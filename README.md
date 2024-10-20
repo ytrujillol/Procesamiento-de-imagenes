@@ -1,1 +1,1 @@
-# Procesamiento_de_imagenes
+# Procesamiento de imágenes
