@@ -25,6 +25,9 @@ md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
 # ╔═╡ 5ece519c-9988-4ef9-acdd-a099712f0a51
 md"""Vamos a usar las siguientes librerías:"""
 
+# ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
+md"""# Introducción"""
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -2073,5 +2076,6 @@ version = "1.4.1+1"
 # ╟─070e0a0e-c4bc-479e-85ab-74908a8595b1
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
+# ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
