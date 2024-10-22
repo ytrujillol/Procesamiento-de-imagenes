@@ -29,13 +29,13 @@ md"""Vamos a usar las siguientes librerías:"""
 md"""# Introducción"""
 
 # ╔═╡ 65985a86-4095-434a-88f5-11253618a066
-url="https://depositphotos.com/photo/flag-of-the-seychelles-42018005.html"
+url="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Bandera_Seychelles.jpg?raw=true"
 
 # ╔═╡ 2f219d9f-7131-4bda-961b-75bfbab7ed86
 fname = download(url)
 
 # ╔═╡ 352351af-6801-4fc3-9c9d-b31d3bc0f213
-image₂ = load(fname₂)
+image₂ = load(fname)
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """

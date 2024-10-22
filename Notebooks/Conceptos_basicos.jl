@@ -506,7 +506,7 @@ md"""Consideremos la siguiente imagen a color."""
 
 # ╔═╡ 5a74bb35-bd65-4e42-a112-f71cdf336682
 begin
-	url₂ = "https://upload.wikimedia.org/wikipedia/commons/3/3d/Flag_of_Seychelles.jpg"
+	url₂ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Bandera_Seychelles.jpg?raw=true"
 	fname₂ = download(url₂)
 	image₂ = load(fname₂)
 end
@@ -545,7 +545,7 @@ end
 md"""En la siguiente figura se presentan las imagenes anteriores pero en escala de grises."""
 
 # ╔═╡ 5652fd36-bde9-4084-9cbf-9e6e62381f79
-[RGB.(Red) RGB.(ones(2112, 400)) RGB.(Green) RGB.(ones(2112, 400)) RGB.(Blue)]
+[RGB.(Red) RGB.(ones(size(Red)[1], 400)) RGB.(Green) RGB.(ones(size(Red)[1], 400)) RGB.(Blue)]
 
 # ╔═╡ f10c3863-89b9-4913-a095-7feb46827238
 md"""Los histogramas de cada uno de los canales de color de la Figura 3 son presentados a continuación."""
@@ -682,7 +682,7 @@ begin
 	end
 	
 	# Ejemplo de uso: Imagen RGB de ejemplo (3 canales)
-	image_rgb = zeros(2112, 2816, 3)  # Imagen aleatoria 256x256 en RGB
+	image_rgb = zeros(size(Red)[1], size(Red)[2], 3)  # Imagen aleatoria 256x256 en RGB
 	image_rgb[:,:,1] = Red *256
 	image_rgb[:,:,2] = Green *256
 	image_rgb[:,:,3] = Blue *256
