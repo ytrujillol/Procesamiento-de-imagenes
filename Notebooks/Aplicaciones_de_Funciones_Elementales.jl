@@ -28,6 +28,40 @@ md"""Vamos a usar las siguientes librerías:"""
 # ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
 md"""# Introducción"""
 
+# ╔═╡ 82580291-8fa9-40d2-853f-ccb622dba296
+begin
+	url₁ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta.jpg?raw=true"
+	fname₁ = download(url₁)
+	image₁ = Gray.(load(fname₁))
+end
+
+# ╔═╡ e54426fd-6d96-4eef-ad61-5a7c2f81ecef
+md"""$\texttt{Figura 1. Una fotografía subexpuesta de un bosque invernal.}$"""
+
+# ╔═╡ a39d5984-4255-4a56-8138-2c62206a0375
+begin
+	url₂ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta.jpg?raw=true"
+	fname₂ = download(url₂)
+	image₂ = Gray.(load(fname₂))
+end
+
+# ╔═╡ cba8c955-22c2-496f-bfd8-61a5a07e9906
+md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}$"""
+
+# ╔═╡ 380f46bc-81ba-4985-b792-e86a57dffbe4
+begin
+	image_values₁ = 255*Float64.(channelview(image₁))
+	hist₁ = fit(Histogram, vec(image_values₁), 0:255).weights
+	plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 1")
+end
+
+# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
+begin
+	image_values₂ = 255*Float64.(channelview(image₂))
+	hist₂ = fit(Histogram, vec(image_values₂), 0:255).weights
+	plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 2")
+end
+
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
@@ -2077,5 +2111,11 @@ version = "1.4.1+1"
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
 # ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
+# ╟─82580291-8fa9-40d2-853f-ccb622dba296
+# ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
+# ╟─a39d5984-4255-4a56-8138-2c62206a0375
+# ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
+# ╟─380f46bc-81ba-4985-b792-e86a57dffbe4
+# ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
