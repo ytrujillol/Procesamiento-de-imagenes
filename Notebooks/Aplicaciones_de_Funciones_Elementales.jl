@@ -4,6 +4,16 @@
 using Markdown
 using InteractiveUtils
 
+# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
+macro bind(def, element)
+    quote
+        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
+        local el = $(esc(element))
+        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
+        el
+    end
+end
+
 # ╔═╡ a530c361-6a99-45c3-9efa-ed85e9ff2535
 using PlutoUI
 
@@ -26,7 +36,7 @@ md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
 md"""Vamos a usar las siguientes librerías:"""
 
 # ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
-md"""# Introducción"""
+md"""# Motivación"""
 
 # ╔═╡ 82580291-8fa9-40d2-853f-ccb622dba296
 begin
@@ -61,6 +71,70 @@ begin
 	hist₂ = fit(Histogram, vec(image_values₂), 0:255).weights
 	plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 2")
 end
+
+# ╔═╡ 881406e6-8dd5-46a0-9568-e7e728c0ac14
+md"""# Transformación $x^{\alpha}$"""
+
+# ╔═╡ 56aa8d2b-2ac5-4686-a421-709e36efcd4f
+@bind γ₁ Slider(0:.001:1, show_value=true, default=0.5)
+
+# ╔═╡ 77edea14-74ab-4c91-a407-0f8a513e5d06
+begin
+	A₁ = float.(channelview(image₁))
+	B₁ = A₁ .^ γ₁
+	image₃ = Gray.(B₁)
+end
+
+# ╔═╡ 29928480-9448-42d0-b4af-ec48d86e4e6e
+md"""$\texttt{Figura 3.}$"""
+
+# ╔═╡ 53327535-b3bd-4e83-872a-46879159a159
+begin
+	image_values₃ = 255*Float64.(channelview(image₃))
+	hist₃ = fit(Histogram, vec(image_values₃), 0:255).weights
+	plot(hist₃, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 3")
+end
+
+# ╔═╡ f575e59a-d17c-40fb-9059-76db8ded0196
+@bind γ₂ Slider(1:.001:5, show_value=true, default=2)
+
+# ╔═╡ 093f23cb-14aa-4a52-81c8-e0ec7748ea13
+begin
+	A₂ = float.(channelview(image₂))
+	B₂ = A₂ .^ γ₂
+	image₄ = Gray.(B₂)
+end
+
+# ╔═╡ 41bf9f4b-4b01-47b6-ab31-de58b9b35705
+md"""$\texttt{Figura 4.}$"""
+
+# ╔═╡ b2fa5afa-ba4d-42f7-9009-3cd7429eedee
+begin
+	image_values₄ = 255*Float64.(channelview(image₄))
+	hist₄ = fit(Histogram, vec(image_values₄), 0:255).weights
+	plot(hist₄, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 3")
+end
+
+# ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
+md"""Escribe una función en MATLAB que aclare (o oscurezca) la imagen especificada usando el valor de γ especificado. La función debe aceptar tanto la matriz de la imagen como el valor de γ como entradas. Idealmente, debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y.
+
+Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para aclarar (u oscurecer) la imagen original. Experimenta con diferentes valores de γ y trata de encontrar el óptimo. (d) Muestra la versión mejorada de la imagen junto con su histograma."""
+
+# ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
+md"""# Tranformación exponencial"""
+
+# ╔═╡ 6633b847-fd7b-4e30-9b46-8228cc76e1c8
+md"""# Tranformación logarítmica"""
+
+# ╔═╡ 57ea7045-6411-493f-93cf-810b277bb1fd
+md"""# Referencias
+
+[1] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
+
+[2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
+
+[3] MIT Computational Thinking. (2023). Images Abstractions. Recuperado de [https://computationalthinking.mit.edu/Fall22/images_abstractions/images/](https://computationalthinking.mit.edu/Fall22/images_abstractions/images/)
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2117,5 +2191,18 @@ version = "1.4.1+1"
 # ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
 # ╟─380f46bc-81ba-4985-b792-e86a57dffbe4
 # ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
+# ╟─881406e6-8dd5-46a0-9568-e7e728c0ac14
+# ╠═56aa8d2b-2ac5-4686-a421-709e36efcd4f
+# ╠═77edea14-74ab-4c91-a407-0f8a513e5d06
+# ╟─29928480-9448-42d0-b4af-ec48d86e4e6e
+# ╟─53327535-b3bd-4e83-872a-46879159a159
+# ╠═f575e59a-d17c-40fb-9059-76db8ded0196
+# ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
+# ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
+# ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
+# ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
+# ╠═91672cee-48cc-4378-a21d-9138cf360b6f
+# ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
+# ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
