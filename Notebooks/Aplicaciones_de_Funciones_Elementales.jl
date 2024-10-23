@@ -62,17 +62,17 @@ md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}
 begin
 	image_values₁ = 255*Float64.(channelview(image₁))
 	hist₁ = fit(Histogram, vec(image_values₁), 0:255).weights
-	p1 = plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de Figura 1")
+	p1 = plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 1")
 	
 	image_values₂ = 255*Float64.(channelview(image₂))
 	hist₂ = fit(Histogram, vec(image_values₂), 0:255).weights
-	p2 = plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de Figura 2")
+	p2 = plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 2")
 
 	plot(p1, p2, layout = (1, 2))
 end
 
 # ╔═╡ 881406e6-8dd5-46a0-9568-e7e728c0ac14
-md"""# Transformación potenciales"""
+md"""# Transformación potencial"""
 
 # ╔═╡ 56aa8d2b-2ac5-4686-a421-709e36efcd4f
 @bind γ₁ Slider(0:.001:1, show_value=true, default=0.5)
@@ -147,24 +147,57 @@ $B= \frac{1}{b − 1} (b^A-1)$"""
 # ╔═╡ 389fb049-5fac-4546-9acb-499f05765a57
 #hablar de la exponenciación de matrices
 
-# ╔═╡ 9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
-@bind b Slider(0:1:500, show_value=true, default=40)
-
-# ╔═╡ 6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+# ╔═╡ af4ec210-5aab-4a2f-9202-5466fd08d9f5
 begin
-	A₃ = float.(channelview(image₂))
-	B₃ = (1/(b-1))*((b .^ A₃) .- 1)
-	image₅ = Gray.(B₃)
+	url₆ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta2.jpg?raw=true"
+	fname₆ = download(url₆)
+	image₆ = Gray.(load(fname₆))
 end
 
 # ╔═╡ 888fc6f9-cb7b-43e3-a8ee-174d424577ed
 md"""$\texttt{Figura 5.}$"""
 
+# ╔═╡ 68951335-3c31-42af-bbab-edfa5f4e8d41
+begin
+	image_values₆ = 255*Float64.(channelview(image₆))
+	hist₆ = fit(Histogram, vec(image_values₆), 0:255).weights
+	plot(hist₆, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
+end
+
+# ╔═╡ 9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
+b = @bind b Slider(0:1:1000, show_value=true, default=500)
+
+# ╔═╡ 6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+begin
+	A₃ = float.(channelview(image₆))
+	B₃ = (1/(b-1))*((b .^ A₃) .- 1)
+	image₅ = Gray.(B₃)
+end
+
+# ╔═╡ 5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
+md"""$\texttt{Figura 6.}$"""
+
 # ╔═╡ b877fb2b-a1be-4671-bb20-f4311ff98c4a
 begin
 	image_values₅ = 255*Float64.(channelview(image₅))
 	hist₅ = fit(Histogram, vec(image_values₅), 0:255).weights
-	plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
+	plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 6")
+end
+
+# ╔═╡ bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
+md"""Comparemos"""
+
+# ╔═╡ b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
+[image₆ image₅]
+
+# ╔═╡ d134bcce-47ad-49a3-8297-84f247f49384
+begin
+	
+	p3 = plot(hist₆, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
+	
+	p4 = plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 6")
+
+	plot(p3, p4, layout = (1, 2))
 end
 
 # ╔═╡ e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
@@ -2247,17 +2280,23 @@ version = "1.4.1+1"
 # ╠═f575e59a-d17c-40fb-9059-76db8ded0196
 # ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
 # ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
-# ╠═b2fa5afa-ba4d-42f7-9009-3cd7429eedee
+# ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
 # ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
 # ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
 # ╟─c12db014-eb77-4411-adbc-3515a90995fc
 # ╠═389fb049-5fac-4546-9acb-499f05765a57
-# ╠═9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
-# ╟─6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+# ╟─af4ec210-5aab-4a2f-9202-5466fd08d9f5
 # ╟─888fc6f9-cb7b-43e3-a8ee-174d424577ed
+# ╟─68951335-3c31-42af-bbab-edfa5f4e8d41
+# ╟─9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
+# ╟─6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+# ╟─5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
 # ╟─b877fb2b-a1be-4671-bb20-f4311ff98c4a
-# ╠═e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
+# ╟─bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
+# ╟─b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
+# ╟─d134bcce-47ad-49a3-8297-84f247f49384
+# ╟─e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
 # ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
