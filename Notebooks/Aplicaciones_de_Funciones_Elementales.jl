@@ -118,9 +118,7 @@ begin
 end
 
 # ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
-md"""Escribe una función en MATLAB que aclare (o oscurezca) la imagen especificada usando el valor de γ especificado. La función debe aceptar tanto la matriz de la imagen como el valor de γ como entradas. Idealmente, debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y.
-
-Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para aclarar (u oscurecer) la imagen original. Experimenta con diferentes valores de γ y trata de encontrar el óptimo. (d) Muestra la versión mejorada de la imagen junto con su histograma."""
+md"""Escribe una función en MATLAB que aclare (o oscurezca) la imagen especificada usando el valor de γ especificado. La función debe aceptar tanto la matriz de la imagen como el valor de γ como entradas. Idealmente, debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y."""
 
 # ╔═╡ 7c908704-fdea-40ab-8849-4923fbe0d93d
 begin
@@ -142,19 +140,27 @@ begin
 	end
 end;
 
+# ╔═╡ b4f216c5-243f-422d-a1fa-e7a3ff816a8c
+function YCbCr_to_RGB(Y, Cb, Cr)
+	R = Y + 1.402 * (Cr - 128)
+	G = Y - 0.344136 * (Cb - 128) - 0.714136 * (Cr - 128)
+	B = Y + 1.772 * (Cb - 128)
+	return R, G, B
+end
+
 # ╔═╡ 9a7c1190-c5fc-4ee1-b756-2828ff18727b
 function Tranformacion_potencial(image, gamma)
-	A = float.(channelview(image))
+	A = Float64.(channelview(image))
 	if length(size(A)) == 2
 		B = A .^ gamma
 		new_image = Gray.(B)
 		return new_image
 	else 
-		image_rgb = zeros(size(A)[1], size(A)[2], 3)
+		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
 		image_rgb[:,:,1] = A[1, :, :] *256
 		image_rgb[:,:,2] = A[2, :, :] *256
 		image_rgb[:,:,3] = A[3, :, :] *256
-
+	
 		image_ycbcr = image_to_ycbcr(image_rgb)/256;
 		
 		new_imagen_YCbCr = permutedims(cat(dims=3, image_ycbcr[:,:,1] .^ gamma, image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
@@ -162,8 +168,94 @@ function Tranformacion_potencial(image, gamma)
 	end
 end;
 
+# ╔═╡ 98157209-d9dd-49ce-867b-a6c4506b138e
+md"""Consideremos la siguiente imagen"""
+
+# ╔═╡ 5c3244f1-5a38-489b-969a-8aec0ffd7d67
+begin
+	URL = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta2.jpg?raw=true"
+	fname = download(URL)
+	image = load(fname)
+	[image Tranformacion_potencial(image, 0.2)]
+end
+
+# ╔═╡ 92051eb2-d182-45bc-a53c-f185426b4d0f
+begin
+	
+	# Función para convertir toda una imagen de RGB a YCbCr
+	function image_to_rgb(image_ycbcr)
+	    RGB_image = similar(image_ycbcr)
+	    for i in 1:size(image_ycbcr, 1), j in 1:size(image_ycbcr, 2)
+	        Y, Cb, Cr = image_ycbcr[i, j, :]
+	        RBG_image[i, j, :] .= YCbCr_to_RGB(Y, Cb, Cr)
+	    end
+	    return RGB_image
+	end
+
+	AA = Float64.(channelview(Tranformacion_potencial(image, 0.2)))
+	
+	imagen_ycbcr = zeros(size(AA[1, :, :])[1], size(AA[1, :, :])[2], 3)
+	imagen_ycbcr[:,:,1] = AA[1, :, :] *256
+	imagen_ycbcr[:,:,2] = AA[2, :, :] *256
+	imagen_ycbcr[:,:,3] = AA[3, :, :] *256
+
+	imagen_rgb = image_to_ycbcr(imagen_ycbcr)/256;
+	
+	new_imagen_rgb = permutedims(cat(dims=3, imagen_rgb[:,:,1], imagen_rgb[:,:,2], imagen_rgb[:,:,3]), [3, 1, 2]);
+	colorview(RGB, new_imagen_rgb)
+end
+
 # ╔═╡ e8453abe-6bff-47ab-b031-b4a3586bd05e
-Tranformacion_potencial(image₂, 2)
+[Gray.(load(fname)) Tranformacion_potencial(Gray.(load(fname)), 0.2)]
+
+# ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
+md"""Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para aclarar (u oscurecer) la imagen original. Experimenta con diferentes valores de γ y trata de encontrar el óptimo. (d) Muestra la versión mejorada de la imagen junto con su histograma."""
+
+# ╔═╡ ae7a4ed5-c551-4015-8502-83a6d38480f1
+function Tranformacion_potencial_mejorada(image, gamma)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		image_values = 255*A
+		hist = fit(Histogram, vec(image_values), 0:255).weights
+		P1=plot(hist, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura")
+		return P1, Tranformacion_potencial(image, gamma)
+	else
+		P1 = plot(title="Histograma de la imagen en RGB")
+		for comp in (red, green, blue)
+		    hist = fit(Histogram, reinterpret.(comp.(vec(image))), 0:256).weights
+		    P1 = plot!(hist, c="$comp",fill=(0,"$comp"), fillalpha=0.1,label="Canal $comp", title="Histograma de la imagen en RGB")
+		end
+		return P1, Tranformacion_potencial(image, gamma)
+	end
+end
+
+# ╔═╡ b4d4d154-3cec-4739-831f-36976db006e0
+begin
+	URL1 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta3.jpg?raw=true"
+	fname1 = download(URL1)
+	image1 = load(fname1)
+end
+
+# ╔═╡ 58b4906f-635f-4be1-a3a9-fe5f79cb54a5
+YCbCr.(load(fname1))
+
+# ╔═╡ 642b4cd9-b297-4cc6-8e5b-84addad4937b
+Tranformacion_potencial_mejorada(image1, 1)
+
+# ╔═╡ cdaeefbb-8f10-4030-ba4c-26a13cd781c8
+Tranformacion_potencial_mejorada(image, 0.2)[2]
+
+# ╔═╡ 9912387f-4c3f-4540-b4f3-3201b58d6015
+range(YCbCr(50,70,0), stop=YCbCr(70,0,720), length=90) # multiple rotations
+
+# ╔═╡ 3ae95ebd-85c7-4ad7-93c6-dd594eb21e8f
+YCbCr.(image)
+
+# ╔═╡ 36c5172c-4529-4c95-afa2-9fa2b55bab11
+channelview(YCbCr.(image))./256
+
+# ╔═╡ 4e347ea8-68b3-4914-bdf0-a20cc5552c54
+display(YCbCr.(image))
 
 # ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
 md"""# Tranformación exponencial"""
@@ -2330,8 +2422,22 @@ version = "1.4.1+1"
 # ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
 # ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
 # ╠═7c908704-fdea-40ab-8849-4923fbe0d93d
+# ╠═b4f216c5-243f-422d-a1fa-e7a3ff816a8c
 # ╠═9a7c1190-c5fc-4ee1-b756-2828ff18727b
+# ╠═98157209-d9dd-49ce-867b-a6c4506b138e
+# ╠═5c3244f1-5a38-489b-969a-8aec0ffd7d67
+# ╠═58b4906f-635f-4be1-a3a9-fe5f79cb54a5
+# ╠═92051eb2-d182-45bc-a53c-f185426b4d0f
 # ╠═e8453abe-6bff-47ab-b031-b4a3586bd05e
+# ╠═f00e05d3-984b-42c8-ad13-0c109cbcc457
+# ╠═ae7a4ed5-c551-4015-8502-83a6d38480f1
+# ╠═b4d4d154-3cec-4739-831f-36976db006e0
+# ╠═642b4cd9-b297-4cc6-8e5b-84addad4937b
+# ╠═cdaeefbb-8f10-4030-ba4c-26a13cd781c8
+# ╠═9912387f-4c3f-4540-b4f3-3201b58d6015
+# ╠═3ae95ebd-85c7-4ad7-93c6-dd594eb21e8f
+# ╠═36c5172c-4529-4c95-afa2-9fa2b55bab11
+# ╠═4e347ea8-68b3-4914-bdf0-a20cc5552c54
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
 # ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
 # ╟─c12db014-eb77-4411-adbc-3515a90995fc
