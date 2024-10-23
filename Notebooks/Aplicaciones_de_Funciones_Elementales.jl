@@ -38,6 +38,9 @@ md"""Vamos a usar las siguientes librerías:"""
 # ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
 md"""# Motivación"""
 
+# ╔═╡ 933134ff-401a-433e-875f-c39aff425fa9
+md""" """
+
 # ╔═╡ 82580291-8fa9-40d2-853f-ccb622dba296
 begin
 	url₁ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta.jpg?raw=true"
@@ -118,6 +121,49 @@ end
 md"""Escribe una función en MATLAB que aclare (o oscurezca) la imagen especificada usando el valor de γ especificado. La función debe aceptar tanto la matriz de la imagen como el valor de γ como entradas. Idealmente, debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y.
 
 Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para aclarar (u oscurecer) la imagen original. Experimenta con diferentes valores de γ y trata de encontrar el óptimo. (d) Muestra la versión mejorada de la imagen junto con su histograma."""
+
+# ╔═╡ 7c908704-fdea-40ab-8849-4923fbe0d93d
+begin
+	function rgb_to_ycbcr(R, G, B)
+	    Y  =  0.299 * R + 0.587 * G + 0.114 * B
+	    Cb = -0.1687 * R - 0.3313 * G + 0.5 * B + 128
+	    Cr =  0.5 * R - 0.4187 * G - 0.0813 * B + 128
+	    return Y, Cb, Cr
+	end
+	
+	# Función para convertir toda una imagen de RGB a YCbCr
+	function image_to_ycbcr(image_rgb)
+	    YCbCr_image = similar(image_rgb)  # Crear un array para la imagen YCbCr
+	    for i in 1:size(image_rgb, 1), j in 1:size(image_rgb, 2)
+	        R, G, B = image_rgb[i, j, :]
+	        YCbCr_image[i, j, :] .= rgb_to_ycbcr(R, G, B)
+	    end
+	    return YCbCr_image
+	end
+end;
+
+# ╔═╡ 9a7c1190-c5fc-4ee1-b756-2828ff18727b
+function Tranformacion_potencial(image, gamma)
+	A = float.(channelview(image))
+	if length(size(A)) == 2
+		B = A .^ gamma
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(size(A)[1], size(A)[2], 3)
+		image_rgb[:,:,1] = A[1, :, :] *256
+		image_rgb[:,:,2] = A[2, :, :] *256
+		image_rgb[:,:,3] = A[3, :, :] *256
+
+		image_ycbcr = image_to_ycbcr(image_rgb)/256;
+		
+		new_imagen_YCbCr = permutedims(cat(dims=3, image_ycbcr[:,:,1] .^ gamma, image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_YCbCr)
+	end
+end;
+
+# ╔═╡ e8453abe-6bff-47ab-b031-b4a3586bd05e
+Tranformacion_potencial(image₂, 2)
 
 # ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
 md"""# Tranformación exponencial"""
@@ -2267,6 +2313,7 @@ version = "1.4.1+1"
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
 # ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
+# ╠═933134ff-401a-433e-875f-c39aff425fa9
 # ╟─82580291-8fa9-40d2-853f-ccb622dba296
 # ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
 # ╟─a39d5984-4255-4a56-8138-2c62206a0375
@@ -2278,10 +2325,13 @@ version = "1.4.1+1"
 # ╟─29928480-9448-42d0-b4af-ec48d86e4e6e
 # ╟─53327535-b3bd-4e83-872a-46879159a159
 # ╠═f575e59a-d17c-40fb-9059-76db8ded0196
-# ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
+# ╠═093f23cb-14aa-4a52-81c8-e0ec7748ea13
 # ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
 # ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
 # ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
+# ╠═7c908704-fdea-40ab-8849-4923fbe0d93d
+# ╠═9a7c1190-c5fc-4ee1-b756-2828ff18727b
+# ╠═e8453abe-6bff-47ab-b031-b4a3586bd05e
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
 # ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
 # ╟─c12db014-eb77-4411-adbc-3515a90995fc
