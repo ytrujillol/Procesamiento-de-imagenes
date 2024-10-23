@@ -58,22 +58,21 @@ end
 # ╔═╡ cba8c955-22c2-496f-bfd8-61a5a07e9906
 md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}$"""
 
-# ╔═╡ 380f46bc-81ba-4985-b792-e86a57dffbe4
+# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
 begin
 	image_values₁ = 255*Float64.(channelview(image₁))
 	hist₁ = fit(Histogram, vec(image_values₁), 0:255).weights
-	plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 1")
-end
-
-# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
-begin
+	p1 = plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de Figura 1")
+	
 	image_values₂ = 255*Float64.(channelview(image₂))
 	hist₂ = fit(Histogram, vec(image_values₂), 0:255).weights
-	plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 2")
+	p2 = plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de Figura 2")
+
+	plot(p1, p2, layout = (1, 2))
 end
 
 # ╔═╡ 881406e6-8dd5-46a0-9568-e7e728c0ac14
-md"""# Transformación $x^{\alpha}$"""
+md"""# Transformación potenciales"""
 
 # ╔═╡ 56aa8d2b-2ac5-4686-a421-709e36efcd4f
 @bind γ₁ Slider(0:.001:1, show_value=true, default=0.5)
@@ -112,7 +111,7 @@ md"""$\texttt{Figura 4.}$"""
 begin
 	image_values₄ = 255*Float64.(channelview(image₄))
 	hist₄ = fit(Histogram, vec(image_values₄), 0:255).weights
-	plot(hist₄, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 3")
+	plot(hist₄, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 4")
 end
 
 # ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
@@ -122,6 +121,56 @@ Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de t
 
 # ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
 md"""# Tranformación exponencial"""
+
+# ╔═╡ afc2569f-8cd2-4daf-9303-2ac5ee407325
+md"""Lo que inmediatamente llama nuestra atención es que, a diferencia de los gráficos de las funciones de potencia, los gráficos de las funciones exponenciales no pasan por el origen, lo cual será un problema si aplicamos una función exponencial a los valores de los píxeles. Afortunadamente, este inconveniente se puede solucionar fácilmente desplazando el gráfico una unidad hacia abajo.
+
+También nos gustaría que nuestra función mapee el intervalo [0, 1] en el intervalo [0, 1]. Combinando todos nuestros deseos, nos gustaría tener una función descrita por la fórmula general:
+
+$f(x) = c(b^x − 1)$
+
+que satisfaga las condiciones:
+
+$f(0) = 0 \text{ y } f(1) = 1.$
+Esto implica que la constante c debe ser igual a:
+
+$c = \frac{1}{b − 1}$"""
+
+# ╔═╡ c12db014-eb77-4411-adbc-3515a90995fc
+md""" $A$ imagen original (de tamaño $m\times n$), $B$ imagen mejorada
+
+$B(m, n) = c(b^{A(m,n)} − 1),$
+esto es
+
+$B= \frac{1}{b − 1} (b^A-1)$"""
+
+# ╔═╡ 389fb049-5fac-4546-9acb-499f05765a57
+#hablar de la exponenciación de matrices
+
+# ╔═╡ 9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
+@bind b Slider(0:1:500, show_value=true, default=40)
+
+# ╔═╡ 6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+begin
+	A₃ = float.(channelview(image₂))
+	B₃ = (1/(b-1))*((b .^ A₃) .- 1)
+	image₅ = Gray.(B₃)
+end
+
+# ╔═╡ 888fc6f9-cb7b-43e3-a8ee-174d424577ed
+md"""$\texttt{Figura 5.}$"""
+
+# ╔═╡ b877fb2b-a1be-4671-bb20-f4311ff98c4a
+begin
+	image_values₅ = 255*Float64.(channelview(image₅))
+	hist₅ = fit(Histogram, vec(image_values₅), 0:255).weights
+	plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
+end
+
+# ╔═╡ e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
+md"""Escribe una función en MATLAB que oscurezca la imagen especificada utilizando la transformación exponencial con un valor especificado de la base b. Tu función debe aceptar la imagen y la base b como entradas. Idealmente, tu función debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y. Siéntete libre de usar cualquiera de las ecuaciones (2.5) o (2.8) para implementar la transformación exponencial.
+
+Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen sobreexpuesta de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para oscurecer la imagen original. Experimenta con diferentes bases e intenta encontrar el valor óptimo para la base. (d) Muestra la imagen mejorada junto con su histograma."""
 
 # ╔═╡ 6633b847-fd7b-4e30-9b46-8228cc76e1c8
 md"""# Tranformación logarítmica"""
@@ -2189,7 +2238,6 @@ version = "1.4.1+1"
 # ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
 # ╟─a39d5984-4255-4a56-8138-2c62206a0375
 # ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
-# ╟─380f46bc-81ba-4985-b792-e86a57dffbe4
 # ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
 # ╟─881406e6-8dd5-46a0-9568-e7e728c0ac14
 # ╠═56aa8d2b-2ac5-4686-a421-709e36efcd4f
@@ -2199,9 +2247,17 @@ version = "1.4.1+1"
 # ╠═f575e59a-d17c-40fb-9059-76db8ded0196
 # ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
 # ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
-# ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
+# ╠═b2fa5afa-ba4d-42f7-9009-3cd7429eedee
 # ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
-# ╠═91672cee-48cc-4378-a21d-9138cf360b6f
+# ╟─91672cee-48cc-4378-a21d-9138cf360b6f
+# ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
+# ╟─c12db014-eb77-4411-adbc-3515a90995fc
+# ╠═389fb049-5fac-4546-9acb-499f05765a57
+# ╠═9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
+# ╟─6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+# ╟─888fc6f9-cb7b-43e3-a8ee-174d424577ed
+# ╟─b877fb2b-a1be-4671-bb20-f4311ff98c4a
+# ╠═e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
 # ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
