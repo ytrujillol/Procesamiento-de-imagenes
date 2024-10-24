@@ -275,6 +275,9 @@ begin
 	Gray.(load(fname))
 end
 
+# ╔═╡ 5880cdde-295f-4b4f-94c8-8811998718ea
+md"""$\texttt{Figura 5.}$"""
+
 # ╔═╡ 8d19488a-8025-4718-8a3f-5b3ad87ecdc4
 md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
 
@@ -283,6 +286,9 @@ md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
 
 # ╔═╡ e8453abe-6bff-47ab-b031-b4a3586bd05e
 Tranformacion_potencial(Gray.(load(fname)), γ₃)
+
+# ╔═╡ 3fd40425-386d-44b7-95e0-3bba3e0782b6
+md"""$\texttt{Figura 6.}$"""
 
 # ╔═╡ 2bd8a54f-87c9-42ea-9504-2f57c654f563
 md"""Ahora, consideremos la siguiente fotografía"""
@@ -294,6 +300,9 @@ begin
 	image1 = load(fname1)
 end
 
+# ╔═╡ 7c85cf7b-fbec-4007-a2b5-f5df86224c11
+md"""$\texttt{Figura 7.}$"""
+
 # ╔═╡ d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
 md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
 
@@ -303,11 +312,17 @@ md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
 # ╔═╡ 3d81527f-eedd-424d-93ba-d473aad093fb
 Tranformacion_potencial(image1, γ₄)
 
+# ╔═╡ 2904c135-3dc6-41a1-8170-827665b15673
+md"""$\texttt{Figura 8.}$"""
+
 # ╔═╡ cd98b718-1175-4c86-b0b0-889dcc5c9de7
 md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
 
 # ╔═╡ 03e8996d-a802-4364-ba47-a7aabfabe782
 function_RBG(Tranformacion_potencial(image1, γ₄))
+
+# ╔═╡ 388e800c-26c8-4e21-a8a9-c14941b4bf09
+md"""$\texttt{Figura 9.}$"""
 
 # ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
 md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
@@ -338,6 +353,9 @@ Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[1]
 
 # ╔═╡ c77864b5-934b-471e-b7ee-585d561a49be
 Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[2]
+
+# ╔═╡ 5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
+md"""$\texttt{Figura 10.}$"""
 
 # ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
 md"""# Tranformación exponencial"""
@@ -401,7 +419,7 @@ begin
 end
 
 # ╔═╡ 888fc6f9-cb7b-43e3-a8ee-174d424577ed
-md"""$\texttt{Figura 5. Una fotografía sobreexpuesta de un árbol.}$"""
+md"""$\texttt{Figura 11. Una fotografía sobreexpuesta de un árbol.}$"""
 
 # ╔═╡ b8aa4ed9-3228-4451-8615-d829c771ec06
 md"""A continuación se muestra el histrograma de la Figura 5. Se puede observar que el histograma presenta un sesgo a la izquierda."""
@@ -423,7 +441,7 @@ begin
 end
 
 # ╔═╡ 5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
-md"""$\texttt{Figura 6.}$"""
+md"""$\texttt{Figura 13.}$"""
 
 # ╔═╡ 0c086519-a135-41ec-b9d2-f1c9878e79cb
 md"""A continuación, se presenta el histograma de la Figura 6."""
@@ -436,6 +454,9 @@ md"""Al comparar las imágenes, observamos una mejora notable en la claridad y d
 
 # ╔═╡ b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
 [image₆ image₅]
+
+# ╔═╡ 41ea8e3f-19e8-4f83-9d8b-7467af55d8e8
+md"""$\texttt{Figura 14.}$"""
 
 # ╔═╡ df7c8857-3535-4074-b5b8-64500ec002a0
 md"""A continuación, vamos a crear una función que permita aclarar u oscurecer una imagen utilizando un valor dado de la base $b$. La función recibirá como parámetros la imagen y la base $b$. Funcionará tanto para imágenes en escala de grises como para imágenes en color. En este último caso, la imagen se convertirá al espacio de color YCbCr, aplicando la transformación solo al canal Y."""
@@ -470,6 +491,9 @@ begin
 	image3 = load(fname3)
 end
 
+# ╔═╡ f4fe9a3b-cc16-4cad-86cf-99e5b9eff23a
+md"""$\texttt{Figura 15.}$"""
+
 # ╔═╡ 2b4f4a46-8aee-4a15-9051-7d7bdee7824f
 md"""Escogemos el valor de $b$ y aplicamos la tranformación."""
 
@@ -479,11 +503,17 @@ md"""Escogemos el valor de $b$ y aplicamos la tranformación."""
 # ╔═╡ e73ffdf3-34f4-4056-bbc3-1b44943ae224
 Tranformacion_exponencial(image3, b₁)
 
+# ╔═╡ 70671e22-bbe4-4137-a361-61e3825e0601
+md"""$\texttt{Figura 16.}$"""
+
 # ╔═╡ ff92eeae-a456-4b44-87cc-a532602e75c8
 md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
 
 # ╔═╡ 11717f36-6d98-4212-b978-21f89db4a42e
 function_RBG(Tranformacion_exponencial(image3, b₁))
+
+# ╔═╡ 36138bc1-8278-4955-a796-e8cb49d59250
+md"""$\texttt{Figura 17.}$"""
 
 # ╔═╡ 315c17c6-2234-42c8-9f30-a873c782da3b
 md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
@@ -507,19 +537,29 @@ end
 md"""Consideremos la siguiente imagen y apliquemos la transformación exponencial,"""
 
 # ╔═╡ d5313e2d-35bc-40fd-95cd-261d07ff850f
+begin
+	URL4 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta3.jpg?raw=true"
+	fname4 = download(URL4)
+	image4 = Gray.(load(fname4))
+end
 
+# ╔═╡ fb30a480-b151-4ecc-96c6-541b2fb9507f
+md"""$\texttt{Figura 18.}$"""
 
 # ╔═╡ a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
-Tranformacion_exponencial_mejorada(Gray.(load(fname)), 0.33)
+Tranformacion_exponencial_mejorada(image4, 0.005)
 
 # ╔═╡ 307e8dc1-32a9-4ce0-80b8-f20faa08f848
 md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
 
 # ╔═╡ 0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
-
+Tranformacion_exponencial_mejorada(image4, 0.005)[1]
 
 # ╔═╡ 229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
-Tranformacion_exponencial_mejorada(Gray.(load(fname)), 0.33)[2]
+Tranformacion_exponencial_mejorada(image4, 0.005)[2]
+
+# ╔═╡ 4ea1b82a-b067-46e2-8e5d-8265f6fb2742
+md"""$\texttt{Figura 19.}$"""
 
 # ╔═╡ 6633b847-fd7b-4e30-9b46-8228cc76e1c8
 md"""# Tranformación logarítmica"""
@@ -2617,16 +2657,21 @@ version = "1.4.1+1"
 # ╠═9a7c1190-c5fc-4ee1-b756-2828ff18727b
 # ╟─98157209-d9dd-49ce-867b-a6c4506b138e
 # ╟─b372d543-c6b9-4eda-b834-a7d78236123f
+# ╟─5880cdde-295f-4b4f-94c8-8811998718ea
 # ╟─8d19488a-8025-4718-8a3f-5b3ad87ecdc4
 # ╟─f654a489-aeb3-4a5f-bf9e-5f44a6968fb8
 # ╟─e8453abe-6bff-47ab-b031-b4a3586bd05e
+# ╟─3fd40425-386d-44b7-95e0-3bba3e0782b6
 # ╟─2bd8a54f-87c9-42ea-9504-2f57c654f563
 # ╟─b4d4d154-3cec-4739-831f-36976db006e0
+# ╟─7c85cf7b-fbec-4007-a2b5-f5df86224c11
 # ╟─d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
 # ╟─da9aaf33-0b21-406b-8f83-e40cdbf0ff20
 # ╠═3d81527f-eedd-424d-93ba-d473aad093fb
+# ╟─2904c135-3dc6-41a1-8170-827665b15673
 # ╟─cd98b718-1175-4c86-b0b0-889dcc5c9de7
 # ╠═03e8996d-a802-4364-ba47-a7aabfabe782
+# ╟─388e800c-26c8-4e21-a8a9-c14941b4bf09
 # ╟─f00e05d3-984b-42c8-ad13-0c109cbcc457
 # ╟─b7a5f08a-38b3-4d5c-ae6e-e2599f29d010
 # ╠═ae7a4ed5-c551-4015-8502-83a6d38480f1
@@ -2634,6 +2679,7 @@ version = "1.4.1+1"
 # ╟─908f9615-5c0b-4370-ba2f-6c6eec20b7d3
 # ╟─039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
 # ╠═c77864b5-934b-471e-b7ee-585d561a49be
+# ╟─5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
 # ╟─b3b5c934-9e16-4d97-ae54-b2fe95bce7f1
 # ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
@@ -2654,24 +2700,30 @@ version = "1.4.1+1"
 # ╟─b877fb2b-a1be-4671-bb20-f4311ff98c4a
 # ╟─bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
 # ╟─b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
+# ╟─41ea8e3f-19e8-4f83-9d8b-7467af55d8e8
 # ╟─df7c8857-3535-4074-b5b8-64500ec002a0
 # ╠═da6fd446-233b-482c-98aa-12b7366d332c
 # ╟─1a359987-3d20-4a3a-919d-ae2bfd59f910
 # ╟─2b1c1420-0819-4cde-9496-6d1665ae9c15
+# ╟─f4fe9a3b-cc16-4cad-86cf-99e5b9eff23a
 # ╟─2b4f4a46-8aee-4a15-9051-7d7bdee7824f
 # ╟─55502b23-40a7-481c-8a96-82b5d20818aa
 # ╟─e73ffdf3-34f4-4056-bbc3-1b44943ae224
+# ╟─70671e22-bbe4-4137-a361-61e3825e0601
 # ╟─ff92eeae-a456-4b44-87cc-a532602e75c8
 # ╟─11717f36-6d98-4212-b978-21f89db4a42e
-# ╠═315c17c6-2234-42c8-9f30-a873c782da3b
+# ╟─36138bc1-8278-4955-a796-e8cb49d59250
+# ╟─315c17c6-2234-42c8-9f30-a873c782da3b
 # ╠═2396bcaf-f877-43bb-baf6-225d1dd62770
 # ╠═666436c0-377c-4175-b95d-dd3e09481364
 # ╟─bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
-# ╠═d5313e2d-35bc-40fd-95cd-261d07ff850f
+# ╟─d5313e2d-35bc-40fd-95cd-261d07ff850f
+# ╟─fb30a480-b151-4ecc-96c6-541b2fb9507f
 # ╠═a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
-# ╠═307e8dc1-32a9-4ce0-80b8-f20faa08f848
-# ╠═0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
-# ╠═229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
+# ╟─307e8dc1-32a9-4ce0-80b8-f20faa08f848
+# ╟─0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
+# ╟─229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
+# ╟─4ea1b82a-b067-46e2-8e5d-8265f6fb2742
 # ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
