@@ -35,6 +35,36 @@ md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
 # ╔═╡ 5ece519c-9988-4ef9-acdd-a099712f0a51
 md"""Vamos a usar las siguientes librerías:"""
 
+# ╔═╡ 19e85962-868f-41fb-9103-d9d7868b5137
+md"""Funciones auxiliares:"""
+
+# ╔═╡ c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
+begin
+	function clip_pixel(pixel::RGB{Float64}) #función para ajustar los valores de la imagen entre 0 y 1
+	    r_clipped = clamp(pixel.r, 0.0, 1.0)
+	    g_clipped = clamp(pixel.g, 0.0, 1.0)
+	    b_clipped = clamp(pixel.b, 0.0, 1.0)
+	    return RGB{N0f8}.(RGB{Float64}(r_clipped, g_clipped, b_clipped))
+	end
+	
+	function Hist(image) #Histograma de la imagen
+		A = Float64.(channelview(image))
+		if length(size(A)) == 2
+			image_values = 255*A
+			hist = fit(Histogram, vec(image_values), 0:255).weights
+			P1=plot(hist, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura")
+			return P1
+		else
+			P1 = plot(title="Histograma de la imagen en RGB")
+			for comp in (red, green, blue)
+			    hist = fit(Histogram, reinterpret.(comp.(vec(RGB.(image)))), 0:256).weights
+			    P1 = plot!(hist, c="$comp",fill=(0,"$comp"), fillalpha=0.1,label="Canal $comp", title="Histograma de la imagen en RGB")
+			end
+			return P1
+		end
+	end
+end;
+
 # ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
 md"""# Motivación"""
 
@@ -65,24 +95,6 @@ end
 
 # ╔═╡ cba8c955-22c2-496f-bfd8-61a5a07e9906
 md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}$"""
-
-# ╔═╡ c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
-function Hist(image)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		image_values = 255*A
-		hist = fit(Histogram, vec(image_values), 0:255).weights
-		P1=plot(hist, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura")
-		return P1
-	else
-		P1 = plot(title="Histograma de la imagen en RGB")
-		for comp in (red, green, blue)
-		    hist = fit(Histogram, reinterpret.(comp.(vec(RGB.(image)))), 0:256).weights
-		    P1 = plot!(hist, c="$comp",fill=(0,"$comp"), fillalpha=0.1,label="Canal $comp", title="Histograma de la imagen en RGB")
-		end
-		return P1
-	end
-end
 
 # ╔═╡ 3eb3a378-d1f0-4418-a49b-125f2da66a8d
 md"""A continuación se muestran los histrogramas de cada imagen. Se puede observar que el histograma de la fotografía subexpuesta presenta un sesgo a la derecha, y, el histograma de la fotografía sobreexpuesta presenta un sesgo a la izquierda."""
@@ -327,9 +339,6 @@ md"""$\texttt{Figura 9.}$"""
 # ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
 md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
 
-# ╔═╡ b7a5f08a-38b3-4d5c-ae6e-e2599f29d010
-md"""$\textcolor{red}{Problemas en color}$"""
-
 # ╔═╡ ae7a4ed5-c551-4015-8502-83a6d38480f1
 function Tranformacion_potencial_mejorada(image, gamma)
 	A = Float64.(channelview(image))
@@ -337,22 +346,22 @@ function Tranformacion_potencial_mejorada(image, gamma)
 		new_image = Tranformacion_potencial(image, gamma)
 		return Hist(new_image), new_image
 	else
-		new_image = function_RBG(Tranformacion_potencial(image, gamma))
+		new_image = clip_pixel.(function_RBG(Tranformacion_potencial(image, gamma)))
 		return Hist(new_image), new_image
 	end
 end
 
 # ╔═╡ 642b4cd9-b297-4cc6-8e5b-84addad4937b
-Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)
+T = Tranformacion_potencial_mejorada(load(fname), 0.33)
 
 # ╔═╡ 908f9615-5c0b-4370-ba2f-6c6eec20b7d3
 md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
 
 # ╔═╡ 039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
-Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[1]
+T[1]
 
 # ╔═╡ c77864b5-934b-471e-b7ee-585d561a49be
-Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[2]
+T[2]
 
 # ╔═╡ 5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
 md"""$\texttt{Figura 10.}$"""
@@ -518,9 +527,6 @@ md"""$\texttt{Figura 17.}$"""
 # ╔═╡ 315c17c6-2234-42c8-9f30-a873c782da3b
 md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
 
-# ╔═╡ 2396bcaf-f877-43bb-baf6-225d1dd62770
-md"""$\textcolor{red}{Problemas en color}$"""
-
 # ╔═╡ 666436c0-377c-4175-b95d-dd3e09481364
 function Tranformacion_exponencial_mejorada(image, gamma)
 	A = Float64.(channelview(image))
@@ -528,7 +534,7 @@ function Tranformacion_exponencial_mejorada(image, gamma)
 		new_image = Tranformacion_exponencial(image, gamma)
 		return Hist(new_image), new_image
 	else
-		new_image = function_RBG(Tranformacion_exponencial(image, gamma))
+		new_image = clip_pixel.(function_RBG(Tranformacion_exponencial(image, gamma)))
 		return Hist(new_image), new_image
 	end
 end
@@ -540,23 +546,23 @@ md"""Consideremos la siguiente imagen y apliquemos la transformación exponencia
 begin
 	URL4 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta3.jpg?raw=true"
 	fname4 = download(URL4)
-	image4 = Gray.(load(fname4))
+	image4 = load(fname4)
 end
 
 # ╔═╡ fb30a480-b151-4ecc-96c6-541b2fb9507f
 md"""$\texttt{Figura 18.}$"""
 
 # ╔═╡ a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
-Tranformacion_exponencial_mejorada(image4, 0.005)
+T2 = Tranformacion_exponencial_mejorada(image4, 0.005)
 
 # ╔═╡ 307e8dc1-32a9-4ce0-80b8-f20faa08f848
 md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
 
 # ╔═╡ 0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
-Tranformacion_exponencial_mejorada(image4, 0.005)[1]
+T2[1]
 
 # ╔═╡ 229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
-Tranformacion_exponencial_mejorada(image4, 0.005)[2]
+T2[2]
 
 # ╔═╡ 4ea1b82a-b067-46e2-8e5d-8265f6fb2742
 md"""$\texttt{Figura 19.}$"""
@@ -2622,6 +2628,8 @@ version = "1.4.1+1"
 # ╟─070e0a0e-c4bc-479e-85ab-74908a8595b1
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
+# ╟─19e85962-868f-41fb-9103-d9d7868b5137
+# ╠═c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
 # ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
 # ╟─933134ff-401a-433e-875f-c39aff425fa9
 # ╟─34f0f949-c54c-432d-86b4-20e31c20097a
@@ -2629,7 +2637,6 @@ version = "1.4.1+1"
 # ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
 # ╟─a39d5984-4255-4a56-8138-2c62206a0375
 # ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
-# ╟─c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
 # ╟─3eb3a378-d1f0-4418-a49b-125f2da66a8d
 # ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
 # ╟─881406e6-8dd5-46a0-9568-e7e728c0ac14
@@ -2673,11 +2680,10 @@ version = "1.4.1+1"
 # ╠═03e8996d-a802-4364-ba47-a7aabfabe782
 # ╟─388e800c-26c8-4e21-a8a9-c14941b4bf09
 # ╟─f00e05d3-984b-42c8-ad13-0c109cbcc457
-# ╟─b7a5f08a-38b3-4d5c-ae6e-e2599f29d010
 # ╠═ae7a4ed5-c551-4015-8502-83a6d38480f1
 # ╠═642b4cd9-b297-4cc6-8e5b-84addad4937b
 # ╟─908f9615-5c0b-4370-ba2f-6c6eec20b7d3
-# ╟─039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
+# ╠═039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
 # ╠═c77864b5-934b-471e-b7ee-585d561a49be
 # ╟─5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
@@ -2714,7 +2720,6 @@ version = "1.4.1+1"
 # ╟─11717f36-6d98-4212-b978-21f89db4a42e
 # ╟─36138bc1-8278-4955-a796-e8cb49d59250
 # ╟─315c17c6-2234-42c8-9f30-a873c782da3b
-# ╠═2396bcaf-f877-43bb-baf6-225d1dd62770
 # ╠═666436c0-377c-4175-b95d-dd3e09481364
 # ╟─bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
 # ╟─d5313e2d-35bc-40fd-95cd-261d07ff850f
