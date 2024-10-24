@@ -460,10 +460,66 @@ function Tranformacion_exponencial(image, b)
 	end
 end;
 
-# ╔═╡ e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
-md"""Escribe una función en MATLAB que oscurezca la imagen especificada utilizando la transformación exponencial con un valor especificado de la base b. Tu función debe aceptar la imagen y la base b como entradas. Idealmente, tu función debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y. Siéntete libre de usar cualquiera de las ecuaciones (2.5) o (2.8) para implementar la transformación exponencial.
+# ╔═╡ 1a359987-3d20-4a3a-919d-ae2bfd59f910
+md"""Consideremos la siguiente imagen"""
 
-Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen sobreexpuesta de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para oscurecer la imagen original. Experimenta con diferentes bases e intenta encontrar el valor óptimo para la base. (d) Muestra la imagen mejorada junto con su histograma."""
+# ╔═╡ 2b1c1420-0819-4cde-9496-6d1665ae9c15
+begin
+	URL3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta4.jpg?raw=true"
+	fname3 = download(URL3)
+	image3 = load(fname3)
+end
+
+# ╔═╡ 2b4f4a46-8aee-4a15-9051-7d7bdee7824f
+md"""Escogemos el valor de $b$ y aplicamos la tranformación."""
+
+# ╔═╡ 55502b23-40a7-481c-8a96-82b5d20818aa
+@bind b₁ Slider(0:.01:20, show_value=true, default=15)
+
+# ╔═╡ e73ffdf3-34f4-4056-bbc3-1b44943ae224
+Tranformacion_exponencial(image3, b₁)
+
+# ╔═╡ ff92eeae-a456-4b44-87cc-a532602e75c8
+md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
+
+# ╔═╡ 11717f36-6d98-4212-b978-21f89db4a42e
+function_RBG(Tranformacion_exponencial(image3, b₁))
+
+# ╔═╡ 315c17c6-2234-42c8-9f30-a873c782da3b
+md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
+
+# ╔═╡ 2396bcaf-f877-43bb-baf6-225d1dd62770
+md"""$\textcolor{red}{Problemas en color}$"""
+
+# ╔═╡ 666436c0-377c-4175-b95d-dd3e09481364
+function Tranformacion_exponencial_mejorada(image, gamma)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		new_image = Tranformacion_exponencial(image, gamma)
+		return Hist(new_image), new_image
+	else
+		new_image = function_RBG(Tranformacion_exponencial(image, gamma))
+		return Hist(new_image), new_image
+	end
+end
+
+# ╔═╡ bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
+md"""Consideremos la siguiente imagen y apliquemos la transformación exponencial,"""
+
+# ╔═╡ d5313e2d-35bc-40fd-95cd-261d07ff850f
+
+
+# ╔═╡ a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
+Tranformacion_exponencial_mejorada(Gray.(load(fname)), 0.33)
+
+# ╔═╡ 307e8dc1-32a9-4ce0-80b8-f20faa08f848
+md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
+
+# ╔═╡ 0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
+
+
+# ╔═╡ 229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
+Tranformacion_exponencial_mejorada(Gray.(load(fname)), 0.33)[2]
 
 # ╔═╡ 6633b847-fd7b-4e30-9b46-8228cc76e1c8
 md"""# Tranformación logarítmica"""
@@ -2600,7 +2656,22 @@ version = "1.4.1+1"
 # ╟─b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
 # ╟─df7c8857-3535-4074-b5b8-64500ec002a0
 # ╠═da6fd446-233b-482c-98aa-12b7366d332c
-# ╟─e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
+# ╟─1a359987-3d20-4a3a-919d-ae2bfd59f910
+# ╟─2b1c1420-0819-4cde-9496-6d1665ae9c15
+# ╟─2b4f4a46-8aee-4a15-9051-7d7bdee7824f
+# ╟─55502b23-40a7-481c-8a96-82b5d20818aa
+# ╟─e73ffdf3-34f4-4056-bbc3-1b44943ae224
+# ╟─ff92eeae-a456-4b44-87cc-a532602e75c8
+# ╟─11717f36-6d98-4212-b978-21f89db4a42e
+# ╠═315c17c6-2234-42c8-9f30-a873c782da3b
+# ╠═2396bcaf-f877-43bb-baf6-225d1dd62770
+# ╠═666436c0-377c-4175-b95d-dd3e09481364
+# ╟─bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
+# ╠═d5313e2d-35bc-40fd-95cd-261d07ff850f
+# ╠═a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
+# ╠═307e8dc1-32a9-4ce0-80b8-f20faa08f848
+# ╠═0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
+# ╠═229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
 # ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
