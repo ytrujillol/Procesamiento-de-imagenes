@@ -21,7 +21,7 @@ using PlutoUI
 begin
 	using Plots,Colors,ColorVectorSpace,ImageShow,FileIO,ImageIO
 	using HypertextLiteral
-	using Images
+	using Images, ImageShow 
 	using Statistics,  Distributions, LinearAlgebra
 	using StatsBase, StatsPlots
 end
@@ -39,7 +39,12 @@ md"""Vamos a usar las siguientes librerías:"""
 md"""# Motivación"""
 
 # ╔═╡ 933134ff-401a-433e-875f-c39aff425fa9
-md""" """
+md"""En el procesamiento de imágenes digitales, ajustar la iluminación y el contraste de las imágenes es fundamental para mejorar su calidad y resaltar detalles importantes. Este tipo de ajustes es particularmente útil en fotografías que están sobreexpuestas o subexpuestas, donde los detalles se pierden debido a un rango limitado de valores de los píxeles.
+
+Las transformaciones de potencia y exponenciales se han utilizado ampliamente para este propósito, ya que permiten manipular de manera eficiente los niveles de brillo y contraste en las imágenes. En este cuaderno se va a implementar dichas técnicas de transformación para aclarar u oscurecer imágenes, utilizando tanto imágenes en escala de grises como en color."""
+
+# ╔═╡ 34f0f949-c54c-432d-86b4-20e31c20097a
+md"""A continuación se presenta una fotografía subexpuesta y una sobreexpuesta, ver Figura 1 y Figura 2, respectivamente."""
 
 # ╔═╡ 82580291-8fa9-40d2-853f-ccb622dba296
 begin
@@ -61,24 +66,70 @@ end
 # ╔═╡ cba8c955-22c2-496f-bfd8-61a5a07e9906
 md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}$"""
 
-# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
-begin
-	image_values₁ = 255*Float64.(channelview(image₁))
-	hist₁ = fit(Histogram, vec(image_values₁), 0:255).weights
-	p1 = plot(hist₁, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 1")
-	
-	image_values₂ = 255*Float64.(channelview(image₂))
-	hist₂ = fit(Histogram, vec(image_values₂), 0:255).weights
-	p2 = plot(hist₂, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 2")
-
-	plot(p1, p2, layout = (1, 2))
+# ╔═╡ c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
+function Hist(image)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		image_values = 255*A
+		hist = fit(Histogram, vec(image_values), 0:255).weights
+		P1=plot(hist, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura")
+		return P1
+	else
+		P1 = plot(title="Histograma de la imagen en RGB")
+		for comp in (red, green, blue)
+		    hist = fit(Histogram, reinterpret.(comp.(vec(RGB.(image)))), 0:256).weights
+		    P1 = plot!(hist, c="$comp",fill=(0,"$comp"), fillalpha=0.1,label="Canal $comp", title="Histograma de la imagen en RGB")
+		end
+		return P1
+	end
 end
+
+# ╔═╡ 3eb3a378-d1f0-4418-a49b-125f2da66a8d
+md"""A continuación se muestran los histrogramas de cada imagen. Se puede observar que el histograma de la fotografía subexpuesta presenta un sesgo a la derecha, y, el histograma de la fotografía sobreexpuesta presenta un sesgo a la izquierda."""
+
+# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
+plot(Hist(image₁), Hist(image₂), layout = (1, 2))
 
 # ╔═╡ 881406e6-8dd5-46a0-9568-e7e728c0ac14
 md"""# Transformación potencial"""
 
+# ╔═╡ 2ac2be6e-7401-4b6f-9487-bd32f6c098c7
+md"""La corrección de gamma es una técnica utilizada en procesamiento de imágenes para ajustar el brillo o la luminosidad de una imagen de acuerdo con una función no lineal. Esta técnica es especialmente útil cuando las imágenes están mal expuestas (ya sea demasiado oscuras o demasiado brillantes) y necesitas ajustar los detalles en las zonas oscuras o claras sin afectar el resto de la imagen. Las funciones de potencia son esenciales para esto."""
+
+# ╔═╡ 42931db9-0349-4264-acc7-be9c7074e4e7
+@bind a Slider(0.01:.01:1, show_value=true, default=0.5)
+
+# ╔═╡ 649706e7-2dc2-49fa-9537-9c0d6ac1c505
+begin
+	f1(x) = x^2
+	f2(x) = x^(1/2)
+	f3(x) = x^a
+	
+	x = 0:0.01:1
+	
+	plot(x, f1.(x), label="x^2", lw=2)
+	plot!(x, f2.(x), label="x^(1/2)", lw=2)
+	plot!(x, f3.(x), label="x^$a", lw=2)
+	
+	xlabel!("x")
+	ylabel!("f(x)")
+	title!("Funciones Potenciales en el Intervalo [0,1]")
+end
+
+# ╔═╡ 69f70ddb-7a39-4d4f-8d44-8a1c37d06600
+md"""La corrección gamma se implementa mediante la transformación de los valores de los píxeles de una imagen usando una función de potencia de la forma:
+
+$B(m,n)=A(m,n)^{\gamma},$ 
+donde $A(m,n)$ es la matriz que representa la imagen original, $B(m,n)$ es la matriz de la imagen corregida y $\gamma$ es un parámetro que determina el nivel de corrección (si $\gamma<1$, aclara la imagen, y si $\gamma>1$, la oscurece)."""
+
+# ╔═╡ d01ae1a4-a3e1-4523-a0d2-dacb26b22b7e
+md"""Consideremos el siguiente valor de $\gamma$:"""
+
 # ╔═╡ 56aa8d2b-2ac5-4686-a421-709e36efcd4f
-@bind γ₁ Slider(0:.001:1, show_value=true, default=0.5)
+@bind γ₁ Slider(0:.001:1, show_value=true, default=0.5) #Parametro γ
+
+# ╔═╡ 5132c39f-6130-4889-85cf-99d4cb449850
+md"""Aplicando la tranformación a la Figura 1, dado que es una fotografía subexpuesta es conveniente que el valor de $\gamma$ este entre $0$ y $1$, así obtenemos la siguiente imagen: """
 
 # ╔═╡ 77edea14-74ab-4c91-a407-0f8a513e5d06
 begin
@@ -88,14 +139,16 @@ begin
 end
 
 # ╔═╡ 29928480-9448-42d0-b4af-ec48d86e4e6e
-md"""$\texttt{Figura 3.}$"""
+md"""$\texttt{Figura 3. Imagen corregida}$"""
+
+# ╔═╡ f8b8575d-06d4-452f-a47a-3148a256d60f
+md"""A continuación se presenta el histograna de la FIgura 3."""
 
 # ╔═╡ 53327535-b3bd-4e83-872a-46879159a159
-begin
-	image_values₃ = 255*Float64.(channelview(image₃))
-	hist₃ = fit(Histogram, vec(image_values₃), 0:255).weights
-	plot(hist₃, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 3")
-end
+Hist(image₃)
+
+# ╔═╡ 5d612f37-223a-429f-bb41-dc98a60c0611
+md"""Ahora, apliquemos la corrección Gamma a la Figura 2, dado que es una fotografía sobreexpuesta es conveniente que $\gamma > 1$, así obtenemos la siguiente imagen:"""
 
 # ╔═╡ f575e59a-d17c-40fb-9059-76db8ded0196
 @bind γ₂ Slider(1:.001:5, show_value=true, default=2)
@@ -108,20 +161,20 @@ begin
 end
 
 # ╔═╡ 41bf9f4b-4b01-47b6-ab31-de58b9b35705
-md"""$\texttt{Figura 4.}$"""
+md"""$\texttt{Figura 4. Imagen corregida.}$"""
+
+# ╔═╡ 187cf483-228d-4bcb-ab76-776a78ee58e7
+md"""A continuación, se presenta el histograna de la Figura 4."""
 
 # ╔═╡ b2fa5afa-ba4d-42f7-9009-3cd7429eedee
-begin
-	image_values₄ = 255*Float64.(channelview(image₄))
-	hist₄ = fit(Histogram, vec(image_values₄), 0:255).weights
-	plot(hist₄, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 4")
-end
+Hist(image₄)
 
-# ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
-md"""Escribe una función en MATLAB que aclare (o oscurezca) la imagen especificada usando el valor de γ especificado. La función debe aceptar tanto la matriz de la imagen como el valor de γ como entradas. Idealmente, debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y."""
+# ╔═╡ ae5eeb4f-d4ef-48d6-b237-22c03c7416d2
+md"""Definamos funciones que nos permitan tranformar imágenes del formato RGB al formato YCbCr, y viceversa."""
 
 # ╔═╡ 7c908704-fdea-40ab-8849-4923fbe0d93d
 begin
+	# Función para convertir toda un pixel de RGB a YCbCr
 	function rgb_to_ycbcr(R, G, B)
 	    Y  =  0.299 * R + 0.587 * G + 0.114 * B
 	    Cb = -0.1687 * R - 0.3313 * G + 0.5 * B + 128
@@ -138,15 +191,59 @@ begin
 	    end
 	    return YCbCr_image
 	end
+
+	# Función para mostrar imagen de RGB a YCbCr
+	function YCBCR(image)
+		A = Float64.(channelview(image)) 
+		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
+		image_rgb[:,:,1] = A[1, :, :] *256
+		image_rgb[:,:,2] = A[2, :, :] *256
+		image_rgb[:,:,3] = A[3, :, :] *256
+	
+		image_ycbcr = image_to_ycbcr(image_rgb)/256;
+		
+		new_imagen_YCbCr = permutedims(cat(dims=3, image_ycbcr[:,:,1], image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_YCbCr)
+	end	
 end;
 
 # ╔═╡ b4f216c5-243f-422d-a1fa-e7a3ff816a8c
-function YCbCr_to_RGB(Y, Cb, Cr)
-	R = Y + 1.402 * (Cr - 128)
-	G = Y - 0.344136 * (Cb - 128) - 0.714136 * (Cr - 128)
-	B = Y + 1.772 * (Cb - 128)
-	return R, G, B
-end
+begin
+	# Función para convertir toda un pixel de YCbCr a RGB
+	function ycbcr_to_rgb(Y, Cb, Cr)
+		R = Y + 1.402 * (Cr - 128)
+		G = Y - 0.344136 * (Cb - 128) - 0.714136 * (Cr - 128)
+		B = Y + 1.772 * (Cb - 128)
+		return R, G, B
+	end
+
+	# Función para convertir toda una imagen de YCbCr a RGB
+	function image_to_rgb(image_ycbcr)
+		RBG_image = similar(image_ycbcr) 
+		for i in 1:size(image_ycbcr, 1), j in 1:size(image_ycbcr, 2)
+			Y, Cb, Cr = image_ycbcr[i, j, :]
+			RBG_image[i, j, :] .= ycbcr_to_rgb(Y, Cb, Cr)
+		end
+		return RBG_image
+	end
+
+	# Función para mostrar imagen de YCbCr a RGB
+	function function_RBG(image)
+		A = Float64.(channelview(image)) 
+		image_ycbcr = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
+		image_ycbcr[:,:,1] = A[1, :, :] *256
+		image_ycbcr[:,:,2] = A[2, :, :] *256
+		image_ycbcr[:,:,3] = A[3, :, :] *256
+	
+		image_rgb = image_to_rgb(image_ycbcr)/256;
+		
+		new_imagen_RGB = permutedims(cat(dims=3, image_rgb[:,:,1], image_rgb[:,:,2], image_rgb[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_RGB)
+	end
+end;
+
+# ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
+md"""Ahora, escribamos una función que aclare (u oscurezca) una imagen para un valor de $\gamma$ dado. La función tendrá como entradas la imagen y el valor de $\gamma$. Idealmente, va a funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen se va a convertir al espacio de color YCbCr, y la transformación sera aplicada al canal Y."""
 
 # ╔═╡ 9a7c1190-c5fc-4ee1-b756-2828ff18727b
 function Tranformacion_potencial(image, gamma)
@@ -171,63 +268,24 @@ end;
 # ╔═╡ 98157209-d9dd-49ce-867b-a6c4506b138e
 md"""Consideremos la siguiente imagen"""
 
-# ╔═╡ 5c3244f1-5a38-489b-969a-8aec0ffd7d67
+# ╔═╡ b372d543-c6b9-4eda-b834-a7d78236123f
 begin
 	URL = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta2.jpg?raw=true"
 	fname = download(URL)
-	image = load(fname)
-	[image Tranformacion_potencial(image, 0.2)]
+	Gray.(load(fname))
 end
 
-# ╔═╡ 92051eb2-d182-45bc-a53c-f185426b4d0f
-begin
-	
-	# Función para convertir toda una imagen de RGB a YCbCr
-	function image_to_rgb(image_ycbcr)
-	    RGB_image = similar(image_ycbcr)
-	    for i in 1:size(image_ycbcr, 1), j in 1:size(image_ycbcr, 2)
-	        Y, Cb, Cr = image_ycbcr[i, j, :]
-	        RBG_image[i, j, :] .= YCbCr_to_RGB(Y, Cb, Cr)
-	    end
-	    return RGB_image
-	end
+# ╔═╡ 8d19488a-8025-4718-8a3f-5b3ad87ecdc4
+md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
 
-	AA = Float64.(channelview(Tranformacion_potencial(image, 0.2)))
-	
-	imagen_ycbcr = zeros(size(AA[1, :, :])[1], size(AA[1, :, :])[2], 3)
-	imagen_ycbcr[:,:,1] = AA[1, :, :] *256
-	imagen_ycbcr[:,:,2] = AA[2, :, :] *256
-	imagen_ycbcr[:,:,3] = AA[3, :, :] *256
-
-	imagen_rgb = image_to_ycbcr(imagen_ycbcr)/256;
-	
-	new_imagen_rgb = permutedims(cat(dims=3, imagen_rgb[:,:,1], imagen_rgb[:,:,2], imagen_rgb[:,:,3]), [3, 1, 2]);
-	colorview(RGB, new_imagen_rgb)
-end
+# ╔═╡ f654a489-aeb3-4a5f-bf9e-5f44a6968fb8
+@bind γ₃ Slider(0:.001:2, show_value=true, default=0.4)
 
 # ╔═╡ e8453abe-6bff-47ab-b031-b4a3586bd05e
-[Gray.(load(fname)) Tranformacion_potencial(Gray.(load(fname)), 0.2)]
+Tranformacion_potencial(Gray.(load(fname)), γ₃)
 
-# ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
-md"""Escribe un programa en MATLAB que haga lo siguiente: (a) Importe una imagen de tu elección al entorno de cálculo de MATLAB. (b) Plotee la imagen original y su histograma. (c) Llama a la función de MATLAB que creaste en el ejercicio 2 para aclarar (u oscurecer) la imagen original. Experimenta con diferentes valores de γ y trata de encontrar el óptimo. (d) Muestra la versión mejorada de la imagen junto con su histograma."""
-
-# ╔═╡ ae7a4ed5-c551-4015-8502-83a6d38480f1
-function Tranformacion_potencial_mejorada(image, gamma)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		image_values = 255*A
-		hist = fit(Histogram, vec(image_values), 0:255).weights
-		P1=plot(hist, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura")
-		return P1, Tranformacion_potencial(image, gamma)
-	else
-		P1 = plot(title="Histograma de la imagen en RGB")
-		for comp in (red, green, blue)
-		    hist = fit(Histogram, reinterpret.(comp.(vec(image))), 0:256).weights
-		    P1 = plot!(hist, c="$comp",fill=(0,"$comp"), fillalpha=0.1,label="Canal $comp", title="Histograma de la imagen en RGB")
-		end
-		return P1, Tranformacion_potencial(image, gamma)
-	end
-end
+# ╔═╡ 2bd8a54f-87c9-42ea-9504-2f57c654f563
+md"""Ahora, consideremos la siguiente fotografía"""
 
 # ╔═╡ b4d4d154-3cec-4739-831f-36976db006e0
 begin
@@ -236,34 +294,59 @@ begin
 	image1 = load(fname1)
 end
 
-# ╔═╡ 58b4906f-635f-4be1-a3a9-fe5f79cb54a5
-YCbCr.(load(fname1))
+# ╔═╡ d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
+md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
+
+# ╔═╡ da9aaf33-0b21-406b-8f83-e40cdbf0ff20
+@bind γ₄ Slider(0:.001:5, show_value=true, default=2.3)
+
+# ╔═╡ 3d81527f-eedd-424d-93ba-d473aad093fb
+Tranformacion_potencial(image1, γ₄)
+
+# ╔═╡ cd98b718-1175-4c86-b0b0-889dcc5c9de7
+md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
+
+# ╔═╡ 03e8996d-a802-4364-ba47-a7aabfabe782
+function_RBG(Tranformacion_potencial(image1, γ₄))
+
+# ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
+md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
+
+# ╔═╡ b7a5f08a-38b3-4d5c-ae6e-e2599f29d010
+md"""$\textcolor{red}{Problemas en color}$"""
+
+# ╔═╡ ae7a4ed5-c551-4015-8502-83a6d38480f1
+function Tranformacion_potencial_mejorada(image, gamma)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		new_image = Tranformacion_potencial(image, gamma)
+		return Hist(new_image), new_image
+	else
+		new_image = function_RBG(Tranformacion_potencial(image, gamma))
+		return Hist(new_image), new_image
+	end
+end
 
 # ╔═╡ 642b4cd9-b297-4cc6-8e5b-84addad4937b
-Tranformacion_potencial_mejorada(image1, 1)
+Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)
 
-# ╔═╡ cdaeefbb-8f10-4030-ba4c-26a13cd781c8
-Tranformacion_potencial_mejorada(image, 0.2)[2]
+# ╔═╡ 908f9615-5c0b-4370-ba2f-6c6eec20b7d3
+md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
 
-# ╔═╡ 9912387f-4c3f-4540-b4f3-3201b58d6015
-range(YCbCr(50,70,0), stop=YCbCr(70,0,720), length=90) # multiple rotations
+# ╔═╡ 039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
+Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[1]
 
-# ╔═╡ 3ae95ebd-85c7-4ad7-93c6-dd594eb21e8f
-YCbCr.(image)
-
-# ╔═╡ 36c5172c-4529-4c95-afa2-9fa2b55bab11
-channelview(YCbCr.(image))./256
-
-# ╔═╡ 4e347ea8-68b3-4914-bdf0-a20cc5552c54
-display(YCbCr.(image))
+# ╔═╡ c77864b5-934b-471e-b7ee-585d561a49be
+Tranformacion_potencial_mejorada(Gray.(load(fname)), 0.33)[2]
 
 # ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
 md"""# Tranformación exponencial"""
 
-# ╔═╡ afc2569f-8cd2-4daf-9303-2ac5ee407325
-md"""Lo que inmediatamente llama nuestra atención es que, a diferencia de los gráficos de las funciones de potencia, los gráficos de las funciones exponenciales no pasan por el origen, lo cual será un problema si aplicamos una función exponencial a los valores de los píxeles. Afortunadamente, este inconveniente se puede solucionar fácilmente desplazando el gráfico una unidad hacia abajo.
+# ╔═╡ b3b5c934-9e16-4d97-ae54-b2fe95bce7f1
+md"""Las funciones exponenciales también se utilizan en el procesamiento de imágenes, especialmente para corregir imágenes sobreexpuestas, donde la mayoría de los píxeles tienen valores altos. Las funciones exponenciales, al igual que las de potencia, permiten modificar los valores de brillo de una imagen, pero son más adecuadas cuando el rango de los valores de los píxeles está concentrado cerca del valor máximo."""
 
-También nos gustaría que nuestra función mapee el intervalo [0, 1] en el intervalo [0, 1]. Combinando todos nuestros deseos, nos gustaría tener una función descrita por la fórmula general:
+# ╔═╡ afc2569f-8cd2-4daf-9303-2ac5ee407325
+md"""También nos gustaría que nuestra función mapee el intervalo $[0, 1]$ en el intervalo $[0, 1]$. Combinando todos nuestros deseos, nos gustaría tener una función descrita por la fórmula general:
 
 $f(x) = c(b^x − 1)$
 
@@ -274,16 +357,41 @@ Esto implica que la constante c debe ser igual a:
 
 $c = \frac{1}{b − 1}$"""
 
+# ╔═╡ 7733f7fb-4bec-4645-9b78-e5748a4db74a
+@bind β Slider(0.01:.01:10, show_value=true, default=0.5)
+
+# ╔═╡ f32e07f2-8b8c-4554-a541-b750550317d6
+begin
+	g1(x) = (1/(2-1))*((2^x)- 1)
+	g2(x) = (1/(4-1))*((4^x)- 1)
+	g3(x) = (1/(β-1))*((β^x)- 1)
+	
+	x_v = 0:0.01:1
+	
+	plot(x_v, g1.(x), label="2^x-1", lw=2)
+	plot!(x_v, g2.(x), label="(1/3)(4^x-1)", lw=2)
+	plot!(x_v, g3.(x), label="(1/($β-1))(($β^x)- 1)", lw=2)
+	
+	xlabel!("x")
+	ylabel!("f(x)")
+	title!("Funciones Potenciales en el Intervalo [0,1]")
+end
+
 # ╔═╡ c12db014-eb77-4411-adbc-3515a90995fc
-md""" $A$ imagen original (de tamaño $m\times n$), $B$ imagen mejorada
+md"""De lo anterior de tiene la tranformación
 
 $B(m, n) = c(b^{A(m,n)} − 1),$
 esto es
 
-$B= \frac{1}{b − 1} (b^A-1)$"""
+$B= \frac{1}{b − 1} (b^A-1),$
+donde $A$ es imagen original (de tamaño $m\times n$), $B$ imagen mejorada, y $b$ es una constante.
+"""
 
 # ╔═╡ 389fb049-5fac-4546-9acb-499f05765a57
 #hablar de la exponenciación de matrices
+
+# ╔═╡ 56aa3ef4-a178-4f02-8f0b-7bfc39cd4124
+md"""Consideremos la siguiente imagen:"""
 
 # ╔═╡ af4ec210-5aab-4a2f-9202-5466fd08d9f5
 begin
@@ -293,14 +401,16 @@ begin
 end
 
 # ╔═╡ 888fc6f9-cb7b-43e3-a8ee-174d424577ed
-md"""$\texttt{Figura 5.}$"""
+md"""$\texttt{Figura 5. Una fotografía sobreexpuesta de un árbol.}$"""
+
+# ╔═╡ b8aa4ed9-3228-4451-8615-d829c771ec06
+md"""A continuación se muestra el histrograma de la Figura 5. Se puede observar que el histograma presenta un sesgo a la izquierda."""
 
 # ╔═╡ 68951335-3c31-42af-bbab-edfa5f4e8d41
-begin
-	image_values₆ = 255*Float64.(channelview(image₆))
-	hist₆ = fit(Histogram, vec(image_values₆), 0:255).weights
-	plot(hist₆, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
-end
+Hist(image₆)
+
+# ╔═╡ a302cbae-0c28-4ac9-bb44-0edf44ed7942
+md"""Mejoremos la imagen, para esto consideremos el siguiente valor de $b$:"""
 
 # ╔═╡ 9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
 b = @bind b Slider(0:1:1000, show_value=true, default=500)
@@ -315,28 +425,40 @@ end
 # ╔═╡ 5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
 md"""$\texttt{Figura 6.}$"""
 
+# ╔═╡ 0c086519-a135-41ec-b9d2-f1c9878e79cb
+md"""A continuación, se presenta el histograma de la Figura 6."""
+
 # ╔═╡ b877fb2b-a1be-4671-bb20-f4311ff98c4a
-begin
-	image_values₅ = 255*Float64.(channelview(image₅))
-	hist₅ = fit(Histogram, vec(image_values₅), 0:255).weights
-	plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 6")
-end
+Hist(image₅)
 
 # ╔═╡ bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
-md"""Comparemos"""
+md"""Al comparar las imágenes, observamos una mejora notable en la claridad y definición de los árboles."""
 
 # ╔═╡ b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
 [image₆ image₅]
 
-# ╔═╡ d134bcce-47ad-49a3-8297-84f247f49384
-begin
-	
-	p3 = plot(hist₆, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 5")
-	
-	p4 = plot(hist₅, c="black", fill=(0, "black"), fillalpha=0.1, label="Canal Gray", title="Histograma de la Figura 6")
+# ╔═╡ df7c8857-3535-4074-b5b8-64500ec002a0
+md"""A continuación, vamos a crear una función que permita aclarar u oscurecer una imagen utilizando un valor dado de la base $b$. La función recibirá como parámetros la imagen y la base $b$. Funcionará tanto para imágenes en escala de grises como para imágenes en color. En este último caso, la imagen se convertirá al espacio de color YCbCr, aplicando la transformación solo al canal Y."""
 
-	plot(p3, p4, layout = (1, 2))
-end
+# ╔═╡ da6fd446-233b-482c-98aa-12b7366d332c
+function Tranformacion_exponencial(image, b)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		B = (1/(b-1))*((b .^ A) .- 1)
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
+		image_rgb[:,:,1] = A[1, :, :] *256
+		image_rgb[:,:,2] = A[2, :, :] *256
+		image_rgb[:,:,3] = A[3, :, :] *256
+	
+		image_ycbcr = image_to_ycbcr(image_rgb)/256;
+		
+		new_imagen_YCbCr = permutedims(cat(dims=3, (1/(b-1))*((b .^ image_ycbcr[:,:,1]) .- 1), image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_YCbCr)
+	end
+end;
 
 # ╔═╡ e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
 md"""Escribe una función en MATLAB que oscurezca la imagen especificada utilizando la transformación exponencial con un valor especificado de la base b. Tu función debe aceptar la imagen y la base b como entradas. Idealmente, tu función debe funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen debe convertirse al espacio de color YCbCr, y la transformación debe aplicarse al canal Y. Siéntete libre de usar cualquiera de las ecuaciones (2.5) o (2.8) para implementar la transformación exponencial.
@@ -2405,53 +2527,79 @@ version = "1.4.1+1"
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
 # ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
-# ╠═933134ff-401a-433e-875f-c39aff425fa9
+# ╟─933134ff-401a-433e-875f-c39aff425fa9
+# ╟─34f0f949-c54c-432d-86b4-20e31c20097a
 # ╟─82580291-8fa9-40d2-853f-ccb622dba296
 # ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
 # ╟─a39d5984-4255-4a56-8138-2c62206a0375
 # ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
+# ╟─c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
+# ╟─3eb3a378-d1f0-4418-a49b-125f2da66a8d
 # ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
 # ╟─881406e6-8dd5-46a0-9568-e7e728c0ac14
-# ╠═56aa8d2b-2ac5-4686-a421-709e36efcd4f
-# ╠═77edea14-74ab-4c91-a407-0f8a513e5d06
+# ╟─2ac2be6e-7401-4b6f-9487-bd32f6c098c7
+# ╟─42931db9-0349-4264-acc7-be9c7074e4e7
+# ╟─649706e7-2dc2-49fa-9537-9c0d6ac1c505
+# ╟─69f70ddb-7a39-4d4f-8d44-8a1c37d06600
+# ╟─d01ae1a4-a3e1-4523-a0d2-dacb26b22b7e
+# ╟─56aa8d2b-2ac5-4686-a421-709e36efcd4f
+# ╟─5132c39f-6130-4889-85cf-99d4cb449850
+# ╟─77edea14-74ab-4c91-a407-0f8a513e5d06
 # ╟─29928480-9448-42d0-b4af-ec48d86e4e6e
+# ╟─f8b8575d-06d4-452f-a47a-3148a256d60f
 # ╟─53327535-b3bd-4e83-872a-46879159a159
-# ╠═f575e59a-d17c-40fb-9059-76db8ded0196
-# ╠═093f23cb-14aa-4a52-81c8-e0ec7748ea13
+# ╟─5d612f37-223a-429f-bb41-dc98a60c0611
+# ╟─f575e59a-d17c-40fb-9059-76db8ded0196
+# ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
 # ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
+# ╟─187cf483-228d-4bcb-ab76-776a78ee58e7
 # ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
-# ╠═bb489988-b03f-4a4b-b6e9-c9e96e1ea886
+# ╟─ae5eeb4f-d4ef-48d6-b237-22c03c7416d2
 # ╠═7c908704-fdea-40ab-8849-4923fbe0d93d
 # ╠═b4f216c5-243f-422d-a1fa-e7a3ff816a8c
+# ╟─bb489988-b03f-4a4b-b6e9-c9e96e1ea886
 # ╠═9a7c1190-c5fc-4ee1-b756-2828ff18727b
-# ╠═98157209-d9dd-49ce-867b-a6c4506b138e
-# ╠═5c3244f1-5a38-489b-969a-8aec0ffd7d67
-# ╠═58b4906f-635f-4be1-a3a9-fe5f79cb54a5
-# ╠═92051eb2-d182-45bc-a53c-f185426b4d0f
-# ╠═e8453abe-6bff-47ab-b031-b4a3586bd05e
-# ╠═f00e05d3-984b-42c8-ad13-0c109cbcc457
+# ╟─98157209-d9dd-49ce-867b-a6c4506b138e
+# ╟─b372d543-c6b9-4eda-b834-a7d78236123f
+# ╟─8d19488a-8025-4718-8a3f-5b3ad87ecdc4
+# ╟─f654a489-aeb3-4a5f-bf9e-5f44a6968fb8
+# ╟─e8453abe-6bff-47ab-b031-b4a3586bd05e
+# ╟─2bd8a54f-87c9-42ea-9504-2f57c654f563
+# ╟─b4d4d154-3cec-4739-831f-36976db006e0
+# ╟─d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
+# ╟─da9aaf33-0b21-406b-8f83-e40cdbf0ff20
+# ╠═3d81527f-eedd-424d-93ba-d473aad093fb
+# ╟─cd98b718-1175-4c86-b0b0-889dcc5c9de7
+# ╠═03e8996d-a802-4364-ba47-a7aabfabe782
+# ╟─f00e05d3-984b-42c8-ad13-0c109cbcc457
+# ╟─b7a5f08a-38b3-4d5c-ae6e-e2599f29d010
 # ╠═ae7a4ed5-c551-4015-8502-83a6d38480f1
-# ╠═b4d4d154-3cec-4739-831f-36976db006e0
 # ╠═642b4cd9-b297-4cc6-8e5b-84addad4937b
-# ╠═cdaeefbb-8f10-4030-ba4c-26a13cd781c8
-# ╠═9912387f-4c3f-4540-b4f3-3201b58d6015
-# ╠═3ae95ebd-85c7-4ad7-93c6-dd594eb21e8f
-# ╠═36c5172c-4529-4c95-afa2-9fa2b55bab11
-# ╠═4e347ea8-68b3-4914-bdf0-a20cc5552c54
+# ╟─908f9615-5c0b-4370-ba2f-6c6eec20b7d3
+# ╟─039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
+# ╠═c77864b5-934b-471e-b7ee-585d561a49be
 # ╟─91672cee-48cc-4378-a21d-9138cf360b6f
+# ╟─b3b5c934-9e16-4d97-ae54-b2fe95bce7f1
 # ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
+# ╠═7733f7fb-4bec-4645-9b78-e5748a4db74a
+# ╟─f32e07f2-8b8c-4554-a541-b750550317d6
 # ╟─c12db014-eb77-4411-adbc-3515a90995fc
 # ╠═389fb049-5fac-4546-9acb-499f05765a57
+# ╟─56aa3ef4-a178-4f02-8f0b-7bfc39cd4124
 # ╟─af4ec210-5aab-4a2f-9202-5466fd08d9f5
 # ╟─888fc6f9-cb7b-43e3-a8ee-174d424577ed
+# ╟─b8aa4ed9-3228-4451-8615-d829c771ec06
 # ╟─68951335-3c31-42af-bbab-edfa5f4e8d41
+# ╟─a302cbae-0c28-4ac9-bb44-0edf44ed7942
 # ╟─9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
 # ╟─6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
 # ╟─5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
+# ╟─0c086519-a135-41ec-b9d2-f1c9878e79cb
 # ╟─b877fb2b-a1be-4671-bb20-f4311ff98c4a
 # ╟─bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
 # ╟─b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
-# ╟─d134bcce-47ad-49a3-8297-84f247f49384
+# ╟─df7c8857-3535-4074-b5b8-64500ec002a0
+# ╠═da6fd446-233b-482c-98aa-12b7366d332c
 # ╟─e325aec1-d8d4-4cff-9f7e-d83575e7a1bc
 # ╠═6633b847-fd7b-4e30-9b46-8228cc76e1c8
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
