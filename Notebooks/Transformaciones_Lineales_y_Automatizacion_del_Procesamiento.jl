@@ -4,16 +4,6 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
 # ╔═╡ a530c361-6a99-45c3-9efa-ed85e9ff2535
 using PlutoUI
 
@@ -24,10 +14,11 @@ begin
 	using Images, ImageShow 
 	using Statistics,  Distributions, LinearAlgebra
 	using StatsBase, StatsPlots
+	using SymPy, CalculusWithJulia
 end
 
 # ╔═╡ 6fdb4745-b175-4ed8-938e-87774afecaa6
-PlutoUI.TableOfContents(title="Aplicaciones de Funciones Elementales", aside=true)
+PlutoUI.TableOfContents(title="Transformaciones Lineales y Automatización del Procesamiento", aside=true)
 
 # ╔═╡ 070e0a0e-c4bc-479e-85ab-74908a8595b1
 md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
@@ -65,126 +56,7 @@ begin
 	end
 end;
 
-# ╔═╡ 440b9745-1001-4e8c-be5f-8d4c570a8732
-md"""# Motivación"""
-
-# ╔═╡ 933134ff-401a-433e-875f-c39aff425fa9
-md"""En el procesamiento de imágenes digitales, ajustar la iluminación y el contraste de las imágenes es fundamental para mejorar su calidad y resaltar detalles importantes. Este tipo de ajustes es particularmente útil en fotografías que están sobreexpuestas o subexpuestas, donde los detalles se pierden debido a un rango limitado de valores de los píxeles.
-
-Las transformaciones de potencia y exponenciales se han utilizado ampliamente para este propósito, ya que permiten manipular de manera eficiente los niveles de brillo y contraste en las imágenes. En este cuaderno se va a implementar dichas técnicas de transformación para aclarar u oscurecer imágenes, utilizando tanto imágenes en escala de grises como en color."""
-
-# ╔═╡ 34f0f949-c54c-432d-86b4-20e31c20097a
-md"""A continuación se presenta una fotografía subexpuesta y una sobreexpuesta, ver Figura 1 y Figura 2, respectivamente."""
-
-# ╔═╡ 82580291-8fa9-40d2-853f-ccb622dba296
-begin
-	url₁ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta.jpg?raw=true"
-	fname₁ = download(url₁)
-	image₁ = Gray.(load(fname₁))
-end
-
-# ╔═╡ e54426fd-6d96-4eef-ad61-5a7c2f81ecef
-md"""$\texttt{Figura 1. Una fotografía subexpuesta de un bosque invernal.}$"""
-
-# ╔═╡ a39d5984-4255-4a56-8138-2c62206a0375
-begin
-	url₂ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta.jpg?raw=true"
-	fname₂ = download(url₂)
-	image₂ = Gray.(load(fname₂))
-end
-
-# ╔═╡ cba8c955-22c2-496f-bfd8-61a5a07e9906
-md"""$\texttt{Figura 2. Una fotografía sobreexpuesta de una vista de montaña.}$"""
-
-# ╔═╡ 3eb3a378-d1f0-4418-a49b-125f2da66a8d
-md"""A continuación se muestran los histrogramas de cada imagen. Se puede observar que el histograma de la fotografía subexpuesta presenta un sesgo a la derecha, y, el histograma de la fotografía sobreexpuesta presenta un sesgo a la izquierda."""
-
-# ╔═╡ 0590cc78-3de9-4a2e-a17d-00918a3d5b43
-plot(Hist(image₁), Hist(image₂), layout = (1, 2))
-
-# ╔═╡ 881406e6-8dd5-46a0-9568-e7e728c0ac14
-md"""# Transformación potencial"""
-
-# ╔═╡ 2ac2be6e-7401-4b6f-9487-bd32f6c098c7
-md"""La corrección de gamma es una técnica utilizada en procesamiento de imágenes para ajustar el brillo o la luminosidad de una imagen de acuerdo con una función no lineal. Esta técnica es especialmente útil cuando las imágenes están mal expuestas (ya sea demasiado oscuras o demasiado brillantes) y necesitas ajustar los detalles en las zonas oscuras o claras sin afectar el resto de la imagen. Las funciones de potencia son esenciales para esto."""
-
-# ╔═╡ 42931db9-0349-4264-acc7-be9c7074e4e7
-@bind a Slider(0.01:.01:1, show_value=true, default=0.5)
-
-# ╔═╡ 649706e7-2dc2-49fa-9537-9c0d6ac1c505
-begin
-	f1(x) = x^2
-	f2(x) = x^(1/2)
-	f3(x) = x^a
-	
-	x = 0:0.01:1
-	
-	plot(x, f1.(x), label="x^2", lw=2)
-	plot!(x, f2.(x), label="x^(1/2)", lw=2)
-	plot!(x, f3.(x), label="x^$a", lw=2)
-	
-	xlabel!("x")
-	ylabel!("f(x)")
-	title!("Funciones Potenciales en el Intervalo [0,1]")
-end
-
-# ╔═╡ 69f70ddb-7a39-4d4f-8d44-8a1c37d06600
-md"""La corrección gamma se implementa mediante la transformación de los valores de los píxeles de una imagen usando una función de potencia de la forma:
-
-$B(m,n)=A(m,n)^{\gamma},$ 
-donde $A(m,n)$ es la matriz que representa la imagen original, $B(m,n)$ es la matriz de la imagen corregida y $\gamma$ es un parámetro que determina el nivel de corrección (si $\gamma<1$, aclara la imagen, y si $\gamma>1$, la oscurece)."""
-
-# ╔═╡ d01ae1a4-a3e1-4523-a0d2-dacb26b22b7e
-md"""Consideremos el siguiente valor de $\gamma$:"""
-
-# ╔═╡ 56aa8d2b-2ac5-4686-a421-709e36efcd4f
-@bind γ₁ Slider(0:.001:1, show_value=true, default=0.5) #Parametro γ
-
-# ╔═╡ 5132c39f-6130-4889-85cf-99d4cb449850
-md"""Aplicando la transformación a la Figura 1, dado que es una fotografía subexpuesta es conveniente que el valor de $\gamma$ este entre $0$ y $1$, así obtenemos la siguiente imagen: """
-
-# ╔═╡ 77edea14-74ab-4c91-a407-0f8a513e5d06
-begin
-	A₁ = float.(channelview(image₁))
-	B₁ = A₁ .^ γ₁
-	image₃ = Gray.(B₁)
-end
-
-# ╔═╡ 29928480-9448-42d0-b4af-ec48d86e4e6e
-md"""$\texttt{Figura 3. Imagen corregida}$"""
-
-# ╔═╡ f8b8575d-06d4-452f-a47a-3148a256d60f
-md"""A continuación se presenta el histograna de la Figura 3."""
-
-# ╔═╡ 53327535-b3bd-4e83-872a-46879159a159
-Hist(image₃)
-
-# ╔═╡ 5d612f37-223a-429f-bb41-dc98a60c0611
-md"""Ahora, apliquemos la corrección Gamma a la Figura 2, dado que es una fotografía sobreexpuesta es conveniente que $\gamma > 1$, así obtenemos la siguiente imagen:"""
-
-# ╔═╡ f575e59a-d17c-40fb-9059-76db8ded0196
-@bind γ₂ Slider(1:.001:5, show_value=true, default=2)
-
-# ╔═╡ 093f23cb-14aa-4a52-81c8-e0ec7748ea13
-begin
-	A₂ = float.(channelview(image₂))
-	B₂ = A₂ .^ γ₂
-	image₄ = Gray.(B₂)
-end
-
-# ╔═╡ 41bf9f4b-4b01-47b6-ab31-de58b9b35705
-md"""$\texttt{Figura 4. Imagen corregida.}$"""
-
-# ╔═╡ 187cf483-228d-4bcb-ab76-776a78ee58e7
-md"""A continuación, se presenta el histograna de la Figura 4."""
-
-# ╔═╡ b2fa5afa-ba4d-42f7-9009-3cd7429eedee
-Hist(image₄)
-
-# ╔═╡ ae5eeb4f-d4ef-48d6-b237-22c03c7416d2
-md"""Definamos funciones que nos permitan tranformar imágenes del formato RGB al formato YCbCr, y viceversa."""
-
-# ╔═╡ 7c908704-fdea-40ab-8849-4923fbe0d93d
+# ╔═╡ 3371e68e-4c21-4cd1-900b-aa2c8deb3b72
 begin
 	# Función para convertir toda un pixel de RGB a YCbCr
 	function rgb_to_ycbcr(R, G, B)
@@ -219,7 +91,7 @@ begin
 	end	
 end;
 
-# ╔═╡ b4f216c5-243f-422d-a1fa-e7a3ff816a8c
+# ╔═╡ 28cbee5f-939d-41dc-bd61-be2d7b1633ff
 begin
 	# Función para convertir toda un pixel de YCbCr a RGB
 	function ycbcr_to_rgb(Y, Cb, Cr)
@@ -254,13 +126,266 @@ begin
 	end
 end;
 
-# ╔═╡ bb489988-b03f-4a4b-b6e9-c9e96e1ea886
-md"""Ahora, escribamos una función que aclare (u oscurezca) una imagen para un valor de $\gamma$ dado. La función tendrá como entradas la imagen y el valor de $\gamma$. Idealmente, va a funcionar con cualquier imagen en escala de grises y con cualquier imagen en color. En este último caso, la imagen se va a convertir al espacio de color YCbCr, y la transformación sera aplicada al canal Y."""
+# ╔═╡ a95b326a-afd8-4e3c-9691-e81cf3590611
+md"""
+# Funciones lineales y extensión por contraste
+"""
 
-# ╔═╡ 9a7c1190-c5fc-4ee1-b756-2828ff18727b
-function Transformacion_potencial(image, gamma)
+# ╔═╡ dbbe2cdd-9fd6-4757-96c9-15ded062e3fc
+md"""
+Observemos la figura 1. Parece que luce demasiado oscura. El problema es que luce demasiado "grisasea" y carece de contraste.
+"""
+
+# ╔═╡ 8a092a7f-26db-4055-9ab8-a5274276eb76
+begin
+	URL5 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/elk_in_the_fog.png?raw=true"
+	fname5 = download(URL5)
+	image5 = load(fname5)
+	[image5 Gray.(image5)]
+end
+
+# ╔═╡ a9e37474-b50a-454e-9a38-409c813dfb90
+md"""$\texttt{Figura 1. Alce en la niebla.}$"""
+
+# ╔═╡ 2f9fb47f-7daf-453b-ab54-4ece5bb746fc
+md"""
+En los histogramas a continuación se evidencia lo anteriormente dicho: los valores en los pixeles se concentran en una región "pequeña" de todo el rango posible.
+"""
+
+# ╔═╡ 429b4082-cf3c-401f-9f3a-17655c1cc435
+plot(Hist(image5), Hist(Gray.(image5)))
+
+# ╔═╡ 172dd730-2284-4085-b484-a955f4a4b411
+md"""$\texttt{Figura 2.}$"""
+
+# ╔═╡ 521e6dc1-eeb1-4215-baec-cba89199e0e5
+md"""
+Para intentar resolver el anterior problema intentamos elongar o estirar el intervalo donde se encuentran los valores de los pixeles de la imagen (llamado $[x_{min},x_{max}]$) y llevarlo al intervalo $[0,1]$ (o, alternativamente, $[0,255]$). Un posible acercamiento para realizar la transformación anterior es usando funciones lineales: Al realizar la siguiente trasnformación
+
+
+$g(x) = \frac{1-0}{x_{max}-x_{min}}(x-x_{min}) + 0 = \frac{1}{x_{max}-x_{min}}(x-x_{min}),$
+
+esta función cumple que $g(x_{min})=0$ y $g(x_{max})=1$. A continuación se declara tal transformación.
+"""
+
+# ╔═╡ fc13b236-113d-450c-a6e4-86e80e063490
+function Elongacion_Lineal(image)
 	A = Float64.(channelview(image))
 	if length(size(A)) == 2
+		q = quantile(Float64.(vec(A)))
+		B = (A .-q[1]) /(q[5]-q[1])
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(3, size(A[1, :, :])[1], size(A[1, :, :])[2])
+
+		qr = quantile(Float64.(vec(A[1, :, :])))
+		qg = quantile(Float64.(vec(A[2, :, :])))
+		qb = quantile(Float64.(vec(A[3, :, :])))
+		
+		image_rgb[1,:,:] = (A[1, :, :] .-qr[1]) /(qr[5]-qr[1])
+		image_rgb[2,:,:] = (A[2, :, :] .-qg[1]) /(qg[5]-qg[1])
+		image_rgb[3,:,:] = (A[3, :, :] .-qb[1]) /(qb[5]-qb[1])
+	
+		return colorview(RGB, image_rgb)
+	end
+end;
+
+# ╔═╡ b0ec526a-a174-4611-85ed-030b9b95fdd8
+md"""
+Al aplicar esta transformación a la imagen del alce en la niebla se obtiene una mejora significativa, como se muestra a continuación.
+"""
+
+# ╔═╡ 60a4607f-dc7e-4f6e-b1b5-160d5281836b
+[image5 Gray.(image5);
+Elongacion_Lineal(image5) Elongacion_Lineal(Gray.(image5))]
+
+# ╔═╡ ed800b15-aa07-43ef-b543-d4deb232a14f
+md"""$\texttt{Figura 3. Comparación de imágenes originales y transformadas}$"""
+
+# ╔═╡ 9100bd30-b537-4522-a833-cd9ca845ac52
+md"""
+En los histogramas se evidencia que, en efecto, la transformación lineal expande el rango de los valores de los pixeles de las imágenes logrando un mayor contraste.
+"""
+
+# ╔═╡ a8e25a1f-e8a1-4561-b252-62baa831e1f1
+plot(Hist(clip_pixel.(Elongacion_Lineal(image5))),Hist(Elongacion_Lineal(Gray.(image5))))
+
+# ╔═╡ a53c6a87-9b7d-4eeb-9736-adc0b0666921
+md"""$\texttt{Figura 4. Histogramas de imágenes originales y transformadas}$"""
+
+# ╔═╡ bc6bf077-90c6-435d-bea1-b1d5e961e88f
+md"""
+Ahora, otro acercamiento es realizar la siguiente transformación:
+
+$g(x) = \begin{cases}
+\frac{0.25-0.00}{Q_1 - x_{min}}(x-x_{min})+0.00, & x_{min}\leq x\leq Q_1,\\
+\frac{0.75-0.25}{Q_3 - Q_1}(x-Q_1)+0.25, & Q_1\leq x\leq Q_3,\\
+\frac{1.00-0.75}{x_{max}-Q_2}(x-Q_3)+0.75, & Q_3\leq x\leq x_{max},\\
+\end{cases}$
+
+donde $Q_1$ y $Q_3$ son los percentiles $0.25$ y $0.75$ de los valores de los pixeles de la imagen, respectivamente. Esta transformación trata de hacer la correspondencia entre los cuartiles de la imágen con los cuartiles del intervalo $[0,1]$ uniformememnto distribuido. A continuación se declara la función que hace esta transformación.
+"""
+
+# ╔═╡ ab961a4c-0113-4311-bbe9-71ce6273f68d
+function Elongacion_Lineal_a_Trozos(image)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		q = quantile(Float64.(vec(A)))
+		B = A
+		B = [q[1] <= x <= q[2] ? (0.25/(q[2]-q[1]))*(x-q[1]) + 0.00 : x for x in B]
+		B = [q[2] <= x <= q[4] ? (0.50/(q[4]-q[2]))*(x-q[2]) + 0.25 : x for x in B]
+		B = [q[4] <= x <= q[5] ? (0.25/(q[5]-q[4]))*(x-q[4]) + 0.75 : x for x in B]
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(3, size(A[1, :, :])[1], size(A[1, :, :])[2])
+		for i in 1:3
+			q = quantile(Float64.(vec(A[i, :, :])))
+			image_rgb[i,:,:] = A[i, :, :]
+			image_rgb[i,:,:] = [q[1] <= x <= q[2] ? (0.25/(q[2]-q[1]))*(x-q[1]) + 0.00 : x for x in image_rgb[i,:,:]]
+			image_rgb[i,:,:] = [q[2] <= x <= q[4] ? (0.50/(q[4]-q[2]))*(x-q[2]) + 0.25 : x for x in image_rgb[i,:,:]]
+			image_rgb[i,:,:] = [q[4] <= x <= q[5] ? (0.25/(q[5]-q[4]))*(x-q[4]) + 0.75 : x for x in image_rgb[i,:,:]]
+		end
+		return colorview(RGB, image_rgb)
+	end
+end;
+
+# ╔═╡ b7bfee2b-badb-4de6-b2b4-d9e2edfc4861
+md"""
+Los resultados a nivel gráfico y en términos del histograma se muestran a continuación.
+"""
+
+# ╔═╡ c2ee78fc-86d5-441e-b953-7df1f2a2bf91
+[image5 Gray.(image5);
+Elongacion_Lineal_a_Trozos(image5) Elongacion_Lineal_a_Trozos(Gray.(image5))]
+
+# ╔═╡ dc40f069-3452-49ff-a14c-f2f3a02fb94d
+md"""$\texttt{Figura 5. Comparación de imágenes originales y transformadas}$"""
+
+# ╔═╡ ec2e72cb-418d-4c99-a971-270eb55b46e0
+plot(Hist(clip_pixel.(Elongacion_Lineal_a_Trozos(image5))),Hist(Elongacion_Lineal_a_Trozos(Gray.(image5))))
+
+# ╔═╡ 6a4fac41-6aa6-466a-b4e9-3a891c3be13a
+md"""$\texttt{Figura 6. Histogramas de imágenes originales y transformadas}$"""
+
+# ╔═╡ 90d6468a-ec89-4f55-85ba-fcdb2e30fbda
+md"""
+Con los resultados anteriores, se muestra que la transformación lineal a trozos distribuye de manera más uniforme la información de los pixeles a lo largo de todo el espectro visual respecto a la transformación lineal; no obstante, parace no conservar la particularidades de la imágen y esto se refleja en el resultado visual que se obtuvo. 
+
+
+
+Ahora, apliquemos ambas transformaciones a la siguiente imagen:
+"""
+
+# ╔═╡ 477456c7-afae-47ce-85b3-72264e663893
+begin
+	URL6 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Nina.png?raw=true"
+	fname6 = download(URL6)
+	image6 = load(fname6)
+	[image6 Gray.(image6)]
+end
+
+# ╔═╡ e2586409-f79a-4ea6-9fb5-fdeee106f960
+md"""$\texttt{Figura 7. Arbol solitario.}$"""
+
+# ╔═╡ 8fafb0d8-08c8-4af6-bb58-e99e15735ca9
+md"""
+Los histogramas para la imagen a color y a escala de grises se muestran a continuación.
+"""
+
+# ╔═╡ c1843553-14e7-40cf-a985-518a02537eea
+plot(Hist(image6), Hist(Gray.(image6)))
+
+# ╔═╡ a3effb01-d543-4b95-8736-4a61db16ba20
+md"""$\texttt{Figura 8.}$"""
+
+# ╔═╡ c7aee762-d2a4-40aa-ba40-d7109aea235e
+md"""
+El resultado de ambas transformaciones se muestra visualmente en la figura 30 y a nivel del histograma en el figura 31.
+"""
+
+# ╔═╡ eab0e590-793e-478c-a1bf-744c99faeb9d
+[image6 Gray.(image6);
+Elongacion_Lineal(image6) Elongacion_Lineal(Gray.(image6));	
+Elongacion_Lineal_a_Trozos(image6) Elongacion_Lineal_a_Trozos(Gray.(image6))]
+
+# ╔═╡ 23c57fc3-ec49-439f-bbee-428bfa1f78eb
+md"""$\texttt{Figura 9. Comparación entre imagen original y ambas transformaciones}$"""
+
+# ╔═╡ 0e111c5e-3c5a-42c7-9118-ad106a489a1e
+plot(Hist(image6),
+	Hist(Gray.(image6)),
+	Hist(clip_pixel.(Elongacion_Lineal(image6))),
+	Hist(Elongacion_Lineal(Gray.(image6))),
+	Hist(clip_pixel.(Elongacion_Lineal_a_Trozos(image6))),
+	Hist(Elongacion_Lineal_a_Trozos(Gray.(image6))),
+	layout=(3,2),size=(700,900))
+
+# ╔═╡ 1545ff57-b90f-4160-a5ec-4800c40ba2be
+md"""$\texttt{Figura 10.}$"""
+
+# ╔═╡ 5cb57d1b-6a82-4269-b657-73d73e00784a
+md"""
+La elección de alguna de las dos transformaciones mencionadas en esta sección se hace por conveniencia y dependiendo del objetivo que se tenga sobre el procesamiento de alguna imagen.
+"""
+
+# ╔═╡ cd8bfa76-a711-44b1-8b6d-44734cc19c74
+md"""
+# Automatización de la mejora de la imagen
+"""
+
+# ╔═╡ afd64fae-0cb5-49bc-8094-1e406637feb6
+begin
+	URL = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta2.jpg?raw=true"
+	fname = download(URL)
+	Gray.(load(fname))
+end
+
+# ╔═╡ b45645bc-c676-4e93-8add-c3b1a6eb6333
+md"""$\texttt{Figura 11.}$"""
+
+# ╔═╡ 48daba39-595b-4dae-b704-624d0fa48638
+md"""
+Consideremos la figura 11 la cual nos muestra una fotografía de la ciudad de Londres subexpuesta. Recordemos que para resolver este problema en la imagen nosotros aplicamos la una transformación potencial la cual tenía un parámetro que nosotros elegimos llamado $\gamma$. En esta sección se busca automatizar el proceso de elección de tal parámetro. Dado que la función $f(x)=x^{\gamma}$ es una función siempre creciente entonces $x_0$ definido como la moda en el conjunto de valores de los pixeles es el punto maximizador de la función $f$. Para el caso de la figura 5, se tiene que la moda es
+"""
+
+# ╔═╡ 05a9e937-aea2-4530-8daa-d970dba534da
+moda = mode(Float64.(vec(Gray.(load(fname)))))
+
+# ╔═╡ 76ac1a0c-5c8b-46f9-9a3a-f6f4bff7aaec
+md"""
+El efecto de *estiramiento de contraste* está directamente relacionado con la expresión 
+
+$m(\gamma) = f'(x_0;\gamma) =\gamma x_{0}^{\gamma-1}.$
+
+Consideremos la función $m(\gamma) = \gamma x_{0}^{\gamma-1}$. Su derivada es $m'(\gamma)= x_0 ^{\gamma -1} + \gamma \log(x_0) x_0 ^{\gamma -1}$; igualando a cero obtenemos que el único punto crítico de $m$ es
+
+$\gamma^{*} = -\frac{1}{log(x_0)},$
+
+este será el valor óptimo de $\gamma$ a elegir.
+"""
+
+# ╔═╡ f7be75cf-266b-4433-b626-9cb5ddb22d97
+begin
+	plot(0:0.05:10,[t*(moda)^(t-1) for t in 0:0.05:10], title="Función m", label="")
+	plot!([-1/log(moda),-1/log(moda)],[0,2.3],label="γ óptimo")
+end
+
+# ╔═╡ 4def2f6e-1090-4881-b8ec-bcace614c3bd
+md"""$\texttt{Figura 12. Función }m$"""
+
+# ╔═╡ d38597c2-10ad-4af1-885d-fcc5e6277ee7
+md"""
+En la siguiente celda se programa la transformación potencial automatizando la elección del parámetro.
+"""
+
+# ╔═╡ ea514c8d-447d-4d94-b339-65f06b51a67d
+function Transformacion_potencial_sin_gamma(image)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		x₀ = mode(Float64.(vec(A)))
+		gamma = - 1/log(x₀)
 		B = A .^ gamma
 		new_image = Gray.(B)
 		return new_image
@@ -271,372 +396,142 @@ function Transformacion_potencial(image, gamma)
 		image_rgb[:,:,3] = A[3, :, :] *256
 	
 		image_ycbcr = image_to_ycbcr(image_rgb)/256;
+
+		x₀ = mode(Float64.(vec(image_ycbcr[:,:,1])))
+		gamma = - 1/log(x₀)
 		
 		new_imagen_YCbCr = permutedims(cat(dims=3, image_ycbcr[:,:,1] .^ gamma, image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
 		return colorview(RGB, new_imagen_YCbCr)
 	end
 end;
 
-# ╔═╡ 98157209-d9dd-49ce-867b-a6c4506b138e
-md"""Consideremos la siguiente imagen"""
-
-# ╔═╡ b372d543-c6b9-4eda-b834-a7d78236123f
-begin
-	URL = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta2.jpg?raw=true"
-	fname = download(URL)
-	Gray.(load(fname))
-end
-
-# ╔═╡ 5880cdde-295f-4b4f-94c8-8811998718ea
-md"""$\texttt{Figura 5.}$"""
-
-# ╔═╡ 8d19488a-8025-4718-8a3f-5b3ad87ecdc4
-md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
-
-# ╔═╡ f654a489-aeb3-4a5f-bf9e-5f44a6968fb8
-@bind γ₃ Slider(0:.001:2, show_value=true, default=0.4)
-
-# ╔═╡ e8453abe-6bff-47ab-b031-b4a3586bd05e
-Transformacion_potencial(Gray.(load(fname)), γ₃)
-
-# ╔═╡ 3fd40425-386d-44b7-95e0-3bba3e0782b6
-md"""$\texttt{Figura 6.}$"""
-
-# ╔═╡ 2bd8a54f-87c9-42ea-9504-2f57c654f563
-md"""Ahora, consideremos la siguiente fotografía"""
-
-# ╔═╡ b4d4d154-3cec-4739-831f-36976db006e0
-begin
-	URL1 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta3.jpg?raw=true"
-	fname1 = download(URL1)
-	image1 = load(fname1)
-end
-
-# ╔═╡ 7c85cf7b-fbec-4007-a2b5-f5df86224c11
-md"""$\texttt{Figura 7.}$"""
-
-# ╔═╡ d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
-md"""Escogemos el valor de $\gamma$ y aplicamos la tranformación."""
-
-# ╔═╡ da9aaf33-0b21-406b-8f83-e40cdbf0ff20
-@bind γ₄ Slider(0:.001:5, show_value=true, default=2.3)
-
-# ╔═╡ 3d81527f-eedd-424d-93ba-d473aad093fb
-Transformacion_potencial(image1, γ₄)
-
-# ╔═╡ 2904c135-3dc6-41a1-8170-827665b15673
-md"""$\texttt{Figura 8.}$"""
-
-# ╔═╡ cd98b718-1175-4c86-b0b0-889dcc5c9de7
-md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
-
-# ╔═╡ 03e8996d-a802-4364-ba47-a7aabfabe782
-function_RBG(Transformacion_potencial(image1, γ₄))
-
-# ╔═╡ 388e800c-26c8-4e21-a8a9-c14941b4bf09
-md"""$\texttt{Figura 9.}$"""
-
-# ╔═╡ f00e05d3-984b-42c8-ad13-0c109cbcc457
-md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
-
-# ╔═╡ ae7a4ed5-c551-4015-8502-83a6d38480f1
-function Transformacion_potencial_mejorada(image, gamma)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		new_image = Transformacion_potencial(image, gamma)
-		return Hist(new_image), new_image
-	else
-		new_image = clip_pixel.(function_RBG(Transformacion_potencial(image, gamma)))
-		return Hist(new_image), new_image
-	end
-end
-
-# ╔═╡ 642b4cd9-b297-4cc6-8e5b-84addad4937b
-T = Transformacion_potencial_mejorada(load(fname), 0.33)
-
-# ╔═╡ 908f9615-5c0b-4370-ba2f-6c6eec20b7d3
-md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
-
-# ╔═╡ 039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
-T[1]
-
-# ╔═╡ c77864b5-934b-471e-b7ee-585d561a49be
-T[2]
-
-# ╔═╡ 5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
-md"""$\texttt{Figura 10.}$"""
-
-# ╔═╡ 91672cee-48cc-4378-a21d-9138cf360b6f
-md"""# Transformación exponencial"""
-
-# ╔═╡ b3b5c934-9e16-4d97-ae54-b2fe95bce7f1
-md"""Las funciones exponenciales también se utilizan en el procesamiento de imágenes, especialmente para corregir imágenes sobreexpuestas, donde la mayoría de los píxeles tienen valores altos. Las funciones exponenciales, al igual que las de potencia, permiten modificar los valores de brillo de una imagen, pero son más adecuadas cuando el rango de los valores de los píxeles está concentrado cerca del valor máximo."""
-
-# ╔═╡ afc2569f-8cd2-4daf-9303-2ac5ee407325
-md"""También nos gustaría que nuestra función mapee el intervalo $[0, 1]$ en el intervalo $[0, 1]$. Combinando todos nuestros deseos, nos gustaría tener una función descrita por la fórmula general:
-
-$f(x) = c(b^x − 1)$
-
-que satisfaga las condiciones:
-
-$f(0) = 0 \text{ y } f(1) = 1.$
-Esto implica que la constante c debe ser igual a:
-
-$c = \frac{1}{b − 1}$"""
-
-# ╔═╡ 7733f7fb-4bec-4645-9b78-e5748a4db74a
-@bind β Slider(0.01:.01:10, show_value=true, default=0.5)
-
-# ╔═╡ f32e07f2-8b8c-4554-a541-b750550317d6
-begin
-	g1(x) = (1/(2-1))*((2^x)- 1)
-	g2(x) = (1/(4-1))*((4^x)- 1)
-	g3(x) = (1/(β-1))*((β^x)- 1)
-	
-	x_v = 0:0.01:1
-	
-	plot(x_v, g1.(x), label="2^x-1", lw=2)
-	plot!(x_v, g2.(x), label="(1/3)(4^x-1)", lw=2)
-	plot!(x_v, g3.(x), label="(1/($β-1))(($β^x)- 1)", lw=2)
-	
-	xlabel!("x")
-	ylabel!("f(x)")
-	title!("Funciones Potenciales en el Intervalo [0,1]")
-end
-
-# ╔═╡ c12db014-eb77-4411-adbc-3515a90995fc
-md"""De lo anterior de tiene la tranformación
-
-$B(m, n) = c(b^{A(m,n)} − 1),$
-esto es
-
-$B= \frac{1}{b − 1} (b^A-1),$
-donde $A$ es imagen original (de tamaño $m\times n$), $B$ imagen mejorada, y $b$ es una constante.
+# ╔═╡ a51878d1-46ff-4c5c-afd1-25c957af75b3
+md"""
+En la siguiente figura se muestra el resultado de aplicar la transformación potencial automatizada.
 """
 
-# ╔═╡ 56aa3ef4-a178-4f02-8f0b-7bfc39cd4124
-md"""Consideremos la siguiente imagen:"""
+# ╔═╡ 71d7ed89-9c75-4574-b2be-a24e6c161da7
+Transformacion_potencial_sin_gamma(Gray.(load(fname)))
 
-# ╔═╡ af4ec210-5aab-4a2f-9202-5466fd08d9f5
+# ╔═╡ 371295c5-1606-4aaf-906b-57573fc641a3
+md"""$\texttt{Figura 13.}$"""
+
+# ╔═╡ 3b3722f4-ef77-432b-94e8-87c1e9f0bdd3
+md"""
+En la figura 34 se exhibe la traslación que sufre el histograma al aplicar la transformación potencial.
+"""
+
+# ╔═╡ c855a749-1c0f-40e2-9785-c868f953ecdc
 begin
-	url₆ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta2.jpg?raw=true"
-	fname₆ = download(url₆)
-	image₆ = Gray.(load(fname₆))
+	plot(Hist(Gray.(load(fname))))
+	
+	plot!([255*moda,255*moda],[0,10000],label="Moda original",color="red")
 end
 
-# ╔═╡ 888fc6f9-cb7b-43e3-a8ee-174d424577ed
-md"""$\texttt{Figura 11. Una fotografía sobreexpuesta de un árbol.}$"""
-
-# ╔═╡ b8aa4ed9-3228-4451-8615-d829c771ec06
-md"""A continuación se muestra el histrograma de la Figura 5. Se puede observar que el histograma presenta un sesgo a la izquierda."""
-
-# ╔═╡ 68951335-3c31-42af-bbab-edfa5f4e8d41
-Hist(image₆)
-
-# ╔═╡ a302cbae-0c28-4ac9-bb44-0edf44ed7942
-md"""Mejoremos la imagen, para esto consideremos el siguiente valor de $b$:"""
-
-# ╔═╡ 9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
-b = @bind b Slider(0:1:1000, show_value=true, default=500)
-
-# ╔═╡ 6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
+# ╔═╡ b6a03628-814c-478f-8d05-57c909d007e2
 begin
-	A₃ = float.(channelview(image₆))
-	B₃ = (1/(b-1))*((b .^ A₃) .- 1)
-	image₅ = Gray.(B₃)
+	plot(Hist(Transformacion_potencial_sin_gamma(Gray.(load(fname)))))
+	plot!([255*(moda)^(-1/log(moda)),255*(moda)^(-1/log(moda))],[0,23000],label="Moda original",color="red")
 end
 
-# ╔═╡ 5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
-md"""$\texttt{Figura 12.}$"""
-
-# ╔═╡ 0c086519-a135-41ec-b9d2-f1c9878e79cb
-md"""A continuación, se presenta el histograma de la Figura 6."""
-
-# ╔═╡ b877fb2b-a1be-4671-bb20-f4311ff98c4a
-Hist(image₅)
-
-# ╔═╡ bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
-md"""Al comparar las imágenes, observamos una mejora notable en la claridad y definición de los árboles."""
-
-# ╔═╡ b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
-[image₆ image₅]
-
-# ╔═╡ 41ea8e3f-19e8-4f83-9d8b-7467af55d8e8
+# ╔═╡ 6307e54c-f4c0-44d2-a8e6-8e5857504962
 md"""$\texttt{Figura 14.}$"""
 
-# ╔═╡ df7c8857-3535-4074-b5b8-64500ec002a0
-md"""A continuación, vamos a crear una función que permita aclarar u oscurecer una imagen utilizando un valor dado de la base $b$. La función recibirá como parámetros la imagen y la base $b$. Funcionará tanto para imágenes en escala de grises como para imágenes en color. En este último caso, la imagen se convertirá al espacio de color YCbCr, aplicando la transformación solo al canal Y."""
+# ╔═╡ b8bf02e6-9f23-4ca4-ad8f-2e35627f239b
+md"""
+En la figura 35 se muestra el resultado de la imagen a color con la transformación potencial automatizada. Posteriormente, en la figura 36 se comparan los histogramas de las imagen a color original y transformada.
+"""
 
-# ╔═╡ da6fd446-233b-482c-98aa-12b7366d332c
-function Transformacion_exponencial(image, b)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		B = (1/(b-1))*((b .^ A) .- 1)
-		new_image = Gray.(B)
-		return new_image
-	else 
-		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
-		image_rgb[:,:,1] = A[1, :, :] *256
-		image_rgb[:,:,2] = A[2, :, :] *256
-		image_rgb[:,:,3] = A[3, :, :] *256
-	
-		image_ycbcr = image_to_ycbcr(image_rgb)/256;
-		
-		new_imagen_YCbCr = permutedims(cat(dims=3, (1/(b-1))*((b .^ image_ycbcr[:,:,1]) .- 1), image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
-		return colorview(RGB, new_imagen_YCbCr)
-	end
-end;
+# ╔═╡ e7f3e5bc-83b8-476d-aca7-625ec73e7759
+clip_pixel.(function_RBG(Transformacion_potencial_sin_gamma(load(fname))))
 
-# ╔═╡ 1a359987-3d20-4a3a-919d-ae2bfd59f910
-md"""Consideremos la siguiente imagen"""
-
-# ╔═╡ 2b1c1420-0819-4cde-9496-6d1665ae9c15
-begin
-	URL3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Sobreexpuesta4.jpg?raw=true"
-	fname3 = download(URL3)
-	image3 = load(fname3)
-end
-
-# ╔═╡ f4fe9a3b-cc16-4cad-86cf-99e5b9eff23a
+# ╔═╡ 8eb3ee9d-2524-4ba5-9f49-6f4e2a95fbf8
 md"""$\texttt{Figura 15.}$"""
 
-# ╔═╡ 2b4f4a46-8aee-4a15-9051-7d7bdee7824f
-md"""Escogemos el valor de $b$ y aplicamos la tranformación."""
+# ╔═╡ e5073afc-b19b-4429-9669-66fd547e20bf
+plot(Hist(load(fname)), Hist(clip_pixel.(function_RBG(Transformacion_potencial_sin_gamma(load(fname))))), size=(700,400))
 
-# ╔═╡ 55502b23-40a7-481c-8a96-82b5d20818aa
-@bind b₁ Slider(0:.01:20, show_value=true, default=15)
-
-# ╔═╡ e73ffdf3-34f4-4056-bbc3-1b44943ae224
-Transformacion_exponencial(image3, b₁)
-
-# ╔═╡ 70671e22-bbe4-4137-a361-61e3825e0601
+# ╔═╡ 4912bef3-926d-41a3-b745-a07bd7558650
 md"""$\texttt{Figura 16.}$"""
 
-# ╔═╡ ff92eeae-a456-4b44-87cc-a532602e75c8
-md"""Note que la imagen anterior está en formato YCbCr. Ahora, visualicémosla en formato RGB. """
+# ╔═╡ b03c9720-e3b9-4529-bdd6-d1a900e9892f
+md"""
+Ahora, consideremos la transformación exponencial y la transformación logaritmica:
 
-# ╔═╡ 11717f36-6d98-4212-b978-21f89db4a42e
-function_RBG(Transformacion_exponencial(image3, b₁))
+$g_{exp}(x) = \frac{1}{b − 1} (b^x-1),$
 
-# ╔═╡ 36138bc1-8278-4955-a796-e8cb49d59250
+$g_{log}(x) = log_{b}((b-1)x+1),$
+
+
+Sea $x_0$ la moda de los valores de los pixeles de la imagen. Las funciones con las que se relaciona el efecto de *estiramiento de contraste* son, respectivamente:
+
+$m_{exp}(b) = g'_{exp}(x_0),$
+
+$m_{log}(b) =  g'_{log}(x_0),$
+
+
+"""
+
+# ╔═╡ f824a8dc-16ef-48b2-a5e0-600965a5a2b8
+#no pude
+
+# ╔═╡ d5fb6aa2-9f51-4331-9b38-a5c00f361b9d
+begin
+	@syms x, b
+	g_exp = (1/(b-1))*(b^x-1)
+end
+
+# ╔═╡ 650ade4e-4e17-48cc-8a2b-6518085acc85
+Dx_exp = Differential(x)(g_exp)
+
+# ╔═╡ 5865a1f2-b6c5-42ac-9eed-9de759935b70
+Db_exp = Differential(b)(Dx_exp)
+
+# ╔═╡ 36901ed4-747e-4018-b636-4bee0f5cf314
+function log_b(x)
+	return log(x) / log(b)
+end;
+
+# ╔═╡ 90636241-9935-4b00-b90b-00ea9d3937f5
+g_log = log_b((b-1)*x+1)
+
+# ╔═╡ 64f4dbd0-7371-408e-a627-620b6bb7593c
+Dx_log = Differential(x)(g_log)
+
+# ╔═╡ d729b4d2-16cd-4c35-b8f5-b24c9fa703af
+Db_log = Differential(b)(Dx_log)
+
+# ╔═╡ 633da3f3-c86b-4da1-8484-f280ddca8ef2
+solve(Db_log(x=>0.5) - 0, b)
+
+# ╔═╡ 3c979d1b-144f-4ea7-8cf6-f3c3e6832945
+md"""
+# Concavidad y convexidad en las trasnformaciones
+"""
+
+# ╔═╡ ad26e460-1eb8-4870-89c5-bbd1e30964cf
+md"""
+En las anteriores secciones se evidenció que todas las transformaciones son crecientes y además son cóncavas o convexas. Es importante que estas transformaciones sean así dado que tienen sentido dentro del contexto son aplicadas. Para exhibir que una transformación cualquiera de $[0,1]$ a un subintervalo de $[0,1]$ no tiene sentido, considere la transformación dada por la función $g$:
+
+$g(x) = \frac{cos(4\pi x)+1}{2}.$
+"""
+
+# ╔═╡ c63cd23a-a6b9-40e6-aa0b-29b35b755b1e
+plot(0:0.001:1,[(cos(10*π*t)+1)/2 for t in 0:0.001:1],title="Función g",label="")
+
+# ╔═╡ b5f02386-197a-4e0b-8e8c-a5a968d4005a
 md"""$\texttt{Figura 17.}$"""
 
-# ╔═╡ 315c17c6-2234-42c8-9f30-a873c782da3b
-md""" Ahora, creemos una función que nos permita visualizar tanto la imagen modificada como su histograma. """
+# ╔═╡ bcf1b464-eb09-4a47-a76c-31daa5730386
+md"""
+Se crea la transformación con la función $g$:
+"""
 
-# ╔═╡ 666436c0-377c-4175-b95d-dd3e09481364
-function Transformacion_exponencial_mejorada(image, gamma)
+# ╔═╡ 193d3566-094b-439b-8184-df326b5cb148
+function Transformacion_sin_sentido(image)
 	A = Float64.(channelview(image))
 	if length(size(A)) == 2
-		new_image = Transformacion_exponencial(image, gamma)
-		return Hist(new_image), new_image
-	else
-		new_image = clip_pixel.(function_RBG(Transformacion_exponencial(image, gamma)))
-		return Hist(new_image), new_image
-	end
-end
-
-# ╔═╡ bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
-md"""Consideremos la siguiente imagen y apliquemos la transformación exponencial,"""
-
-# ╔═╡ d5313e2d-35bc-40fd-95cd-261d07ff850f
-begin
-	URL4 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta3.jpg?raw=true"
-	fname4 = download(URL4)
-	image4 = load(fname4)
-end
-
-# ╔═╡ fb30a480-b151-4ecc-96c6-541b2fb9507f
-md"""$\texttt{Figura 18.}$"""
-
-# ╔═╡ a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
-T2 = Transformacion_exponencial_mejorada(image4, 0.005)
-
-# ╔═╡ 307e8dc1-32a9-4ce0-80b8-f20faa08f848
-md"""Para ver esto más grande, podemos acceder de la siguiente manera:"""
-
-# ╔═╡ 0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
-T2[1]
-
-# ╔═╡ 229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
-T2[2]
-
-# ╔═╡ 4ea1b82a-b067-46e2-8e5d-8265f6fb2742
-md"""$\texttt{Figura 19.}$"""
-
-# ╔═╡ 6633b847-fd7b-4e30-9b46-8228cc76e1c8
-md"""# Transformación logarítmica"""
-
-# ╔═╡ 2e4952e1-8c0e-47b1-b079-76dd72ff1caf
-md"""Las funciones logarítmicas también son usadas en el procesamiento de imágenes, ya que permiten mejorar el contraste y la visualización de detalles en imágenes con rangos dinámicos amplios. Al aplicar una transformación logarítmica a los valores de píxeles, se puede expandir la gama de intensidades en las áreas más oscuras, haciendo que los detalles sutiles sean más visibles. Además, las funciones logarítmicas ayudan a reducir la influencia de los valores "atípicos" en el procesamiento de imágenes, permitiendo una representación más equilibrada de los datos visuales.
-"""
-
-# ╔═╡ b49e19fe-9637-4227-8b5d-c4c7d2dcf5a9
-md"""
-
-Teniendo en cuenta la anterior transformación, se puede recordar que las funciones logarítmicas y exponenciales son inversas entre sí. Se propone utilizar la inversa de la función $f(x) = c(b^x - 1)$ como candidata para la transformación logarítmica. La inversa se determina como $f^{-1}(x) = \log_b(x/c + 1)$.
-
-Por lo tanto, se sugiere construir una función adecuada para la transformación logarítmica en la forma:
-
-$g(x) = \log_b(\sigma x + 1)$
-
-donde el parámetro $\sigma$ satisface la condición $\sigma = b - 1$, esto es,
-
-$g(x) = \log_b((b-1) x + 1).$
-
-Cabe destacar que esta familia de funciones satisfacen que $g(0)=0$ y $g(1)=1$.
-"""
-
-# ╔═╡ 2ce7c115-331f-48a4-bee0-a6bd0b6bf7ae
-@bind bₗ Slider(0.01:.01:10, show_value=true, default=0.5)
-
-# ╔═╡ d4cc7271-d36a-4e7a-a2ae-4ce9d6260265
-begin
-	g01(x) = log((7-1)*x+1) / log(7)
-	g02(x) = log((0.1-1)*x+1) / log(0.1)
-	g03(x) = log((bₗ-1)*x+1) / log(bₗ)
-	
-	plot(x_v, g01.(x), label="log((7-1)x+1)/log(7)", lw=2)
-	plot!(x_v, g02.(x), label="log((0.1-1)x+1)/log(0.1)", lw=2)
-	plot!(x_v, g03.(x), label="log(($bₗ-1)x+1)/log($bₗ)", lw=2)
-	
-	xlabel!("x")
-	ylabel!("g(x)")
-	title!("Funciones Logaritmicas en el Intervalo [0,1]")
-end
-
-# ╔═╡ d0e0399a-79ec-40a2-8ed3-d8ccfd93811a
-md"""De lo anterior se obtiene la siguiente transformación
-
-$B(m, n) = log_{b}((b-1){A(m,n)} + 1),$
-
-donde $A$ es imagen original (de tamaño $m\times n$), $B$ imagen mejorada, y $b$ es una constante.
-"""
-
-# ╔═╡ bcb21393-d1ac-4895-9776-618f90eb6d29
-md"""
-Consideremos la figura 1 que muestra una imágen subexpuesta. La imagen y su histograma se muestra de nuevo a continuación.
-"""
-
-# ╔═╡ bfec8740-1725-4807-8e9a-f02bd3f3181b
-image₁
-
-# ╔═╡ 3e937224-0b97-4fb1-9a3d-9a3cd203148e
-Hist(image₁)
-
-# ╔═╡ 96917f4f-873c-4bf4-9f26-854477ade542
-md"""$\texttt{Figura 20.}$"""
-
-# ╔═╡ 1b155514-8304-4625-907f-8637b0d4b962
-md"""
-Como se ha hecho anteriormente, declaramos una función que haga la transformación logaritmica
-"""
-
-# ╔═╡ 678c47eb-5334-45fa-a83e-33091611e721
-function Transformacion_logaritmica(image, b)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		B = log.((b-1)*A .+ 1) ./ log(b)
+		B = (cos.(10 * π * A) .+ 1)/2
 		new_image = Gray.(B)
 		return new_image
 	else 
@@ -647,90 +542,40 @@ function Transformacion_logaritmica(image, b)
 	
 		image_ycbcr = image_to_ycbcr(image_rgb)/256;
 		
-		new_imagen_YCbCr = permutedims(cat(dims=3, log.((b-1)*image_ycbcr[:,:,1] .+ 1) ./ log(b), image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
-		return colorview(RGB, new_imagen_YCbCr)
+		new_image = permutedims(cat(dims=3, (cos.(4 * π * (image_ycbcr[:,:,1])) .+ 1)/2, image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_image)
 	end
 end;
 
-# ╔═╡ 96662f08-0bda-400d-9d77-0426a761156a
-md"""
-Variando el parámetro $b$ de la transformación logaritmica se cambia la imágen de partida para mejorar la subexposición.
-"""
-
-# ╔═╡ 78b6c4ad-7a99-42e1-8e8a-9ecdeebbadee
-@bind bₗ₁ Slider(0.01:0.01:1000, show_value=true, default=100)
-
-# ╔═╡ e4c9bab6-3727-4bd0-8d62-9563d0df954a
-Transformacion_logaritmica(image₁, bₗ₁)
-
-# ╔═╡ 8e4e6c4e-3108-4979-a634-923cf81df0f5
-Hist(Transformacion_logaritmica(image₁, bₗ₁))
-
-# ╔═╡ 7e36d866-5f72-45ce-9aa1-b89206ac1f3e
-md"""$\texttt{Figura 21.}$"""
-
-# ╔═╡ 96853ee8-053b-470b-a84f-8613b6b0b2b3
-md"""
-Como se puede ver en la figura 21, el histograma de la figura se desplaza hacia la derecha lo que es equivalente a que la imágen aclara y prescinde de su subexposición.
-
-
-Ahora, creamos una función que realice la transformación logaritmica y la vez grafique su respectivo histograma.
-"""
-
-# ╔═╡ f9ed49dc-7f58-4f8a-9a9d-143db3d5c043
-function Transformacion_logaritmica_mejorada(image, gamma)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		new_image = Transformacion_logaritmica(image, gamma)
-		return Hist(new_image), new_image
-	else
-		new_image = clip_pixel.(function_RBG(Transformacion_logaritmica(image, gamma)))
-		return Hist(new_image), new_image
-	end
-end
-
-# ╔═╡ 9f3ab1c1-f711-4c87-bca1-5608c608d203
-md"""
-Aplicamos la transformarción logaritmica a la figura 18 con parámetro $b=100$, obteniendo la siguiente comparación.
-"""
-
-# ╔═╡ 2d9ab4d6-6cdb-4b0a-be70-3dcf318d0b2e
-[image4 function_RBG(Transformacion_logaritmica(image4, 100))]
-
-# ╔═╡ 37c5345e-de2d-4e67-8e96-bdb93dd2a65f
-md"""$\texttt{Figura 22.}$"""
-
-# ╔═╡ 42499e67-7844-4e15-ac1c-65aa69a0356f
-md"""
-En la siguiente figura se muestra el histograma de la figura 18. Como se puede evidenciar, el histograma muestra un sesgo a la derecha indicando subexposición.
-"""
-
-# ╔═╡ f13cc879-42f4-4bba-844e-4f95b236b336
-Hist(image4)
-
-# ╔═╡ 312da3e0-4d10-4831-bf83-e6bcb7007ec7
-md"""$\texttt{Figura 23.}$"""
-
-# ╔═╡ 54d39189-d5ba-410b-a713-b3ca66491e66
-md"""
-En la siguiente animación se evidencia cómo cambia el histograma de la figura 18 a medida que se aplica la transformación logaritmica con parámetro $b$ variando en el intervalo $[2,100]$.
-"""
-
-# ╔═╡ f4b417db-1066-47cc-8055-be70b1a53c67
+# ╔═╡ c14c9ab8-bd23-4efc-bec1-63d93cf7b596
 begin
-	anim1 = @animate for i=2:1:100
-			Transformacion_logaritmica_mejorada(image4, i)
-		end
-		gif(anim1,"TransLog_im4.gif",fps=3)
+	url₁ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta.jpg?raw=true"
+	fname₁ = download(url₁)
+	image₁ = Gray.(load(fname₁))
 end
 
-# ╔═╡ bfa7d58d-1aa0-4b38-9686-3e5d836b2a68
-md"""$\texttt{Animación 1.}$"""
+# ╔═╡ 1f5e7342-96c9-4c18-8d7c-2b715d95f759
+modda = mode(Float64.(vec(Float64.(channelview(image₁)))))
 
-# ╔═╡ b64bc307-1d06-4772-ade3-c4364483a0a9
+# ╔═╡ 0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
+md"""$\texttt{Figura 18.}$"""
+
+# ╔═╡ 9fa9cf3c-db3b-460c-8e1a-2cd615799b31
 md"""
-Vemos que a medida que el parámetro $b$ aumenta, se pierde el sesgo a la derecha del histograma.
+Y en la siguientes dos figuras se muestra su resultado:
 """
+
+# ╔═╡ c1365070-69e6-4e0a-a799-368d35fd9b97
+[image₁ Transformacion_sin_sentido(image₁)]
+
+# ╔═╡ 82a87b96-9ccf-4c39-b848-3a13add95be2
+md"""$\texttt{Figura 19. Transformación sin sentido}$"""
+
+# ╔═╡ 15ed9cd9-bb68-446b-b06f-2691d1da2c0e
+plot(Hist(image₁),Hist(Transformacion_sin_sentido(image₁)))
+
+# ╔═╡ 2ef3e0f2-ec71-49fd-a83f-6639b72ed639
+md"""$\texttt{Figura 20. Histograma de la transformación sin sentido}$"""
 
 # ╔═╡ 57ea7045-6411-493f-93cf-810b277bb1fd
 md"""# Referencias
@@ -745,6 +590,7 @@ md"""# Referencias
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
+CalculusWithJulia = "a2e0e22d-7d4c-5312-9169-8b992201a882"
 ColorVectorSpace = "c3611d14-8923-5661-9e6a-0046d554d3a4"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
@@ -759,8 +605,10 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
 
 [compat]
+CalculusWithJulia = "~0.2.6"
 ColorVectorSpace = "~0.10.0"
 Colors = "~0.12.11"
 Distributions = "~0.25.112"
@@ -771,8 +619,10 @@ ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.60"
+Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
+SymPy = "~2.2.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -781,7 +631,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "82cb3c06f4c9ba583805bc21051db62ac2f5cb56"
+project_hash = "3317a948ceedfbf95edeb17ba8682820d646d9fb"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -799,6 +649,31 @@ deps = ["Pkg"]
 git-tree-sha1 = "6e1d2a35f2f90a4bc7c2ed98079b2ba09c35b83a"
 uuid = "6e696c72-6542-2067-7265-42206c756150"
 version = "1.3.2"
+
+[[deps.Accessors]]
+deps = ["CompositionsBase", "ConstructionBase", "InverseFunctions", "LinearAlgebra", "MacroTools", "Markdown"]
+git-tree-sha1 = "b392ede862e506d451fc1616e79aa6f4c673dab8"
+uuid = "7d9f7c33-5ae7-4f3b-8dc6-eff91059b697"
+version = "0.1.38"
+
+    [deps.Accessors.extensions]
+    AccessorsAxisKeysExt = "AxisKeys"
+    AccessorsDatesExt = "Dates"
+    AccessorsIntervalSetsExt = "IntervalSets"
+    AccessorsStaticArraysExt = "StaticArrays"
+    AccessorsStructArraysExt = "StructArrays"
+    AccessorsTestExt = "Test"
+    AccessorsUnitfulExt = "Unitful"
+
+    [deps.Accessors.weakdeps]
+    AxisKeys = "94b1ba4f-4ee9-5380-92f1-94cde586c3c5"
+    Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
+    IntervalSets = "8197267c-284f-5f27-9208-e0e47529a953"
+    Requires = "ae029012-a4dd-5104-9daa-d747884805df"
+    StaticArrays = "90137ffa-7385-5640-81b9-e52037218182"
+    StructArrays = "09ab397b-f2b6-538f-b94a-2f83cf4a842a"
+    Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+    Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.Adapt]]
 deps = ["LinearAlgebra", "Requires"]
@@ -922,6 +797,17 @@ git-tree-sha1 = "009060c9a6168704143100f36ab08f06c2af4642"
 uuid = "83423d85-b0ee-5818-9007-b63ccbeb887a"
 version = "1.18.2+1"
 
+[[deps.CalculusWithJulia]]
+deps = ["Base64", "Contour", "ForwardDiff", "IntervalSets", "LinearAlgebra", "PlotUtils", "Random", "Reexport", "Roots", "SpecialFunctions", "SplitApplyCombine", "Test"]
+git-tree-sha1 = "217c1decd0cfb958a1827dd532f97042c83daa44"
+uuid = "a2e0e22d-7d4c-5312-9169-8b992201a882"
+version = "0.2.6"
+weakdeps = ["Plots", "SymPyCore"]
+
+    [deps.CalculusWithJulia.extensions]
+    CalculusWithJuliaPlotsExt = "Plots"
+    CalculusWithJuliaSymPyCoreExt = "SymPyCore"
+
 [[deps.CatIndices]]
 deps = ["CustomUnitRanges", "OffsetArrays"]
 git-tree-sha1 = "a0f80a09780eed9b1d106a1bf62041c2efc995bc"
@@ -984,6 +870,22 @@ git-tree-sha1 = "362a287c3aa50601b0bc359053d5c2468f0e7ce0"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.12.11"
 
+[[deps.CommonEq]]
+git-tree-sha1 = "6b0f0354b8eb954cdba708fb262ef00ee7274468"
+uuid = "3709ef60-1bee-4518-9f2f-acd86f176c50"
+version = "0.2.1"
+
+[[deps.CommonSolve]]
+git-tree-sha1 = "0eee5eb66b1cf62cd6ad1b460238e60e4b09400c"
+uuid = "38540f10-b2f7-11e9-35d8-d573e4eb0ff2"
+version = "0.2.4"
+
+[[deps.CommonSubexpressions]]
+deps = ["MacroTools"]
+git-tree-sha1 = "cda2cfaebb4be89c9084adaca7dd7333369715c5"
+uuid = "bbf7d656-a473-5ed7-a52c-81e309532950"
+version = "0.3.1"
+
 [[deps.CommonWorldInvalidations]]
 git-tree-sha1 = "ae52d1c52048455e85a387fbee9be553ec2b68d0"
 uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
@@ -1004,6 +906,15 @@ deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
 version = "1.1.1+0"
 
+[[deps.CompositionsBase]]
+git-tree-sha1 = "802bb88cd69dfd1509f6670416bd4434015693ad"
+uuid = "a33af91c-f02d-484b-be07-31d278c5ca2b"
+version = "0.1.2"
+weakdeps = ["InverseFunctions"]
+
+    [deps.CompositionsBase.extensions]
+    CompositionsBaseInverseFunctionsExt = "InverseFunctions"
+
 [[deps.ComputationalResources]]
 git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
 uuid = "ed09eef8-17a6-5b46-8889-db040fac31e3"
@@ -1014,6 +925,12 @@ deps = ["Serialization", "Sockets"]
 git-tree-sha1 = "ea32b83ca4fefa1768dc84e504cc0a94fb1ab8d1"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
 version = "2.4.2"
+
+[[deps.Conda]]
+deps = ["Downloads", "JSON", "VersionParsing"]
+git-tree-sha1 = "b19db3927f0db4151cb86d073689f2428e524576"
+uuid = "8f4d0f93-b110-5947-807f-2305c1781a2d"
+version = "1.10.2"
 
 [[deps.ConstructionBase]]
 git-tree-sha1 = "76219f1ed5771adbb096743bff43fb5fdd4c1157"
@@ -1080,6 +997,24 @@ deps = ["Mmap"]
 git-tree-sha1 = "9e2f36d3c96a820c678f2f1f1782582fcf685bae"
 uuid = "8bb1440f-4735-579b-a4ab-409b98df4dab"
 version = "1.9.1"
+
+[[deps.Dictionaries]]
+deps = ["Indexing", "Random", "Serialization"]
+git-tree-sha1 = "35b66b6744b2d92c778afd3a88d2571875664a2a"
+uuid = "85a47980-9c8c-11e8-2b9f-f7ca1fa99fb4"
+version = "0.4.2"
+
+[[deps.DiffResults]]
+deps = ["StaticArraysCore"]
+git-tree-sha1 = "782dd5f4561f5d267313f23853baaaa4c52ea621"
+uuid = "163ba53b-c6d8-5494-b064-1a9d43ac40c5"
+version = "1.1.0"
+
+[[deps.DiffRules]]
+deps = ["IrrationalConstants", "LogExpFunctions", "NaNMath", "Random", "SpecialFunctions"]
+git-tree-sha1 = "23163d55f885173722d1e4cf0f6110cdbaf7e272"
+uuid = "b552c78f-8df3-52c6-915a-8e097449b14b"
+version = "1.15.1"
 
 [[deps.Distances]]
 deps = ["LinearAlgebra", "Statistics", "StatsAPI"]
@@ -1210,6 +1145,16 @@ version = "2.13.96+0"
 git-tree-sha1 = "9c68794ef81b08086aeb32eeaf33531668d5f5fc"
 uuid = "1fa38f19-a742-5d3f-a2b9-30dd87b9d5f8"
 version = "1.3.7"
+
+[[deps.ForwardDiff]]
+deps = ["CommonSubexpressions", "DiffResults", "DiffRules", "LinearAlgebra", "LogExpFunctions", "NaNMath", "Preferences", "Printf", "Random", "SpecialFunctions"]
+git-tree-sha1 = "cf0fe81336da9fb90944683b8c41984b08793dad"
+uuid = "f6369f11-7733-5829-9624-2563aa707210"
+version = "0.10.36"
+weakdeps = ["StaticArrays"]
+
+    [deps.ForwardDiff.extensions]
+    ForwardDiffStaticArraysExt = "StaticArrays"
 
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
@@ -1454,6 +1399,11 @@ git-tree-sha1 = "0936ba688c6d201805a83da835b55c61a180db52"
 uuid = "905a6f67-0a94-5f89-b386-d35d92009cd1"
 version = "3.1.11+0"
 
+[[deps.Indexing]]
+git-tree-sha1 = "ce1566720fd6b19ff3411404d4b977acd4814f9f"
+uuid = "313cdc1a-70c2-5d6a-ae34-0150d3930a38"
+version = "1.1.1"
+
 [[deps.IndirectArrays]]
 git-tree-sha1 = "012e604e1c7458645cb8b436f8fba789a51b257f"
 uuid = "9b13fd28-a010-5f03-acff-a1bbcff69959"
@@ -1501,6 +1451,16 @@ weakdeps = ["Random", "RecipesBase", "Statistics"]
     IntervalSetsRandomExt = "Random"
     IntervalSetsRecipesBaseExt = "RecipesBase"
     IntervalSetsStatisticsExt = "Statistics"
+
+[[deps.InverseFunctions]]
+git-tree-sha1 = "2787db24f4e03daf859c6509ff87764e4182f7d1"
+uuid = "3587e190-3f89-42d0-90ee-14403ec27112"
+version = "0.1.16"
+weakdeps = ["Dates", "Test"]
+
+    [deps.InverseFunctions.extensions]
+    InverseFunctionsDatesExt = "Dates"
+    InverseFunctionsTestExt = "Test"
 
 [[deps.IrrationalConstants]]
 git-tree-sha1 = "630b497eafcc20001bba38a4651b327dcfc491d2"
@@ -1739,15 +1699,11 @@ deps = ["ArrayInterface", "CPUSummary", "CloseOpenIntervals", "DocStringExtensio
 git-tree-sha1 = "8084c25a250e00ae427a379a5b607e7aed96a2dd"
 uuid = "bdcacae8-1622-11e9-2a5c-532679323890"
 version = "0.12.171"
+weakdeps = ["ChainRulesCore", "ForwardDiff", "SpecialFunctions"]
 
     [deps.LoopVectorization.extensions]
     ForwardDiffExt = ["ChainRulesCore", "ForwardDiff"]
     SpecialFunctionsExt = "SpecialFunctions"
-
-    [deps.LoopVectorization.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
-    SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
 [[deps.MIMEs]]
 git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
@@ -2085,6 +2041,12 @@ git-tree-sha1 = "77a42d78b6a92df47ab37e177b2deac405e1c88f"
 uuid = "43287f4e-b6f4-7ad1-bb20-aadabca52c3d"
 version = "1.2.1"
 
+[[deps.PyCall]]
+deps = ["Conda", "Dates", "Libdl", "LinearAlgebra", "MacroTools", "Serialization", "VersionParsing"]
+git-tree-sha1 = "9816a3826b0ebf49ab4926e2b18842ad8b5c8f04"
+uuid = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+version = "1.96.4"
+
 [[deps.QOI]]
 deps = ["ColorTypes", "FileIO", "FixedPointNumbers"]
 git-tree-sha1 = "18e8f4d1426e965c7b532ddd260599e1510d26ce"
@@ -2192,6 +2154,24 @@ deps = ["Artifacts", "JLLWrappers", "Libdl"]
 git-tree-sha1 = "58cdd8fb2201a6267e1db87ff148dd6c1dbd8ad8"
 uuid = "f50d1b31-88e8-58de-be2c-1cc44531875f"
 version = "0.5.1+0"
+
+[[deps.Roots]]
+deps = ["Accessors", "ChainRulesCore", "CommonSolve", "Printf"]
+git-tree-sha1 = "1ab580704784260ee5f45bffac810b152922747b"
+uuid = "f2b01f46-fcfa-551c-844a-d8ac1e96c665"
+version = "2.1.5"
+
+    [deps.Roots.extensions]
+    RootsForwardDiffExt = "ForwardDiff"
+    RootsIntervalRootFindingExt = "IntervalRootFinding"
+    RootsSymPyExt = "SymPy"
+    RootsSymPyPythonCallExt = "SymPyPythonCall"
+
+    [deps.Roots.weakdeps]
+    ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
+    IntervalRootFinding = "d2bf35a9-74e0-55ec-b149-d360ff49b807"
+    SymPy = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
+    SymPyPythonCall = "bc8888f7-b21e-4b7c-a06a-5d9c9496438c"
 
 [[deps.Rotations]]
 deps = ["LinearAlgebra", "Quaternions", "Random", "StaticArrays"]
@@ -2305,6 +2285,12 @@ weakdeps = ["ChainRulesCore"]
     [deps.SpecialFunctions.extensions]
     SpecialFunctionsChainRulesCoreExt = "ChainRulesCore"
 
+[[deps.SplitApplyCombine]]
+deps = ["Dictionaries", "Indexing"]
+git-tree-sha1 = "c06d695d51cfb2187e6848e98d6252df9101c588"
+uuid = "03a91e81-4c3e-53e1-a0a4-9c0c8f19dd66"
+version = "1.2.3"
+
 [[deps.StableRNGs]]
 deps = ["Random"]
 git-tree-sha1 = "83e6cce8324d49dfaf9ef059227f91ed4441a8e5"
@@ -2377,14 +2363,11 @@ deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Re
 git-tree-sha1 = "b423576adc27097764a90e163157bcfc9acf0f46"
 uuid = "4c63d2b9-4356-54db-8cca-17b64c39e42c"
 version = "1.3.2"
+weakdeps = ["ChainRulesCore", "InverseFunctions"]
 
     [deps.StatsFuns.extensions]
     StatsFunsChainRulesCoreExt = "ChainRulesCore"
     StatsFunsInverseFunctionsExt = "InverseFunctions"
-
-    [deps.StatsFuns.weakdeps]
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [[deps.StatsPlots]]
 deps = ["AbstractFFTs", "Clustering", "DataStructures", "Distributions", "Interpolations", "KernelDensity", "LinearAlgebra", "MultivariateStats", "NaNMath", "Observables", "Plots", "RecipesBase", "RecipesPipeline", "Reexport", "StatsBase", "TableOperations", "Tables", "Widgets"]
@@ -2404,6 +2387,24 @@ uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
 version = "7.7.0+0"
+
+[[deps.SymPy]]
+deps = ["CommonEq", "CommonSolve", "LinearAlgebra", "PyCall", "SpecialFunctions", "SymPyCore"]
+git-tree-sha1 = "d35b297be048dfac05bcff29e55d6106808e3c5a"
+uuid = "24249f21-da20-56a4-8eb1-6a02cf4ae2e6"
+version = "2.2.0"
+
+[[deps.SymPyCore]]
+deps = ["CommonEq", "CommonSolve", "Latexify", "LinearAlgebra", "Markdown", "RecipesBase", "SpecialFunctions"]
+git-tree-sha1 = "bef92ec4c31804bdc9c44cb00eaf0348eac383fb"
+uuid = "458b697b-88f0-4a86-b56b-78b75cfb3531"
+version = "0.2.5"
+
+    [deps.SymPyCore.extensions]
+    SymPyCoreTermInterfaceExt = "TermInterface"
+
+    [deps.SymPyCore.weakdeps]
+    TermInterface = "8ea1fca8-c5ef-4a55-8b96-4e9afe9c9a3c"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -2502,14 +2503,11 @@ deps = ["Dates", "LinearAlgebra", "Random"]
 git-tree-sha1 = "d95fe458f26209c66a187b1114df96fd70839efd"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
 version = "1.21.0"
+weakdeps = ["ConstructionBase", "InverseFunctions"]
 
     [deps.Unitful.extensions]
     ConstructionBaseUnitfulExt = "ConstructionBase"
     InverseFunctionsUnitfulExt = "InverseFunctions"
-
-    [deps.Unitful.weakdeps]
-    ConstructionBase = "187b0558-2788-49d3-abe0-74a17ed4e7c9"
-    InverseFunctions = "3587e190-3f89-42d0-90ee-14403ec27112"
 
 [[deps.UnitfulLatexify]]
 deps = ["LaTeXStrings", "Latexify", "Unitful"]
@@ -2527,6 +2525,11 @@ deps = ["ArrayInterface", "CPUSummary", "HostCPUFeatures", "IfElse", "LayoutPoin
 git-tree-sha1 = "e7f5b81c65eb858bed630fe006837b935518aca5"
 uuid = "3d5dd08c-fd9d-11e8-17fa-ed2836048c2f"
 version = "0.21.70"
+
+[[deps.VersionParsing]]
+git-tree-sha1 = "58d6e80b4ee071f5efd07fda82cb9fbe17200868"
+uuid = "81def892-9a0e-5fdd-b105-ffc91e053289"
+version = "1.3.0"
 
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
@@ -2797,133 +2800,88 @@ version = "1.4.1+1"
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
 # ╟─19e85962-868f-41fb-9103-d9d7868b5137
 # ╠═c4a5ee43-3e5e-4dc1-a529-6c9ed0aa08f4
-# ╟─440b9745-1001-4e8c-be5f-8d4c570a8732
-# ╟─933134ff-401a-433e-875f-c39aff425fa9
-# ╟─34f0f949-c54c-432d-86b4-20e31c20097a
-# ╟─82580291-8fa9-40d2-853f-ccb622dba296
-# ╟─e54426fd-6d96-4eef-ad61-5a7c2f81ecef
-# ╟─a39d5984-4255-4a56-8138-2c62206a0375
-# ╟─cba8c955-22c2-496f-bfd8-61a5a07e9906
-# ╟─3eb3a378-d1f0-4418-a49b-125f2da66a8d
-# ╟─0590cc78-3de9-4a2e-a17d-00918a3d5b43
-# ╟─881406e6-8dd5-46a0-9568-e7e728c0ac14
-# ╟─2ac2be6e-7401-4b6f-9487-bd32f6c098c7
-# ╟─42931db9-0349-4264-acc7-be9c7074e4e7
-# ╟─649706e7-2dc2-49fa-9537-9c0d6ac1c505
-# ╟─69f70ddb-7a39-4d4f-8d44-8a1c37d06600
-# ╟─d01ae1a4-a3e1-4523-a0d2-dacb26b22b7e
-# ╟─56aa8d2b-2ac5-4686-a421-709e36efcd4f
-# ╟─5132c39f-6130-4889-85cf-99d4cb449850
-# ╟─77edea14-74ab-4c91-a407-0f8a513e5d06
-# ╟─29928480-9448-42d0-b4af-ec48d86e4e6e
-# ╟─f8b8575d-06d4-452f-a47a-3148a256d60f
-# ╟─53327535-b3bd-4e83-872a-46879159a159
-# ╟─5d612f37-223a-429f-bb41-dc98a60c0611
-# ╟─f575e59a-d17c-40fb-9059-76db8ded0196
-# ╟─093f23cb-14aa-4a52-81c8-e0ec7748ea13
-# ╟─41bf9f4b-4b01-47b6-ab31-de58b9b35705
-# ╟─187cf483-228d-4bcb-ab76-776a78ee58e7
-# ╟─b2fa5afa-ba4d-42f7-9009-3cd7429eedee
-# ╟─ae5eeb4f-d4ef-48d6-b237-22c03c7416d2
-# ╠═7c908704-fdea-40ab-8849-4923fbe0d93d
-# ╠═b4f216c5-243f-422d-a1fa-e7a3ff816a8c
-# ╟─bb489988-b03f-4a4b-b6e9-c9e96e1ea886
-# ╠═9a7c1190-c5fc-4ee1-b756-2828ff18727b
-# ╟─98157209-d9dd-49ce-867b-a6c4506b138e
-# ╟─b372d543-c6b9-4eda-b834-a7d78236123f
-# ╟─5880cdde-295f-4b4f-94c8-8811998718ea
-# ╟─8d19488a-8025-4718-8a3f-5b3ad87ecdc4
-# ╟─f654a489-aeb3-4a5f-bf9e-5f44a6968fb8
-# ╟─e8453abe-6bff-47ab-b031-b4a3586bd05e
-# ╟─3fd40425-386d-44b7-95e0-3bba3e0782b6
-# ╟─2bd8a54f-87c9-42ea-9504-2f57c654f563
-# ╟─b4d4d154-3cec-4739-831f-36976db006e0
-# ╟─7c85cf7b-fbec-4007-a2b5-f5df86224c11
-# ╟─d49e8aeb-1ae7-46da-b6c1-dd0821dffb63
-# ╟─da9aaf33-0b21-406b-8f83-e40cdbf0ff20
-# ╟─3d81527f-eedd-424d-93ba-d473aad093fb
-# ╟─2904c135-3dc6-41a1-8170-827665b15673
-# ╟─cd98b718-1175-4c86-b0b0-889dcc5c9de7
-# ╟─03e8996d-a802-4364-ba47-a7aabfabe782
-# ╟─388e800c-26c8-4e21-a8a9-c14941b4bf09
-# ╟─f00e05d3-984b-42c8-ad13-0c109cbcc457
-# ╠═ae7a4ed5-c551-4015-8502-83a6d38480f1
-# ╠═642b4cd9-b297-4cc6-8e5b-84addad4937b
-# ╟─908f9615-5c0b-4370-ba2f-6c6eec20b7d3
-# ╟─039bbc45-5d1f-4ed2-8689-3b6d3a4bb7fc
-# ╟─c77864b5-934b-471e-b7ee-585d561a49be
-# ╟─5bd837f7-6978-4a36-a4ea-40d0c6ca3e2a
-# ╟─91672cee-48cc-4378-a21d-9138cf360b6f
-# ╟─b3b5c934-9e16-4d97-ae54-b2fe95bce7f1
-# ╟─afc2569f-8cd2-4daf-9303-2ac5ee407325
-# ╠═7733f7fb-4bec-4645-9b78-e5748a4db74a
-# ╟─f32e07f2-8b8c-4554-a541-b750550317d6
-# ╟─c12db014-eb77-4411-adbc-3515a90995fc
-# ╟─56aa3ef4-a178-4f02-8f0b-7bfc39cd4124
-# ╟─af4ec210-5aab-4a2f-9202-5466fd08d9f5
-# ╟─888fc6f9-cb7b-43e3-a8ee-174d424577ed
-# ╟─b8aa4ed9-3228-4451-8615-d829c771ec06
-# ╟─68951335-3c31-42af-bbab-edfa5f4e8d41
-# ╟─a302cbae-0c28-4ac9-bb44-0edf44ed7942
-# ╟─9928a2c7-e2d1-44c5-8ecc-f07cf508fc94
-# ╟─6f8e11b8-ea1f-4bb3-a259-ae2847afa4d9
-# ╟─5cdab392-0ae2-4e20-ba1f-916a86e2b5d3
-# ╟─0c086519-a135-41ec-b9d2-f1c9878e79cb
-# ╟─b877fb2b-a1be-4671-bb20-f4311ff98c4a
-# ╟─bd654ca0-7fe7-4cda-9c3f-ac9c5cbbde74
-# ╠═b70a2ae9-f16a-45bd-bbd8-61c1fce3d6a2
-# ╟─41ea8e3f-19e8-4f83-9d8b-7467af55d8e8
-# ╟─df7c8857-3535-4074-b5b8-64500ec002a0
-# ╠═da6fd446-233b-482c-98aa-12b7366d332c
-# ╟─1a359987-3d20-4a3a-919d-ae2bfd59f910
-# ╟─2b1c1420-0819-4cde-9496-6d1665ae9c15
-# ╟─f4fe9a3b-cc16-4cad-86cf-99e5b9eff23a
-# ╟─2b4f4a46-8aee-4a15-9051-7d7bdee7824f
-# ╟─55502b23-40a7-481c-8a96-82b5d20818aa
-# ╟─e73ffdf3-34f4-4056-bbc3-1b44943ae224
-# ╟─70671e22-bbe4-4137-a361-61e3825e0601
-# ╟─ff92eeae-a456-4b44-87cc-a532602e75c8
-# ╟─11717f36-6d98-4212-b978-21f89db4a42e
-# ╟─36138bc1-8278-4955-a796-e8cb49d59250
-# ╟─315c17c6-2234-42c8-9f30-a873c782da3b
-# ╠═666436c0-377c-4175-b95d-dd3e09481364
-# ╟─bc81f0bd-3d26-43c1-a8a8-3cb20552f75a
-# ╟─d5313e2d-35bc-40fd-95cd-261d07ff850f
-# ╟─fb30a480-b151-4ecc-96c6-541b2fb9507f
-# ╠═a2ca75c4-c3f8-420c-a57d-5d7bf37590dd
-# ╟─307e8dc1-32a9-4ce0-80b8-f20faa08f848
-# ╟─0b35f76a-d4ce-4ba2-b2da-d2e71aa11b67
-# ╟─229ea4e5-ae30-4f4d-aeb7-257e2fb2b6c6
-# ╟─4ea1b82a-b067-46e2-8e5d-8265f6fb2742
-# ╟─6633b847-fd7b-4e30-9b46-8228cc76e1c8
-# ╟─2e4952e1-8c0e-47b1-b079-76dd72ff1caf
-# ╟─b49e19fe-9637-4227-8b5d-c4c7d2dcf5a9
-# ╟─2ce7c115-331f-48a4-bee0-a6bd0b6bf7ae
-# ╟─d4cc7271-d36a-4e7a-a2ae-4ce9d6260265
-# ╟─d0e0399a-79ec-40a2-8ed3-d8ccfd93811a
-# ╟─bcb21393-d1ac-4895-9776-618f90eb6d29
-# ╟─bfec8740-1725-4807-8e9a-f02bd3f3181b
-# ╟─3e937224-0b97-4fb1-9a3d-9a3cd203148e
-# ╟─96917f4f-873c-4bf4-9f26-854477ade542
-# ╟─1b155514-8304-4625-907f-8637b0d4b962
-# ╠═678c47eb-5334-45fa-a83e-33091611e721
-# ╟─96662f08-0bda-400d-9d77-0426a761156a
-# ╟─78b6c4ad-7a99-42e1-8e8a-9ecdeebbadee
-# ╟─e4c9bab6-3727-4bd0-8d62-9563d0df954a
-# ╟─8e4e6c4e-3108-4979-a634-923cf81df0f5
-# ╟─7e36d866-5f72-45ce-9aa1-b89206ac1f3e
-# ╟─96853ee8-053b-470b-a84f-8613b6b0b2b3
-# ╠═f9ed49dc-7f58-4f8a-9a9d-143db3d5c043
-# ╟─9f3ab1c1-f711-4c87-bca1-5608c608d203
-# ╟─2d9ab4d6-6cdb-4b0a-be70-3dcf318d0b2e
-# ╟─37c5345e-de2d-4e67-8e96-bdb93dd2a65f
-# ╟─42499e67-7844-4e15-ac1c-65aa69a0356f
-# ╟─f13cc879-42f4-4bba-844e-4f95b236b336
-# ╟─312da3e0-4d10-4831-bf83-e6bcb7007ec7
-# ╟─54d39189-d5ba-410b-a713-b3ca66491e66
-# ╟─f4b417db-1066-47cc-8055-be70b1a53c67
-# ╟─bfa7d58d-1aa0-4b38-9686-3e5d836b2a68
-# ╟─b64bc307-1d06-4772-ade3-c4364483a0a9
+# ╠═3371e68e-4c21-4cd1-900b-aa2c8deb3b72
+# ╠═28cbee5f-939d-41dc-bd61-be2d7b1633ff
+# ╟─a95b326a-afd8-4e3c-9691-e81cf3590611
+# ╟─dbbe2cdd-9fd6-4757-96c9-15ded062e3fc
+# ╟─8a092a7f-26db-4055-9ab8-a5274276eb76
+# ╟─a9e37474-b50a-454e-9a38-409c813dfb90
+# ╟─2f9fb47f-7daf-453b-ab54-4ece5bb746fc
+# ╟─429b4082-cf3c-401f-9f3a-17655c1cc435
+# ╟─172dd730-2284-4085-b484-a955f4a4b411
+# ╟─521e6dc1-eeb1-4215-baec-cba89199e0e5
+# ╠═fc13b236-113d-450c-a6e4-86e80e063490
+# ╟─b0ec526a-a174-4611-85ed-030b9b95fdd8
+# ╟─60a4607f-dc7e-4f6e-b1b5-160d5281836b
+# ╟─ed800b15-aa07-43ef-b543-d4deb232a14f
+# ╟─9100bd30-b537-4522-a833-cd9ca845ac52
+# ╟─a8e25a1f-e8a1-4561-b252-62baa831e1f1
+# ╟─a53c6a87-9b7d-4eeb-9736-adc0b0666921
+# ╟─bc6bf077-90c6-435d-bea1-b1d5e961e88f
+# ╠═ab961a4c-0113-4311-bbe9-71ce6273f68d
+# ╟─b7bfee2b-badb-4de6-b2b4-d9e2edfc4861
+# ╟─c2ee78fc-86d5-441e-b953-7df1f2a2bf91
+# ╟─dc40f069-3452-49ff-a14c-f2f3a02fb94d
+# ╟─ec2e72cb-418d-4c99-a971-270eb55b46e0
+# ╟─6a4fac41-6aa6-466a-b4e9-3a891c3be13a
+# ╟─90d6468a-ec89-4f55-85ba-fcdb2e30fbda
+# ╟─477456c7-afae-47ce-85b3-72264e663893
+# ╟─e2586409-f79a-4ea6-9fb5-fdeee106f960
+# ╟─8fafb0d8-08c8-4af6-bb58-e99e15735ca9
+# ╟─c1843553-14e7-40cf-a985-518a02537eea
+# ╟─a3effb01-d543-4b95-8736-4a61db16ba20
+# ╟─c7aee762-d2a4-40aa-ba40-d7109aea235e
+# ╟─eab0e590-793e-478c-a1bf-744c99faeb9d
+# ╟─23c57fc3-ec49-439f-bbee-428bfa1f78eb
+# ╟─0e111c5e-3c5a-42c7-9118-ad106a489a1e
+# ╟─1545ff57-b90f-4160-a5ec-4800c40ba2be
+# ╟─5cb57d1b-6a82-4269-b657-73d73e00784a
+# ╟─cd8bfa76-a711-44b1-8b6d-44734cc19c74
+# ╟─afd64fae-0cb5-49bc-8094-1e406637feb6
+# ╟─b45645bc-c676-4e93-8add-c3b1a6eb6333
+# ╟─48daba39-595b-4dae-b704-624d0fa48638
+# ╟─05a9e937-aea2-4530-8daa-d970dba534da
+# ╟─76ac1a0c-5c8b-46f9-9a3a-f6f4bff7aaec
+# ╟─f7be75cf-266b-4433-b626-9cb5ddb22d97
+# ╟─4def2f6e-1090-4881-b8ec-bcace614c3bd
+# ╟─d38597c2-10ad-4af1-885d-fcc5e6277ee7
+# ╠═ea514c8d-447d-4d94-b339-65f06b51a67d
+# ╟─a51878d1-46ff-4c5c-afd1-25c957af75b3
+# ╟─71d7ed89-9c75-4574-b2be-a24e6c161da7
+# ╟─371295c5-1606-4aaf-906b-57573fc641a3
+# ╟─3b3722f4-ef77-432b-94e8-87c1e9f0bdd3
+# ╟─c855a749-1c0f-40e2-9785-c868f953ecdc
+# ╟─b6a03628-814c-478f-8d05-57c909d007e2
+# ╟─6307e54c-f4c0-44d2-a8e6-8e5857504962
+# ╟─b8bf02e6-9f23-4ca4-ad8f-2e35627f239b
+# ╟─e7f3e5bc-83b8-476d-aca7-625ec73e7759
+# ╟─8eb3ee9d-2524-4ba5-9f49-6f4e2a95fbf8
+# ╟─e5073afc-b19b-4429-9669-66fd547e20bf
+# ╟─4912bef3-926d-41a3-b745-a07bd7558650
+# ╟─b03c9720-e3b9-4529-bdd6-d1a900e9892f
+# ╠═f824a8dc-16ef-48b2-a5e0-600965a5a2b8
+# ╠═d5fb6aa2-9f51-4331-9b38-a5c00f361b9d
+# ╠═650ade4e-4e17-48cc-8a2b-6518085acc85
+# ╠═5865a1f2-b6c5-42ac-9eed-9de759935b70
+# ╠═1f5e7342-96c9-4c18-8d7c-2b715d95f759
+# ╟─36901ed4-747e-4018-b636-4bee0f5cf314
+# ╠═90636241-9935-4b00-b90b-00ea9d3937f5
+# ╠═64f4dbd0-7371-408e-a627-620b6bb7593c
+# ╠═d729b4d2-16cd-4c35-b8f5-b24c9fa703af
+# ╠═633da3f3-c86b-4da1-8484-f280ddca8ef2
+# ╟─3c979d1b-144f-4ea7-8cf6-f3c3e6832945
+# ╟─ad26e460-1eb8-4870-89c5-bbd1e30964cf
+# ╠═c63cd23a-a6b9-40e6-aa0b-29b35b755b1e
+# ╟─b5f02386-197a-4e0b-8e8c-a5a968d4005a
+# ╟─bcf1b464-eb09-4a47-a76c-31daa5730386
+# ╠═193d3566-094b-439b-8184-df326b5cb148
+# ╟─c14c9ab8-bd23-4efc-bec1-63d93cf7b596
+# ╟─0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
+# ╟─9fa9cf3c-db3b-460c-8e1a-2cd615799b31
+# ╟─c1365070-69e6-4e0a-a799-368d35fd9b97
+# ╟─82a87b96-9ccf-4c39-b848-3a13add95be2
+# ╟─15ed9cd9-bb68-446b-b06f-2691d1da2c0e
+# ╟─2ef3e0f2-ec71-49fd-a83f-6639b72ed639
 # ╟─57ea7045-6411-493f-93cf-810b277bb1fd
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
