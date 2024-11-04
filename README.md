@@ -1,6 +1,6 @@
 # Procesamiento de imágenes
 <h1> Notebooks </h1>
-        <p>Como parte del seminario de procesamiento de imágenes (Lectura dirigida) de la Universidad Nacional de Colombia, sede Bogotá, se han desarrollado cuadernos interactivos en el lenguaje de programación Julia.</p> <p>El texto guía para el curso es **An Image Processing Tour of College Mathematics** de Galperin, Y. V. (2020), publicado por Chapman & Hall/CRC Press.</p>
+        <p>Como parte del seminario de procesamiento de imágenes (Lectura dirigida) de la Universidad Nacional de Colombia, sede Bogotá, se han desarrollado cuadernos interactivos en el lenguaje de programación Julia.</p> <p>El texto guía para el curso es An Image Processing Tour of College Mathematics de Galperin, Y. V. (2020), publicado por Chapman & Hall/CRC Press.</p>
 
 <html>
 <body>
