@@ -280,14 +280,14 @@ Ahora, apliquemos ambas transformaciones a la siguiente imagen:
 
 # ╔═╡ 477456c7-afae-47ce-85b3-72264e663893
 begin
-	URL6 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Nina.png?raw=true"
+	URL6 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Nina.jpg?raw=true"
 	fname6 = download(URL6)
 	image6 = load(fname6)
 	[image6 Gray.(image6)]
 end
 
 # ╔═╡ e2586409-f79a-4ea6-9fb5-fdeee106f960
-md"""$\texttt{Figura 7. Arbol solitario.}$"""
+md"""$\texttt{Figura 7.}$"""
 
 # ╔═╡ 8fafb0d8-08c8-4af6-bb58-e99e15735ca9
 md"""

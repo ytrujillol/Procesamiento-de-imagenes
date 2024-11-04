@@ -155,15 +155,14 @@ Es igual de fácil visualizar las curvas de densidad de variables aleatorias con
 
 # ╔═╡ 5e3776f7-381b-4df4-aab8-f3f3cdad4125
 begin
-	url1 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/tigres.png?raw=true"
+	url1 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Nina.jpg?raw=true"
 	fname1 = download(url1)
-	image = load(fname1)
-	image1 = Gray.(image)
+	Image1 = Gray.(load(fname1))
 end
 
 # ╔═╡ 4181a8b6-e2f4-48a4-89fe-a537834fc989
 begin
-	A = Float64.(channelview(image1))
+	A = Float64.(channelview(Gray.(load(fname1))))
 	image_values = 255*A
 	density(vec(image_values), bw=0.5, legend=:topright, xlabel="Pixeles", ylabel="Densidad", title="Curva de Densidad", label=false)
 end
@@ -185,16 +184,88 @@ f_{X}(g^{-1}(y)) \cdot \frac{1}{g'(g^{-1}(y))}, & g(a)\leq y \leq g(b),\\
 \end{cases}$
 """
 
+# ╔═╡ 2f2d01ca-8042-42e6-b56b-9988d76b604e
+md""" **Ejemplo**
+
+En el problema de igualación de imágenes, queremos que la distribución de los valores de píxeles de la imagen transformada sea uniforme. Esto es
+
+$f_Y(y) = \frac{1}{255}, \quad 0 \leq y \leq 255,$
+suponiendo que los píxeles en escala de grises toman valores en el intervalo $[0, 255]$. Sustituyendo esta expresión de $f_Y(y)$ en el resultado del Teorema anterior, se tiene que
+
+$\frac{1}{255} = f_X\left(g^{-1}(y)\right) \cdot \frac{1}{g'\left(g^{-1}(y)\right)}$
+así,
+
+$g'(x) = 255f(x),$
+de aquí que,
+
+$g(x) = 255 \cdot F_X(x).$
+
+En otras ocasiones, debemos resolver el problema opuesto, es decir, comenzar con la variable aleatoria $X$ que está distribuida uniformemente en el intervalo $[a, b]$ y convertirla en la variable aleatoria $Y$ con la función de densidad de probabilidad especificada $f_Y$. En ese caso, al intercambiar los roles de $X$ y $Y$ en la ecuación $g(x) = 255 \cdot F_X(x)$, obtenemos que
+
+$g(x) = F_Y^{-1}\left(\frac{x-a}{b - a}\right),$
+que se usa a menudo para simular muestras de poblaciones aleatorias con distribuciones de probabilidad especificadas. Finalmente, si queremos convertir una variable aleatoria $X$ con una función de densidad conocida $f_X$ en una variable aleatoria $Y$ con cualquier función de densidad especificada $f_Y$, podemos combinar las igualdades $g(x) = 255 \cdot F_X(x)$ y $g(x) = F_Y^{-1}\left(\frac{x-a}{b - a}\right)$  para obtener
+
+$g(x) = F_Y^{-1}\left(F_X(x)\right).$
+Note que
+
+$g'(x) = \frac{f_X(x)}{f_Y(x)},$
+e integrando esta última expresión obtenemos una solución para la transformación $g$
+
+$g(x) = \int_{-\infty}^{x} \frac{f_X(t)}{f_Y(t)} \, dt.$"""
+
 # ╔═╡ 7f354572-17df-46c0-9224-cf30ee07f0fb
-md"""
-# Ecualización del histograma de una imagen
+md""" # Ecualización del histograma de una imagen
+
+Recordemos que, dado una imagen en escala de grises, podemos asociar con ella la variable aleatoria $X$, definida como el valor de un píxel seleccionado al azar. La ecualización de imágenes consiste en diseñar una transformación $g$ para que la variable aleatoria $Y$, definida por $Y=g(X)$ tenga una distribución uniforme. La ecualización garantiza que todos los tonos de gris estén representados con las mismas frecuencias.
 """
 
-# ╔═╡ 10d49f62-97b2-48c0-a6f6-d604f0799a8b
-[image Gray.(image)]
+# ╔═╡ a06d57e8-ff68-4d0e-ab9d-68b268b34fd0
+md""" A continuación se crea la función para la transformación 
 
-# ╔═╡ 9c316aba-aec6-43b0-97e7-16ce53363216
-plot(Hist(image), Hist(Gray.(image)),size=(700,320))
+$g(x)=255 F_X(x)=255\sum_{t\leq x} p(t)$
+lo cual puede aplicarse fácilmente a imágenes digitales en escala de grises."""
+
+# ╔═╡ 338945a3-98ce-42b0-b3ec-46eb8496948a
+function equalize(img::AbstractArray)
+    img_gray = Gray.(img)
+    img_flat = Float64.(img_gray[:])
+	h, w = size(img)
+
+    histogram = zeros(Int, 256)
+    for pixel in img_flat
+        intensity = round(Int, pixel * 255)
+        histogram[intensity + 1] += 1
+    end
+
+	cdf = cumsum(histogram) / sum(histogram)
+	equalized_img = img
+
+    for y in 1:h
+        for x in 1:w
+            intensity = Int(round(img[y, x] * 255))   # Escalar a 0-255
+            new_intensity = cdf[intensity + 1] * 255  # g(x) = 255 * CDF(x)
+            equalized_img[y, x] = Gray(new_intensity / 255)
+        end
+    end
+    return equalized_img
+end
+
+# ╔═╡ 63bfb0d6-b277-41c0-917e-f81d23456602
+md"""El resultado de la aplicación de esta transformación se muestra a continuación, junto con sus respectivos histogramas."""
+
+# ╔═╡ 0a5bee54-ca49-48a5-ad6c-9fcccb233835
+[Gray.(load(fname1)) equalize(Gray.(load(fname1)))]
+
+# ╔═╡ 00829973-7604-4194-b60c-541ed1297d26
+plot(Hist(Gray.(load(fname1))), Hist(equalize(Gray.(load(fname1)))),size=(700,320))
+
+# ╔═╡ 9afd39ee-e60f-4398-9db7-a215ff803186
+md"""La ecualización de imágenes es solo un caso especial de la técnica más general llamada correspondencia de histogramas, que consiste en transformar una imagen para que su histograma adquiera una forma especificada.
+
+Para ilustrar el concepto de correspondencia de histogramas, consideramos la imagen submarina en la Figura x, que aparece muy gris y parece un candidato perfecto para la ecualización. """
+
+# ╔═╡ e17f8a3a-903d-4e97-a535-0586c116654a
+md"""El procedimiento de ecualización al aplicar la transformación a todos los valores de los píxeles ciertamente mejora significativamente la calidad visual de la imagen, aunque podríamos desear aumentar aún más el contraste de la imagen. Para ello, quisiéramos que el histograma de la imagen adopte una forma de "V", de modo que la mayoría de los píxeles se vuelvan muy oscuros o muy brillantes, con muy pocos permaneciendo en el rango medio."""
 
 # ╔═╡ 1c689f83-2f3c-41ed-94e4-c9d529793956
 md"""# Referencias
@@ -235,6 +306,7 @@ ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.60"
+Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
 """
@@ -245,7 +317,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "82cb3c06f4c9ba583805bc21051db62ac2f5cb56"
+project_hash = "61005893e9ba057d5c0a92abbb0b09ac235cf884"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2289,9 +2361,15 @@ version = "1.4.1+1"
 # ╟─4181a8b6-e2f4-48a4-89fe-a537834fc989
 # ╟─b2f480a6-6e29-42ae-bd13-2a1e8cb6c838
 # ╟─d3298c66-0cbe-4019-a26b-f37d9e0a1489
+# ╟─2f2d01ca-8042-42e6-b56b-9988d76b604e
 # ╟─7f354572-17df-46c0-9224-cf30ee07f0fb
-# ╟─10d49f62-97b2-48c0-a6f6-d604f0799a8b
-# ╟─9c316aba-aec6-43b0-97e7-16ce53363216
+# ╟─a06d57e8-ff68-4d0e-ab9d-68b268b34fd0
+# ╠═338945a3-98ce-42b0-b3ec-46eb8496948a
+# ╟─63bfb0d6-b277-41c0-917e-f81d23456602
+# ╟─0a5bee54-ca49-48a5-ad6c-9fcccb233835
+# ╟─00829973-7604-4194-b60c-541ed1297d26
+# ╠═9afd39ee-e60f-4398-9db7-a215ff803186
+# ╠═e17f8a3a-903d-4e97-a535-0586c116654a
 # ╟─1c689f83-2f3c-41ed-94e4-c9d529793956
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
