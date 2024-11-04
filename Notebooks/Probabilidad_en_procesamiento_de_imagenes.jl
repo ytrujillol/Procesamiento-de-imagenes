@@ -264,8 +264,59 @@ md"""La ecualización de imágenes es solo un caso especial de la técnica más 
 
 Para ilustrar el concepto de correspondencia de histogramas, consideramos la imagen submarina en la Figura x, que aparece muy gris y parece un candidato perfecto para la ecualización. """
 
+# ╔═╡ ad053067-ea82-46e1-8b7f-6279b0bb9b1f
+begin
+	url2 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Oceano.jpg?raw=true"
+	fname2 = download(url2)
+	Image2 = Gray.(load(fname2))
+end;
+
+# ╔═╡ e92907c8-d25f-41d6-ac19-c731db96df8f
+[Gray.(load(fname2)) equalize(Gray.(load(fname2)))]
+
+# ╔═╡ 122c8e90-d25a-4da2-a2e7-9da6e9b00aca
+plot(Hist(Gray.(load(fname2))), Hist(equalize(Gray.(load(fname2)))),size=(700,320))
+
 # ╔═╡ e17f8a3a-903d-4e97-a535-0586c116654a
 md"""El procedimiento de ecualización al aplicar la transformación a todos los valores de los píxeles ciertamente mejora significativamente la calidad visual de la imagen, aunque podríamos desear aumentar aún más el contraste de la imagen. Para ello, quisiéramos que el histograma de la imagen adopte una forma de "V", de modo que la mayoría de los píxeles se vuelvan muy oscuros o muy brillantes, con muy pocos permaneciendo en el rango medio."""
+
+# ╔═╡ 5051442d-58f1-410a-aa5e-cb9d0ef511d5
+# Definición de la función de densidad de probabilidad fY(y)
+function fY(y)
+	if 0 <= y < 128
+		return (7 / 4) - (3 / 2) * (y / 128)
+	elseif 128 <= y <= 255
+		return (3 / 2) * (y / 128) - (5 / 4)
+	else
+		return 0.0
+	end
+end
+
+# ╔═╡ 53f080d5-2356-4872-ba7a-2bd6fcf54ea1
+# Función para calcular pX(t) a partir del histograma
+function pX(hist_X)
+	total = sum(hist_X)
+	return hist_X ./ total
+end
+
+# ╔═╡ e59a7558-ffd2-4343-9427-5307eb37f0dd
+# :v
+
+# ╔═╡ 67a54298-82f6-4008-8b23-2a597bd0890c
+md""""1. Prepara una selección de imágenes que parezcan grises y aburridas debido a un contraste insuficiente. Si es necesario, convierte una imagen en color a una imagen en escala de grises.
+2. Escribe una función en MATLAB que iguale la imagen especificada utilizando la fórmula (3.12).
+3. Crea una selección de funciones de densidad lineales por partes, de potencia y exponenciales en forma de V y en forma de U que se puedan utilizar para aumentar el contraste mediante un procedimiento de ajuste de histogramas.
+4. Crea una selección de funciones de densidad lineales por partes, de potencia y exponenciales en forma de ∧ y en forma de ∩ que se puedan utilizar para reducir el contraste mediante un procedimiento de ajuste de histogramas.
+5. Crea una selección de funciones de densidad lineales, de potencia y exponenciales que se puedan utilizar para enfatizar rangos de píxeles más oscuros o más claros mediante un procedimiento de ajuste de histogramas.
+6. Crea las funciones de MATLAB correspondientes que ajusten la imagen especificada a las distribuciones de probabilidad creadas en los Ejercicios de MATLAB 3, 4 y 5.
+7. Escribe un programa en MATLAB que realice lo siguiente:
+   (a) Pregunte al usuario qué imagen se debe cargar en el entorno de computación de MATLAB.
+   (b) Grafique la imagen original junto con su histograma.
+   (c) Pregunte al usuario qué tipo de acción es necesaria: igualación o ajuste de histograma.
+   (d) Si el usuario ha seleccionado la igualación de imágenes, llama a la función creada en el Ejercicio 2 de MATLAB para igualar la imagen.
+   (e) Si el usuario ha seleccionado el ajuste de histograma, pregunte al usuario que elija la forma a ajustar. Después, llama a la función apropiada creada en los Ejercicios 3, 4 y 5 de MATLAB para transformar la imagen y darle al histograma la forma seleccionada.
+   (f) Muestra la versión mejorada de la imagen junto con su histograma. Comenta sobre la relación entre las características de los histogramas y la calidad visual de las imágenes.
+   (g) Prueba tu programa utilizando varias imágenes diferentes. Idealmente, debería funcionar con cualquier imagen rectangular en escala de grises y color."""
 
 # ╔═╡ 1c689f83-2f3c-41ed-94e4-c9d529793956
 md"""# Referencias
@@ -2368,8 +2419,15 @@ version = "1.4.1+1"
 # ╟─63bfb0d6-b277-41c0-917e-f81d23456602
 # ╟─0a5bee54-ca49-48a5-ad6c-9fcccb233835
 # ╟─00829973-7604-4194-b60c-541ed1297d26
-# ╠═9afd39ee-e60f-4398-9db7-a215ff803186
-# ╠═e17f8a3a-903d-4e97-a535-0586c116654a
+# ╟─9afd39ee-e60f-4398-9db7-a215ff803186
+# ╟─ad053067-ea82-46e1-8b7f-6279b0bb9b1f
+# ╟─e92907c8-d25f-41d6-ac19-c731db96df8f
+# ╠═122c8e90-d25a-4da2-a2e7-9da6e9b00aca
+# ╟─e17f8a3a-903d-4e97-a535-0586c116654a
+# ╠═5051442d-58f1-410a-aa5e-cb9d0ef511d5
+# ╠═53f080d5-2356-4872-ba7a-2bd6fcf54ea1
+# ╠═e59a7558-ffd2-4343-9427-5307eb37f0dd
+# ╟─67a54298-82f6-4008-8b23-2a597bd0890c
 # ╟─1c689f83-2f3c-41ed-94e4-c9d529793956
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
