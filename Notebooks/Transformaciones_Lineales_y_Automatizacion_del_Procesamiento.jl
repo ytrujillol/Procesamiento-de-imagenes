@@ -17,6 +17,9 @@ begin
 	using SymPy, CalculusWithJulia
 end
 
+# ╔═╡ 2d7d543b-f393-4401-b6a3-fce6473423a1
+using PyCall
+
 # ╔═╡ 6fdb4745-b175-4ed8-938e-87774afecaa6
 PlutoUI.TableOfContents(title="Transformaciones Lineales y Automatización del Procesamiento", aside=true)
 
@@ -473,36 +476,99 @@ $m_{log}(b) =  g'_{log}(x_0),$
 """
 
 # ╔═╡ f824a8dc-16ef-48b2-a5e0-600965a5a2b8
-#no pude
+md"""Usaremos la siguiente librería:"""
 
-# ╔═╡ d5fb6aa2-9f51-4331-9b38-a5c00f361b9d
+# ╔═╡ e703411c-97bd-4585-8637-e1081776a4d3
+md"""Las siguientes funciones calculan el valor óptimo de b para la transformación exponencial y la transformación logaritmica, respectivamente."""
+
+# ╔═╡ a7689313-7716-485a-b7ae-be3d05726067
 begin
-	@syms x, b
-	g_exp = (1/(b-1))*(b^x-1)
-end
-
-# ╔═╡ 650ade4e-4e17-48cc-8a2b-6518085acc85
-Dx_exp = Differential(x)(g_exp)
-
-# ╔═╡ 5865a1f2-b6c5-42ac-9eed-9de759935b70
-Db_exp = Differential(b)(Dx_exp)
-
-# ╔═╡ 36901ed4-747e-4018-b636-4bee0f5cf314
-function log_b(x)
-	return log(x) / log(b)
+	function b_optim_exp(moda, pto)
+		sympy = pyimport("sympy")
+		b, x = sympy.symbols("b x")
+		g = (b^x - 1) / (b - 1)
+		dg_dx = sympy.diff(g, x)
+		dg_dx_moda = dg_dx.subs(Dict(x => moda)) # Evaluar en x = moda
+		dg_dx_moda_db = sympy.diff(dg_dx_moda, b)
+		b_solution = sympy.nsolve(dg_dx_moda_db, b, pto)
+		return convert(Float64, b_solution)
+	end
+	
+	function b_optim_log(moda, pto)
+		sympy = pyimport("sympy")
+		b, x = sympy.symbols("b x")
+		g = sympy.log((b - 1) * x + 1) / sympy.log(b)
+		dg_dx = sympy.diff(g, x)
+		dg_dx_moda = dg_dx.subs(Dict(x => moda)) # Evaluar en x = moda
+		dg_dx_moda_db = sympy.diff(dg_dx_moda, b)
+		b_solution = sympy.nsolve(dg_dx_moda_db, b, pto)
+		return convert(Float64, b_solution)
+	end
 end;
 
-# ╔═╡ 90636241-9935-4b00-b90b-00ea9d3937f5
-g_log = log_b((b-1)*x+1)
+# ╔═╡ 44b0fea5-38e2-45bb-9bde-850eb0fa2045
+md"""
+A continuación se implementa la transformación exponencial y la transformación logaritmica automatizando la elección del parámetro "b".
+"""
 
-# ╔═╡ 64f4dbd0-7371-408e-a627-620b6bb7593c
-Dx_log = Differential(x)(g_log)
+# ╔═╡ 023ccb2c-9b07-4f18-9404-a8ae8a7e4bdf
+function Transformacion_exponencial_sin_b(image, pto)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		moda = mode(Float64.(vec(A)))
+		b = b_optim_exp(moda, pto)
+		B = (1/(b-1))*((b .^ A) .- 1)
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
+		image_rgb[:,:,1] = A[1, :, :] *256
+		image_rgb[:,:,2] = A[2, :, :] *256
+		image_rgb[:,:,3] = A[3, :, :] *256
+	
+		image_ycbcr = image_to_ycbcr(image_rgb)/256;
 
-# ╔═╡ d729b4d2-16cd-4c35-b8f5-b24c9fa703af
-Db_log = Differential(b)(Dx_log)
+		moda = mode(Float64.(vec(image_ycbcr[:,:,1])))
+		b = b_optim_exp(moda, pto)
+		
+		new_imagen_YCbCr = permutedims(cat(dims=3, (1/(b-1))*((b .^ image_ycbcr[:,:,1]) .- 1), image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_YCbCr)
+	end
+end;
 
-# ╔═╡ 633da3f3-c86b-4da1-8484-f280ddca8ef2
-solve(Db_log(x=>0.5) - 0, b)
+# ╔═╡ 151bf563-1c06-4f1f-a2f5-20e9fdc7f9ac
+function Transformacion_logaritmica_sin_b(image, pto)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		moda = mode(Float64.(vec(A)))
+		b = b_optim_log(moda, pto)
+		B = log.((b-1)*A .+ 1) ./ log(b)
+		new_image = Gray.(B)
+		return new_image
+	else 
+		image_rgb = zeros(size(A[1, :, :])[1], size(A[1, :, :])[2], 3)
+		image_rgb[:,:,1] = A[1, :, :] *256
+		image_rgb[:,:,2] = A[2, :, :] *256
+		image_rgb[:,:,3] = A[3, :, :] *256
+	
+		image_ycbcr = image_to_ycbcr(image_rgb)/256;
+
+		moda = mode(Float64.(vec(image_ycbcr[:,:,1])))
+		b = b_optim_log(moda, pto)
+		
+		new_imagen_YCbCr = permutedims(cat(dims=3, log.((b-1)*image_ycbcr[:,:,1] .+ 1) ./ log(b), image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
+		return colorview(RGB, new_imagen_YCbCr)
+	end
+end;
+
+# ╔═╡ 59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
+md"""Veamos algunos ejemplos de la imagenes que hemos usado a lo largo del cuaderno."""
+
+# ╔═╡ a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
+Transformacion_exponencial_sin_b(Gray.(image5), 0.0005)
+
+# ╔═╡ 3d44d161-342a-4b01-9e9d-a5debddfdd91
+Transformacion_logaritmica_sin_b(Gray.(load(fname)), 50)
 
 # ╔═╡ 3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 md"""
@@ -554,8 +620,11 @@ begin
 	image₁ = Gray.(load(fname₁))
 end
 
-# ╔═╡ 1f5e7342-96c9-4c18-8d7c-2b715d95f759
-modda = mode(Float64.(vec(Float64.(channelview(image₁)))))
+# ╔═╡ 63c1a044-987a-4018-8cfc-2e28f57740c0
+Transformacion_exponencial_sin_b(Gray.(image₁), 50)
+
+# ╔═╡ eaa23575-097b-43e4-ac7e-baaaff706bd6
+Transformacion_logaritmica_sin_b(Gray.(image₁), 0.5)
 
 # ╔═╡ 0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
 md"""$\texttt{Figura 18.}$"""
@@ -602,6 +671,7 @@ Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
@@ -619,6 +689,7 @@ ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.60"
+PyCall = "~1.96.4"
 Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
@@ -631,7 +702,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "3317a948ceedfbf95edeb17ba8682820d646d9fb"
+project_hash = "6afe37b1bd17df8dbfd69ce4bd48a764c97074ef"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2859,16 +2930,18 @@ version = "1.4.1+1"
 # ╟─e5073afc-b19b-4429-9669-66fd547e20bf
 # ╟─4912bef3-926d-41a3-b745-a07bd7558650
 # ╟─b03c9720-e3b9-4529-bdd6-d1a900e9892f
-# ╠═f824a8dc-16ef-48b2-a5e0-600965a5a2b8
-# ╠═d5fb6aa2-9f51-4331-9b38-a5c00f361b9d
-# ╠═650ade4e-4e17-48cc-8a2b-6518085acc85
-# ╠═5865a1f2-b6c5-42ac-9eed-9de759935b70
-# ╠═1f5e7342-96c9-4c18-8d7c-2b715d95f759
-# ╟─36901ed4-747e-4018-b636-4bee0f5cf314
-# ╠═90636241-9935-4b00-b90b-00ea9d3937f5
-# ╠═64f4dbd0-7371-408e-a627-620b6bb7593c
-# ╠═d729b4d2-16cd-4c35-b8f5-b24c9fa703af
-# ╠═633da3f3-c86b-4da1-8484-f280ddca8ef2
+# ╟─f824a8dc-16ef-48b2-a5e0-600965a5a2b8
+# ╠═2d7d543b-f393-4401-b6a3-fce6473423a1
+# ╟─e703411c-97bd-4585-8637-e1081776a4d3
+# ╠═a7689313-7716-485a-b7ae-be3d05726067
+# ╟─44b0fea5-38e2-45bb-9bde-850eb0fa2045
+# ╠═023ccb2c-9b07-4f18-9404-a8ae8a7e4bdf
+# ╠═151bf563-1c06-4f1f-a2f5-20e9fdc7f9ac
+# ╟─59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
+# ╠═63c1a044-987a-4018-8cfc-2e28f57740c0
+# ╠═a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
+# ╠═eaa23575-097b-43e4-ac7e-baaaff706bd6
+# ╠═3d44d161-342a-4b01-9e9d-a5debddfdd91
 # ╟─3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 # ╟─ad26e460-1eb8-4870-89c5-bbd1e30964cf
 # ╠═c63cd23a-a6b9-40e6-aa0b-29b35b755b1e

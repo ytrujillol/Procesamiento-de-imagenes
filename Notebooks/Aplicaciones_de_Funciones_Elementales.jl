@@ -771,6 +771,7 @@ ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.60"
+Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
 """
@@ -781,7 +782,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "82cb3c06f4c9ba583805bc21051db62ac2f5cb56"
+project_hash = "61005893e9ba057d5c0a92abbb0b09ac235cf884"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
