@@ -286,7 +286,7 @@ begin
 	URL6 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Nina.jpg?raw=true"
 	fname6 = download(URL6)
 	image6 = load(fname6)
-	[image6 Gray.(image6)]
+	Gray.(image6)
 end
 
 # ╔═╡ e2586409-f79a-4ea6-9fb5-fdeee106f960
@@ -294,11 +294,11 @@ md"""$\texttt{Figura 7.}$"""
 
 # ╔═╡ 8fafb0d8-08c8-4af6-bb58-e99e15735ca9
 md"""
-Los histogramas para la imagen a color y a escala de grises se muestran a continuación.
+El histograma para la imagen a escala de grises se muestra a continuación.
 """
 
 # ╔═╡ c1843553-14e7-40cf-a985-518a02537eea
-plot(Hist(image6), Hist(Gray.(image6)))
+plot(Hist(Gray.(image6)))
 
 # ╔═╡ a3effb01-d543-4b95-8736-4a61db16ba20
 md"""$\texttt{Figura 8.}$"""
@@ -309,21 +309,16 @@ El resultado de ambas transformaciones se muestra visualmente en la figura 30 y 
 """
 
 # ╔═╡ eab0e590-793e-478c-a1bf-744c99faeb9d
-[image6 Gray.(image6);
-Elongacion_Lineal(image6) Elongacion_Lineal(Gray.(image6));	
-Elongacion_Lineal_a_Trozos(image6) Elongacion_Lineal_a_Trozos(Gray.(image6))]
+[Gray.(image6) Elongacion_Lineal(Gray.(image6)) Elongacion_Lineal_a_Trozos(Gray.(image6))]
 
 # ╔═╡ 23c57fc3-ec49-439f-bbee-428bfa1f78eb
 md"""$\texttt{Figura 9. Comparación entre imagen original y ambas transformaciones}$"""
 
 # ╔═╡ 0e111c5e-3c5a-42c7-9118-ad106a489a1e
-plot(Hist(image6),
-	Hist(Gray.(image6)),
-	Hist(clip_pixel.(Elongacion_Lineal(image6))),
+plot(Hist(Gray.(image6)),
 	Hist(Elongacion_Lineal(Gray.(image6))),
-	Hist(clip_pixel.(Elongacion_Lineal_a_Trozos(image6))),
 	Hist(Elongacion_Lineal_a_Trozos(Gray.(image6))),
-	layout=(3,2),size=(700,900))
+	layout=(3,1),size=(700,900))
 
 # ╔═╡ 1545ff57-b90f-4160-a5ec-4800c40ba2be
 md"""$\texttt{Figura 10.}$"""
@@ -470,9 +465,7 @@ Sea $x_0$ la moda de los valores de los pixeles de la imagen. Las funciones con 
 
 $m_{exp}(b) = g'_{exp}(x_0),$
 
-$m_{log}(b) =  g'_{log}(x_0),$
-
-
+$m_{log}(b) =  g'_{log}(x_0).$
 """
 
 # ╔═╡ f824a8dc-16ef-48b2-a5e0-600965a5a2b8
@@ -564,11 +557,35 @@ end;
 # ╔═╡ 59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
 md"""Veamos algunos ejemplos de la imagenes que hemos usado a lo largo del cuaderno."""
 
+# ╔═╡ f3325da5-a44d-4d90-a00f-a93b7bc48ef8
+md"""**Ejemplo 1:**"""
+
 # ╔═╡ a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
-Transformacion_exponencial_sin_b(Gray.(image5), 0.0005)
+Transformacion_exponencial_sin_b(Gray.(image5), 0.5)
+
+# ╔═╡ 9f53b4f6-10ea-4847-98fb-b0d4cd2c0b63
+begin
+	m₁ = mode(Float64.(vec(Float64.(channelview(Gray.(image5))))))
+	plot(Hist(Gray.(image5)),
+		Hist(Transformacion_exponencial_sin_b(Gray.(image5), 0.5)),
+		layout=(1,2),size=(700,300))
+	plot!([255*m₁,255*m₁],[0,10000],label="Moda original",color="red")
+end
+
+# ╔═╡ 7ee4efd6-7d32-4215-a07a-78961aaff8a4
+md"""**Ejemplo 2:**"""
 
 # ╔═╡ 3d44d161-342a-4b01-9e9d-a5debddfdd91
 Transformacion_logaritmica_sin_b(Gray.(load(fname)), 50)
+
+# ╔═╡ b165680a-6b3d-4f18-a133-0012f19236a3
+begin
+	m₂ = mode(Float64.(vec(Float64.(channelview(Gray.(load(fname)))))))
+	plot(Hist(Gray.(load(fname))),
+		Hist(Transformacion_exponencial_sin_b(Gray.(load(fname)), 50)),
+		layout=(1,2),size=(700,300))
+	plot!([255*m₂,255*m₂],[0,10000],label="Moda original",color="red")
+end
 
 # ╔═╡ 3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 md"""
@@ -619,12 +636,6 @@ begin
 	fname₁ = download(url₁)
 	image₁ = Gray.(load(fname₁))
 end
-
-# ╔═╡ 63c1a044-987a-4018-8cfc-2e28f57740c0
-Transformacion_exponencial_sin_b(Gray.(image₁), 50)
-
-# ╔═╡ eaa23575-097b-43e4-ac7e-baaaff706bd6
-Transformacion_logaritmica_sin_b(Gray.(image₁), 0.5)
 
 # ╔═╡ 0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
 md"""$\texttt{Figura 18.}$"""
@@ -2938,10 +2949,12 @@ version = "1.4.1+1"
 # ╠═023ccb2c-9b07-4f18-9404-a8ae8a7e4bdf
 # ╠═151bf563-1c06-4f1f-a2f5-20e9fdc7f9ac
 # ╟─59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
-# ╠═63c1a044-987a-4018-8cfc-2e28f57740c0
-# ╠═a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
-# ╠═eaa23575-097b-43e4-ac7e-baaaff706bd6
-# ╠═3d44d161-342a-4b01-9e9d-a5debddfdd91
+# ╟─f3325da5-a44d-4d90-a00f-a93b7bc48ef8
+# ╟─a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
+# ╟─9f53b4f6-10ea-4847-98fb-b0d4cd2c0b63
+# ╟─7ee4efd6-7d32-4215-a07a-78961aaff8a4
+# ╟─3d44d161-342a-4b01-9e9d-a5debddfdd91
+# ╟─b165680a-6b3d-4f18-a133-0012f19236a3
 # ╟─3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 # ╟─ad26e460-1eb8-4870-89c5-bbd1e30964cf
 # ╠═c63cd23a-a6b9-40e6-aa0b-29b35b755b1e
