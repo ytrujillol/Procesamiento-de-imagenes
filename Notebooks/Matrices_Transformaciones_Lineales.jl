@@ -167,13 +167,13 @@ end
 
 # ╔═╡ 895c92f0-6124-446f-a4dd-5a51316a5ed3
 begin
-	url3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Pumba.jpg?raw=false"
+	url3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Pumba.jpg?raw=true"
 	fname3 = download(url3)
 	imag3 = Gray.(load(fname3))
 end
 
 # ╔═╡ 005fb905-a248-4bbf-8ceb-0271a1824deb
-
+md"""A contiuación en la Figura , se muestra la sobreposición de las imágenes."""
 
 # ╔═╡ 5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
 Sobreposicion(imag2, imag3)
@@ -2265,10 +2265,10 @@ version = "1.4.1+1"
 # ╟─0709425c-688d-40c3-9c80-eac32426d1b5
 # ╟─fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
 # ╠═80431850-0e2d-4ca8-9589-abd9117382b3
-# ╠═7726e89f-04b1-4664-89d8-bcdba5ec4129
+# ╟─7726e89f-04b1-4664-89d8-bcdba5ec4129
 # ╟─f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
-# ╠═895c92f0-6124-446f-a4dd-5a51316a5ed3
-# ╠═005fb905-a248-4bbf-8ceb-0271a1824deb
+# ╟─895c92f0-6124-446f-a4dd-5a51316a5ed3
+# ╟─005fb905-a248-4bbf-8ceb-0271a1824deb
 # ╠═5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
 # ╠═1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
 # ╟─2ea0c762-0377-4db9-b891-002f189a3ada
