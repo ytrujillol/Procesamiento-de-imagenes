@@ -87,7 +87,81 @@ end
 # ╔═╡ 7ff384fb-e482-4bf9-a70f-34bdd4fa840a
 md"""$\texttt{Figura 1. Tablero de Ajedrez}$"""
 
+# ╔═╡ 065a2edb-82b6-428a-9c33-7af11ec75ae1
+md"""Ahora si deseamos reflejar una imagen y rotarla 90° en sentido antihorario, todo en un solo paso podemos usar la transposición de la matriz. Formalmente, sea $A$ $(n\times m)$ la matriz asociada a la imagen  
+
+$A = 
+\begin{bmatrix} 
+a_{11} & a_{12} & \cdots & a_{1n} \\ 
+a_{21} & a_{22} & \cdots & a_{2n} \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+a_{m1} & a_{m2} & \cdots & a_{mn} 
+\end{bmatrix},$
+su transpuesta es $A^T ( m \times n)$ definida como:  
+
+$A^T = 
+\begin{bmatrix} 
+a_{11} & a_{21} & \cdots & a_{m1} \\ 
+a_{12} & a_{22} & \cdots & a_{m2} \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+a_{1n} & a_{2n} & \cdots & a_{mn} 
+\end{bmatrix}.$"""
+
+# ╔═╡ 214d8d87-347c-47ac-8e0f-139f86c68b85
+md"""La siguiente función halla la transpuesta de una imagen."""
+
+# ╔═╡ fc100c97-e447-4a7a-b42f-4adb9729bfda
+function Transpuesta(image)
+	Trans = transpose(channelview(image))
+	return Gray.(Trans)
+end
+
+# ╔═╡ 5ab89eea-6d7b-490f-96f7-8b4d36249722
+md"""A contiuación en la Figura 2 se muestra un conejo y su reflejo y rotación de 90°."""
+
+# ╔═╡ a5c73baf-5367-470d-8e82-2874d5f90fd6
+begin
+	url1="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/conejo.jpg?raw=true"
+	fname1 = download(url1)
+	imag1 = Gray.(load(fname1))[1:600,150:749]
+	[imag1 Gray.(ones(size(imag1)[1], 100)) Transpuesta(imag1)]
+end
+
+# ╔═╡ cd1e19bd-190d-4d29-9223-485318476099
+md"""$\texttt{Figura 2.}$"""
+
 # ╔═╡ 0709425c-688d-40c3-9c80-eac32426d1b5
+md"""Ahora, si deseamos superponer una imagen sobre otra, podemos sumar las matrices que representa cada imagen, es decir, sean $A$ y $B$ las matrices que asociadas a dos imágenes, su sobreppsición estará dado por: 
+
+$A + B = 
+\begin{bmatrix} 
+a_{11} + b_{11} & a_{12} + b_{12} & \cdots & a_{1n} + b_{1n} \\ 
+a_{21} + b_{21} & a_{22} + b_{22} & \cdots & a_{2n} + b_{2n} \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+a_{m1} + b_{m1} & a_{m2} + b_{m2} & \cdots & a_{mn} + b_{mn} 
+\end{bmatrix}.$
+**Nota:** Para realizar la suma, primero debemos asegurarnos de que las imágenes tengan el mismo tamaño, recortando o extendiendo la más pequeña según sea necesario."""
+
+# ╔═╡ fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
+md"""La siguiente función halla la sobreposición de dos imágenes."""
+
+# ╔═╡ 80431850-0e2d-4ca8-9589-abd9117382b3
+function Sobreposicion(image1, image2)
+	A = channelview(image1)
+	B = channelview(image2)
+	n = min(size(A)[1], size(B)[1])
+	m = min(size(A)[2], size(B)[2])
+	Sum = A[1:n,1:m] + B[1:n,1:m]
+	return Gray.(Sum)
+end
+
+# ╔═╡ 7726e89f-04b1-4664-89d8-bcdba5ec4129
+md"""Sobrepongamos las siguientes dos imágenes"""
+
+# ╔═╡ 005fb905-a248-4bbf-8ceb-0271a1824deb
+
+
+# ╔═╡ 1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
 
 
 # ╔═╡ 2ea0c762-0377-4db9-b891-002f189a3ada
@@ -2165,7 +2239,18 @@ version = "1.4.1+1"
 # ╟─8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
 # ╟─bf509d53-b239-4514-bdb2-30d5f52219e8
 # ╟─7ff384fb-e482-4bf9-a70f-34bdd4fa840a
-# ╠═0709425c-688d-40c3-9c80-eac32426d1b5
+# ╟─065a2edb-82b6-428a-9c33-7af11ec75ae1
+# ╟─214d8d87-347c-47ac-8e0f-139f86c68b85
+# ╠═fc100c97-e447-4a7a-b42f-4adb9729bfda
+# ╟─5ab89eea-6d7b-490f-96f7-8b4d36249722
+# ╟─a5c73baf-5367-470d-8e82-2874d5f90fd6
+# ╟─cd1e19bd-190d-4d29-9223-485318476099
+# ╟─0709425c-688d-40c3-9c80-eac32426d1b5
+# ╟─fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
+# ╠═80431850-0e2d-4ca8-9589-abd9117382b3
+# ╠═7726e89f-04b1-4664-89d8-bcdba5ec4129
+# ╠═005fb905-a248-4bbf-8ceb-0271a1824deb
+# ╠═1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
 # ╟─2ea0c762-0377-4db9-b891-002f189a3ada
 # ╟─db9272d9-aad3-4819-b518-997e00fbfb5f
 # ╟─00000000-0000-0000-0000-000000000001
