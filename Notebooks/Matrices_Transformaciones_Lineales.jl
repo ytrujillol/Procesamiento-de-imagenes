@@ -36,9 +36,58 @@ md"""
 """
 
 # ╔═╡ dcea8986-c1ed-4dab-976b-b9f4931f051f
-md"""Recordemos que las imágenes en escala de grises son simplemente matrices de valores de píxeles entre 0 y 255. Para generar el negativo de una imagen, debemos "invertir" el brillo de cada píxel. Para ello, podemos emplear la resta de matrices, definida para dos matrices idénticas de tamaño $m\times n$:"""
+md"""Como ya vimos en cuadernos anteriores, las imágenes en escala de grises son matrices de valores de píxeles entre 0 y 255. Así, para generar el negativo de una imagen, debemos "invertir" el brillo de cada píxel. Esto se realiza de la siguiente manera, consideremos $A$ la matriz que representa la imagen y $B$ una matriz del mismo tamaño, es decir, ambas matrices son de tamaño $m\times n$:
+
+$A = 
+\begin{bmatrix} 
+a_{11} & a_{12} & \cdots & a_{1n} \\ 
+a_{21} & a_{22} & \cdots & a_{2n} \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+a_{m1} & a_{m2} & \cdots & a_{mn} 
+\end{bmatrix}
+\quad \text{y} \quad 
+B = 
+\begin{bmatrix} 
+255 & 255 & \cdots & 255 \\ 
+255 & 255 & \cdots & 255 \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+255 & 255 & \cdots & 255 
+\end{bmatrix}$
+luego la imagen en negativo es la siguiente:
+
+$B - A = 
+\begin{bmatrix} 
+255 - a_{11} & 255 - a_{12} & \cdots & 255 - a_{1n} \\ 
+255 - a_{21} & 255 - a_{22} & \cdots & 255 - a_{2n} \\ 
+\vdots & \vdots & \ddots & \vdots \\ 
+255 - a_{m1} & 255 - a_{m2} & \cdots & 255 - a_{mn} 
+\end{bmatrix}.$
+"""
+
+# ╔═╡ c035d077-763e-46e8-9807-08be974ddf61
+md"""La siguiente función halla el negativo de una imagen."""
+
+# ╔═╡ 552aab87-728c-4ec0-b9ee-a41c8a38f51a
+function Negativo(image)
+	Neg = ones(size(channelview(image)))-channelview(image)
+	return Gray.(Neg)
+end
+
+# ╔═╡ 8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
+md"""A contiuación en la Figura 1 se muestra un tablero de ajedrez con su posición inicial y su negativo."""
 
 # ╔═╡ bf509d53-b239-4514-bdb2-30d5f52219e8
+begin
+	url="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Ajedrez.png?raw=true"
+	fname = download(url)
+	imag = Gray.(load(fname))
+	[imag Gray.(ones(size(imag)[1], 100)) Negativo(imag)]
+end
+
+# ╔═╡ 7ff384fb-e482-4bf9-a70f-34bdd4fa840a
+md"""$\texttt{Figura 1. Tablero de Ajedrez}$"""
+
+# ╔═╡ 0709425c-688d-40c3-9c80-eac32426d1b5
 
 
 # ╔═╡ 2ea0c762-0377-4db9-b891-002f189a3ada
@@ -2110,8 +2159,13 @@ version = "1.4.1+1"
 # ╠═87509cb1-de05-41f2-b30e-ad065ccde690
 # ╟─21d43d86-b0cd-43ec-a434-ecb564971d24
 # ╟─7806626e-81e1-4b48-9756-b8277213d268
-# ╠═dcea8986-c1ed-4dab-976b-b9f4931f051f
-# ╠═bf509d53-b239-4514-bdb2-30d5f52219e8
+# ╟─dcea8986-c1ed-4dab-976b-b9f4931f051f
+# ╟─c035d077-763e-46e8-9807-08be974ddf61
+# ╠═552aab87-728c-4ec0-b9ee-a41c8a38f51a
+# ╟─8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
+# ╟─bf509d53-b239-4514-bdb2-30d5f52219e8
+# ╟─7ff384fb-e482-4bf9-a70f-34bdd4fa840a
+# ╠═0709425c-688d-40c3-9c80-eac32426d1b5
 # ╟─2ea0c762-0377-4db9-b891-002f189a3ada
 # ╟─db9272d9-aad3-4819-b518-997e00fbfb5f
 # ╟─00000000-0000-0000-0000-000000000001
