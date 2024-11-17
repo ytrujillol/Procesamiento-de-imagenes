@@ -16,6 +16,9 @@ begin
 	using StatsBase, StatsPlots
 end
 
+# ╔═╡ 450ce71e-2fcb-4c32-ae96-bba24b7584b1
+using Interpolations
+
 # ╔═╡ 855fbf64-5944-460c-a0d4-523066030e4e
 PlutoUI.TableOfContents(title="Matrices y transformaciones lineales", aside=true)
 
@@ -34,6 +37,9 @@ md"""
 md"""
 # Operaciones básicas con matrices
 """
+
+# ╔═╡ 98b24728-d29c-4d14-ba92-4e51fdbc7b10
+md"""##   $\cdot$ Negativo de una imagen"""
 
 # ╔═╡ dcea8986-c1ed-4dab-976b-b9f4931f051f
 md"""Como ya vimos en cuadernos anteriores, las imágenes en escala de grises son matrices de valores de píxeles entre 0 y 255. Así, para generar el negativo de una imagen, debemos "invertir" el brillo de cada píxel. Esto se realiza de la siguiente manera, consideremos $A$ la matriz que representa la imagen y $B$ una matriz del mismo tamaño, es decir, ambas matrices son de tamaño $m\times n$:
@@ -69,8 +75,13 @@ md"""La siguiente función halla el negativo de una imagen."""
 
 # ╔═╡ 552aab87-728c-4ec0-b9ee-a41c8a38f51a
 function Negativo(image)
-	Neg = ones(size(channelview(image)))-channelview(image)
-	return Gray.(Neg)
+	A = Float64.(channelview(image))
+	if length(size(A)) == 2
+		return Gray.(ones(size(A))-A)
+	else
+		Ones_Matrix = ones(size(A[1, :, :]))
+		return colorview(RGB, permutedims(cat(dims=3, Ones_Matrix-A[1, :, :], Ones_Matrix-A[2, :, :], Ones_Matrix-A[3, :, :]), [3, 1, 2]))
+	end
 end
 
 # ╔═╡ 8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
@@ -86,6 +97,12 @@ end
 
 # ╔═╡ 7ff384fb-e482-4bf9-a70f-34bdd4fa840a
 md"""$\texttt{Figura 1. Tablero de Ajedrez}$"""
+
+# ╔═╡ b4ccdbde-1226-4a8a-a348-487342a2b728
+md"""$\texttt{Figura 2.}$"""
+
+# ╔═╡ 6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
+md"""##   $\cdot$ Transpuesta de una imagen"""
 
 # ╔═╡ 065a2edb-82b6-428a-9c33-7af11ec75ae1
 md"""Ahora si deseamos reflejar una imagen y rotarla 90° en sentido antihorario, todo en un solo paso podemos usar la transposición de la matriz. Formalmente, sea $A$ $(n\times m)$ la matriz asociada a la imagen  
@@ -117,7 +134,7 @@ function Transpuesta(image)
 end
 
 # ╔═╡ 5ab89eea-6d7b-490f-96f7-8b4d36249722
-md"""A contiuación en la Figura 2 se muestra un conejo y su reflejo y rotación de 90°."""
+md"""A contiuación en la Figura 3 se muestra un conejo y su reflejo y rotación de 90°."""
 
 # ╔═╡ a5c73baf-5367-470d-8e82-2874d5f90fd6
 begin
@@ -127,8 +144,17 @@ begin
 	[imag1 Gray.(ones(size(imag1)[1], 100)) Transpuesta(imag1)]
 end
 
+# ╔═╡ cb534937-101c-439d-b515-e0d99212894f
+begin
+	Imag1 = load(fname1)[1:600,150:749]
+	[Imag1 RGB.(ones(size(Imag1)[1], 100)) Negativo(Imag1)]
+end
+
 # ╔═╡ cd1e19bd-190d-4d29-9223-485318476099
-md"""$\texttt{Figura 2.}$"""
+md"""$\texttt{Figura 3.}$"""
+
+# ╔═╡ 14df04a2-8d3e-4b85-a7a2-e2e455f31e73
+md"""##   $\cdot$ Sobreposición de imágenes"""
 
 # ╔═╡ 0709425c-688d-40c3-9c80-eac32426d1b5
 md"""Ahora, si deseamos superponer una imagen sobre otra, podemos sumar las matrices que representa cada imagen, es decir, sean $A$ y $B$ las matrices que asociadas a dos imágenes, su sobreppsición estará dado por: 
@@ -165,6 +191,9 @@ begin
 	imag2 = Gray.(load(fname2))
 end
 
+# ╔═╡ 971750a7-dfef-4c44-a703-1ce02dedbe81
+md"""$\texttt{Figura x.}$"""
+
 # ╔═╡ 895c92f0-6124-446f-a4dd-5a51316a5ed3
 begin
 	url3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Pumba.jpg?raw=true"
@@ -172,24 +201,291 @@ begin
 	imag3 = Gray.(load(fname3))
 end
 
+# ╔═╡ e9ba5ec0-4c45-466b-b530-b38ff98e632c
+md"""$\texttt{Figura x.}$"""
+
 # ╔═╡ 005fb905-a248-4bbf-8ceb-0271a1824deb
 md"""A contiuación en la Figura , se muestra la sobreposición de las imágenes."""
 
 # ╔═╡ 5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
 Sobreposicion(imag2, imag3)
 
-# ╔═╡ 1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
+# ╔═╡ c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
+md"""$\texttt{Figura x.}$"""
 
+# ╔═╡ fe07af97-b521-4062-a6af-dd7d9d5ae6a1
+#:v
+
+# ╔═╡ 1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
+begin
+	url4 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Oso1.png?raw=true"
+	fname4 = download(url4)
+	imag4 = Gray.(load(fname4))
+	
+	url5="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Oso2.png?raw=true"
+	fname5 = download(url5)
+	imag5 = Gray.(load(fname5))
+	
+	[imag4
+	imag5
+	Sobreposicion(imag4, imag5)]
+end
+
+# ╔═╡ 2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
+md"""$\texttt{Figura x.}$"""
+
+# ╔═╡ 90b15d0a-748a-4d0b-ad20-800b35fdb9be
+md"""##   $\cdot$ Producto de imágenes"""
+
+# ╔═╡ 23f61001-cc7e-4ebc-9cac-474e217538f7
+md""" Recordemos la multiplicación de matrices, dadas dos matrices $A$ de tamaño $m \times p$ y $B$ de tamaño $p \times n$, el producto $C = A \cdot B$ es otra matriz $m \times n$ donde cada elemento $c_{ij}$ se obtiene sumando el producto de los elementos correspondientes de la fila $i$ de $A$ y la columna $j$ de $B$: $c_{ij} = \sum_{k=1}^{p} a_{ik} \cdot b_{kj}$. De la siguiente forma:
+
+$\begin{align}A\cdot B &= \begin{bmatrix}
+a_{11} & a_{12} & \ldots & a_{1p} \\
+a_{21} & a_{22} & \ldots & a_{2p} \\
+\vdots & \vdots & \ddots & \vdots \\
+a_{m1} & a_{m2} & \ldots & a_{mp}
+\end{bmatrix}\cdot\begin{bmatrix}
+b_{11} & b_{12} & \ldots & b_{1n} \\
+b_{21} & b_{22} & \ldots & b_{2n} \\
+\vdots & \vdots & \ddots & \vdots \\
+b_{p1} & b_{p2} & \ldots & b_{pn}
+\end{bmatrix}\\
+
+&= \begin{bmatrix}
+a_{11} \cdot b_{11} + a_{12} \cdot b_{21} + \ldots + a_{1p} \cdot b_{p1} & \ldots & a_{i1} \cdot b_{1n} + a_{12} \cdot b_{2n} + \ldots + a_{1p} \cdot b_{pn} \\
+a_{21} \cdot b_{11} + a_{22} \cdot b_{21} + \ldots + a_{2p} \cdot b_{p1} & \ldots & a_{21} \cdot b_{1n} + a_{22} \cdot b_{2n} + \ldots + a_{2p} \cdot b_{pn} \\
+\vdots & \ddots & \vdots \\
+a_{m1} \cdot b_{11} + a_{m2} \cdot b_{21} + \ldots + a_{mp} \cdot b_{p1} & \ldots & a_{m1} \cdot b_{1n} + a_{m2} \cdot b_{2n} + \ldots + a_{mp} \cdot b_{pn}
+\end{bmatrix}\\
+
+&=\begin{bmatrix}
+c_{11} & c_{12} & \ldots & c_{1n} \\
+c_{21} & c_{22} & \ldots & c_{2n} \\
+\vdots & \vdots & \ddots & \vdots \\
+c_{m1} & c_{m2} & \ldots & c_{mn}
+\end{bmatrix}\\
+
+&=C\end{align}$
+"""
+
+# ╔═╡ b955394f-4bac-4e1c-8620-a4403cfd3d35
+md"""A continuación mostraremos algunos ejemplos del uso de la multiplicación de matrices en el procesamiento de imágenes. Por ejemplo, multiplicar una imagen a la izquierda por la matriz  
+
+$H = 
+\begin{bmatrix}
+1/2 & 1/2 & 0 & 0 & \cdots & 0 & 0 \\ 
+0 & 0 & 1/2  & 1/2 & \cdots & 0 & 0 \\ 
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\ 
+0 & 0 & 0 & 0 & \cdots & 1/2 & 1/2
+\end{bmatrix}$
+comprime verticalmente la imagen por un factor de 2. Multiplicarla a la izquierda por  
+
+$G = 
+\begin{bmatrix}
+-1/2 & 1/2 & 0 & 0 & \cdots & 0 & 0 \\ 
+0 & 0 & -1/2  & 1/2 & \cdots & 0 & 0 \\ 
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\ 
+0 & 0 & 0 & 0 & \cdots & -1/2 & 1/2
+\end{bmatrix}$
+resalta los bordes horizontales de la imagen.  
+Multiplicar a la derecha por $H^T$ comprime horizontalmente la imagen, y por $G^T$ resalta los bordes verticales. El efecto combinado de ambas multiplicaciones afecta columnas y filas."""
+
+# ╔═╡ db613b98-f00f-4028-a7df-0b5309243021
+function H(m, n)
+    H = zeros(m, n)
+    for i in 1:m
+        col = 2 * (i - 1) + 1 
+        if col <= n
+            H[i, col] = 1/2
+        end
+        if col + 1 <= n
+            H[i, col + 1] = 1/2
+        end
+    end
+    return H
+end
+
+# ╔═╡ a36bc04e-b611-4244-9e86-81c4dfd01a1d
+function G(m, n)
+    G = zeros(m, n)
+    for i in 1:m
+        col = 2 * (i - 1) + 1
+        if col <= n
+            G[i, col] = -1/2
+        end
+        if col + 1 <= n
+            G[i, col + 1] = 1/2
+        end
+    end
+    return G
+end
+
+# ╔═╡ fc506b2d-3295-49b4-b81a-04a922242f24
+[imag Gray.(ones(size(imag)[1], 80)) Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag))
+Gray.(ones(80, 2*size(imag)[2]+ 80))
+Gray.(channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2]))) Gray.(ones(size(imag)[1], 80))  Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2])))]
+
+# ╔═╡ 710d89b9-13d8-4501-aed3-2befbdc36c10
+md"""$\texttt{Figura x.}$"""
+
+# ╔═╡ 480d1d73-bd2e-488e-b936-4749956e45b7
+Gray.(G(size(imag)[1], size(imag)[1])*channelview(imag))
+
+# ╔═╡ a1a4aae3-96c1-46b5-8ce3-78d9082a2b55
+Gray.(channelview(imag)*Transpose(G(size(imag)[2], size(imag)[2])))
+
+# ╔═╡ 9a431f74-107d-4db1-859e-bb4ca74f07cb
+md"""Este método se aplica también a la segmentación de partes específicas de una imagen, como bandas horizontales, verticales o rectángulos. Por ejemplo, para extraer la mitad horizontal central de una imagen $A$, se multiplica a la izquierda por una matriz con una identidad en el centro y ceros alrededor.
+
+Por ejemplo, para extraer la mitad horizontal central de una imagen $(A)$ de tamaño $m\times n$, se debe multiplicar $A$ a la izquierda por 
+
+$K =
+\begin{bmatrix}
+Z_{m/4} & Z_{m/2} & Z_{m/4} \\ 
+Z_{m/2} & I_{m/2} & Z_{m/2} \\ 
+Z_{m/4} & Z_{m/2} & Z_{m/4}
+\end{bmatrix},$
+
+donde $I_{m/2}$ es la matriz identidad de tamaño $m/2$ y $Z_{m/4}$ es la matriz nula de tamaño $m/4 \times m/4$.
+
+Alternativamente, si se desea mostrar la parte central vertical de la imagen, se debe multiplicar $A$ a la derecha por la matriz:  
+
+$V =
+\begin{bmatrix}
+Z_{n/4} & Z_{n/2} & Z_{n/4} \\ 
+Z_{n/2} & I_{n/2} & Z_{n/2} \\ 
+Z_{n/4} & Z_{n/2} & Z_{n/4}
+\end{bmatrix}.$
+
+Para extraer un rectángulo central en la imagen, se pueden realizar ambas operaciones en sucesión, descritas formalmente como:  
+
+$A \to K \cdot A \cdot V.$"""
+
+# ╔═╡ d69cb3a0-892a-4f8c-92a2-855f46bee6c4
+floor(15/4)
+
+# ╔═╡ 1f286685-9bd8-4da2-9187-f62416077814
+function Matrix(n)
+	M = Int(4*floor(n/4))
+    M4 = M÷4
+	M2 = M÷2
+    Z_M4 = zeros(M4, M4)
+	ZM2 = [zeros(M4, M4) zeros(M4, M4)]
+    I_M2 = I(M2)
+    matrix = [Z_M4       ZM2       Z_M4;
+        	ZM2'       I_M2      ZM2';
+        	Z_M4       ZM2       Z_M4]
+	# Tamaño de la matriz base
+    k = size(matrix, 1)
+
+    # Crear matriz ampliada con ceros
+    new_matrix = zeros(n, n)
+    new_matrix[1:k, 1:k] .= matrix  # Copiar valores en la nueva matriz
+    return new_matrix
+end
+
+# ╔═╡ 834e4649-2624-45f5-b98a-1dda03a914ff
+[imag1 Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1))
+Gray.(ones(80, 2*size(imag1)[2]+ 80))
+Gray.(channelview(imag1)*Matrix(size(imag1)[2])) Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1)*Matrix(size(imag1)[2]))]
+
+# ╔═╡ 77fdb7f1-cef6-437b-a793-3443d1f6ad6f
+md"""$\texttt{Figura x.}$"""
+
+# ╔═╡ 8fe1ebac-1ede-4f25-8a4a-3f62480da9f9
+#Escribe tres funciones en MATLAB que extraigan las siguientes partes de la imagen especificada (enmascarando el resto de la imagen):
+#(a) La mitad vertical central,
+#(b) La mitad horizontal central,
+#(c) La parte rectangular central.
+#Prueba tus funciones con una selección de imágenes de tu elección.
+#Escribe funciones similares en MATLAB para seleccionar otras regiones de la imagen especificada (por ejemplo, el tercio horizontal central, la mitad superior, el cuarto vertical izquierdo, etc.) mediante la multiplicación por una matriz adecuada.
 
 # ╔═╡ 2ea0c762-0377-4db9-b891-002f189a3ada
 md"""
 # Transformaciones Lineales
-"""
+
+Una función $T: \mathbb{R}^n \to \mathbb{R}^m$ se llama **transformación lineal** si:  
+
+$T(u + v) = T(u) + T(v),$
+y  
+
+$T(\alpha v) = \alpha T(v)$
+para todo $u, v \in \mathbb{R}^n$ y todos los escalares $\alpha$."""
+
+# ╔═╡ ad2006cb-0f8a-400b-b352-3228d7383fc9
+md"""**La matriz estándar de una transformación lineal**  
+
+Cualquier transformación lineal $T : \mathbb{R}^n \to \mathbb{R}^m$ es de la forma:  
+
+$T(x) = Ax,$
+donde $A$ es la matriz estándar de la transformación, la cual se define como:  
+
+$A = \begin{bmatrix} 
+T(e_1) & T(e_2) & \cdots & T(e_n) 
+\end{bmatrix}.$"""
+
+# ╔═╡ 8a9438fc-4754-4ece-8601-d3f075681db1
+#:V 
+
+# ╔═╡ bd7d058e-c076-4269-9cdb-5214f6760fa4
+deg2rad(90)
+
+# ╔═╡ 809054ff-58bd-46eb-bbe1-65fe353da582
+function rotate_image(image, angle)
+    # Convert angle to radians
+    θ = deg2rad(angle)
+
+    # Get the size of the image
+    M, N = size(image)
+
+    # Determine the center of the image
+    cx = N / 2
+    cy = M / 2
+
+    # Precompute the rotation matrix
+    R = [cos(θ) -sin(θ); sin(θ) cos(θ)]
+
+    # Create a blank canvas for the rotated image
+    rotated_image = zeros(eltype(image), M, N)
+
+    # Iterate through each pixel in the output image
+    for m in 1:M, n in 1:N
+        # Convert (m, n) to Cartesian coordinates centered at the image center
+        x = n - cx
+        y = cy - m
+
+        # Apply the inverse rotation
+        original_coords = R \ [x; y]
+        x_orig = original_coords[1] + cx
+        y_orig = cy - original_coords[2]
+
+        # Interpolate the pixel value
+        if x_orig >= 1 && x_orig <= N && y_orig >= 1 && y_orig <= M
+            interp = interpolate(image, BSpline(Linear()))
+            rotated_image[m, n] = interp(x_orig, y_orig)
+        end
+    end
+
+    return rotated_image
+end
+
+# ╔═╡ 4756613f-dec2-4145-ab57-de24776ab9e4
+rotate_image(imag1, 180)
 
 # ╔═╡ db9272d9-aad3-4819-b518-997e00fbfb5f
 md"""
 # Coordenadas homogéneas y transformaciones proyectivas
 """
+
+# ╔═╡ 4da22b7a-f145-43ef-aad6-2cad844e560b
+md"""# Referencias
+
+[1] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
+
+[2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
+
+[3] Labmatecc. (s.f.). Conceptos básicos. Recuperado de [https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/](https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/)"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -202,12 +498,29 @@ HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
+Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
+
+[compat]
+ColorVectorSpace = "~0.10.0"
+Colors = "~0.12.11"
+Distributions = "~0.25.112"
+FileIO = "~1.16.4"
+HypertextLiteral = "~0.9.5"
+ImageIO = "~0.6.9"
+ImageShow = "~0.3.8"
+Images = "~0.26.1"
+Interpolations = "~0.15.1"
+Plots = "~1.40.7"
+PlutoUI = "~0.7.60"
+Statistics = "~1.11.1"
+StatsBase = "~0.34.3"
+StatsPlots = "~0.15.7"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
@@ -216,7 +529,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.11.0"
 manifest_format = "2.0"
-project_hash = "e13be3c20c2e4d125cbf86eed400e0b1351de274"
+project_hash = "74d6296aaa98e76103f8bc579f85174205bc3703"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -2250,28 +2563,60 @@ version = "1.4.1+1"
 # ╠═87509cb1-de05-41f2-b30e-ad065ccde690
 # ╟─21d43d86-b0cd-43ec-a434-ecb564971d24
 # ╟─7806626e-81e1-4b48-9756-b8277213d268
+# ╟─98b24728-d29c-4d14-ba92-4e51fdbc7b10
 # ╟─dcea8986-c1ed-4dab-976b-b9f4931f051f
 # ╟─c035d077-763e-46e8-9807-08be974ddf61
 # ╠═552aab87-728c-4ec0-b9ee-a41c8a38f51a
 # ╟─8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
 # ╟─bf509d53-b239-4514-bdb2-30d5f52219e8
 # ╟─7ff384fb-e482-4bf9-a70f-34bdd4fa840a
+# ╟─cb534937-101c-439d-b515-e0d99212894f
+# ╟─b4ccdbde-1226-4a8a-a348-487342a2b728
+# ╟─6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
 # ╟─065a2edb-82b6-428a-9c33-7af11ec75ae1
 # ╟─214d8d87-347c-47ac-8e0f-139f86c68b85
 # ╠═fc100c97-e447-4a7a-b42f-4adb9729bfda
 # ╟─5ab89eea-6d7b-490f-96f7-8b4d36249722
 # ╟─a5c73baf-5367-470d-8e82-2874d5f90fd6
 # ╟─cd1e19bd-190d-4d29-9223-485318476099
+# ╟─14df04a2-8d3e-4b85-a7a2-e2e455f31e73
 # ╟─0709425c-688d-40c3-9c80-eac32426d1b5
 # ╟─fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
 # ╠═80431850-0e2d-4ca8-9589-abd9117382b3
 # ╟─7726e89f-04b1-4664-89d8-bcdba5ec4129
 # ╟─f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
+# ╟─971750a7-dfef-4c44-a703-1ce02dedbe81
 # ╟─895c92f0-6124-446f-a4dd-5a51316a5ed3
+# ╟─e9ba5ec0-4c45-466b-b530-b38ff98e632c
 # ╟─005fb905-a248-4bbf-8ceb-0271a1824deb
 # ╠═5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
-# ╠═1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
+# ╟─c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
+# ╠═fe07af97-b521-4062-a6af-dd7d9d5ae6a1
+# ╟─1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
+# ╟─2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
+# ╟─90b15d0a-748a-4d0b-ad20-800b35fdb9be
+# ╟─23f61001-cc7e-4ebc-9cac-474e217538f7
+# ╟─b955394f-4bac-4e1c-8620-a4403cfd3d35
+# ╠═db613b98-f00f-4028-a7df-0b5309243021
+# ╠═a36bc04e-b611-4244-9e86-81c4dfd01a1d
+# ╟─fc506b2d-3295-49b4-b81a-04a922242f24
+# ╟─710d89b9-13d8-4501-aed3-2befbdc36c10
+# ╠═480d1d73-bd2e-488e-b936-4749956e45b7
+# ╠═a1a4aae3-96c1-46b5-8ce3-78d9082a2b55
+# ╟─9a431f74-107d-4db1-859e-bb4ca74f07cb
+# ╠═d69cb3a0-892a-4f8c-92a2-855f46bee6c4
+# ╠═1f286685-9bd8-4da2-9187-f62416077814
+# ╟─834e4649-2624-45f5-b98a-1dda03a914ff
+# ╟─77fdb7f1-cef6-437b-a793-3443d1f6ad6f
+# ╠═8fe1ebac-1ede-4f25-8a4a-3f62480da9f9
 # ╟─2ea0c762-0377-4db9-b891-002f189a3ada
+# ╟─ad2006cb-0f8a-400b-b352-3228d7383fc9
+# ╠═8a9438fc-4754-4ece-8601-d3f075681db1
+# ╠═450ce71e-2fcb-4c32-ae96-bba24b7584b1
+# ╠═4756613f-dec2-4145-ab57-de24776ab9e4
+# ╠═bd7d058e-c076-4269-9cdb-5214f6760fa4
+# ╠═809054ff-58bd-46eb-bbe1-65fe353da582
 # ╟─db9272d9-aad3-4819-b518-997e00fbfb5f
+# ╟─4da22b7a-f145-43ef-aad6-2cad844e560b
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
