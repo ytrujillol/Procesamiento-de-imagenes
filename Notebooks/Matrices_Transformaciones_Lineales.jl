@@ -426,52 +426,50 @@ T(e_1) & T(e_2) & \cdots & T(e_n)
 \end{bmatrix}.$"""
 
 # ╔═╡ 8a9438fc-4754-4ece-8601-d3f075681db1
-#:V 
+#:V revisar aquí para abajo, falta sin interpolation
 
-# ╔═╡ bd7d058e-c076-4269-9cdb-5214f6760fa4
-deg2rad(90)
+# ╔═╡ 5f3c5ff6-861f-426f-ab44-91180bea14bd
+eltype(imag1)
+
+# ╔═╡ 5f0a3e74-a352-47c5-8e4f-db21dd7687f6
+zeros(eltype(imag1), 10, 8)
 
 # ╔═╡ 809054ff-58bd-46eb-bbe1-65fe353da582
 function rotate_image(image, angle)
-    # Convert angle to radians
     θ = deg2rad(angle)
-
-    # Get the size of the image
     M, N = size(image)
-
-    # Determine the center of the image
     cx = N / 2
     cy = M / 2
-
-    # Precompute the rotation matrix
-    R = [cos(θ) -sin(θ); sin(θ) cos(θ)]
-
-    # Create a blank canvas for the rotated image
+    A = [cos(θ) -sin(θ); sin(θ) cos(θ)]
     rotated_image = zeros(eltype(image), M, N)
 
-    # Iterate through each pixel in the output image
     for m in 1:M, n in 1:N
-        # Convert (m, n) to Cartesian coordinates centered at the image center
         x = n - cx
         y = cy - m
-
-        # Apply the inverse rotation
-        original_coords = R \ [x; y]
-        x_orig = original_coords[1] + cx
-        y_orig = cy - original_coords[2]
-
-        # Interpolate the pixel value
-        if x_orig >= 1 && x_orig <= N && y_orig >= 1 && y_orig <= M
+		new_coords = A * [x; y]
+		x_p = new_coords[1]
+		y_p = new_coords[2]
+        x = x_p + cx
+        y = cy - y_p
+        if x >= 1 && x <= N && y >= 1 && y <= M
             interp = interpolate(image, BSpline(Linear()))
-            rotated_image[m, n] = interp(x_orig, y_orig)
+            rotated_image[m, n] = interp(x, y)
         end
     end
-
     return rotated_image
 end
 
 # ╔═╡ 4756613f-dec2-4145-ab57-de24776ab9e4
+[imag1 rotate_image(imag1, 20)]
+
+# ╔═╡ 225ea01f-243a-49fe-a22f-a85fc5c78a9b
 rotate_image(imag1, 180)
+
+# ╔═╡ 6e02907a-678c-4d4f-a3f7-92eddc878baf
+rotate_image(imag1, 0)
+
+# ╔═╡ c05c1e83-47b7-44e4-95d8-8ad59daba95a
+#está raro :v
 
 # ╔═╡ db9272d9-aad3-4819-b518-997e00fbfb5f
 md"""
@@ -2613,9 +2611,13 @@ version = "1.4.1+1"
 # ╟─ad2006cb-0f8a-400b-b352-3228d7383fc9
 # ╠═8a9438fc-4754-4ece-8601-d3f075681db1
 # ╠═450ce71e-2fcb-4c32-ae96-bba24b7584b1
-# ╠═4756613f-dec2-4145-ab57-de24776ab9e4
-# ╠═bd7d058e-c076-4269-9cdb-5214f6760fa4
+# ╠═5f3c5ff6-861f-426f-ab44-91180bea14bd
+# ╠═5f0a3e74-a352-47c5-8e4f-db21dd7687f6
 # ╠═809054ff-58bd-46eb-bbe1-65fe353da582
+# ╠═4756613f-dec2-4145-ab57-de24776ab9e4
+# ╠═225ea01f-243a-49fe-a22f-a85fc5c78a9b
+# ╠═6e02907a-678c-4d4f-a3f7-92eddc878baf
+# ╠═c05c1e83-47b7-44e4-95d8-8ad59daba95a
 # ╟─db9272d9-aad3-4819-b518-997e00fbfb5f
 # ╟─4da22b7a-f145-43ef-aad6-2cad844e560b
 # ╟─00000000-0000-0000-0000-000000000001
