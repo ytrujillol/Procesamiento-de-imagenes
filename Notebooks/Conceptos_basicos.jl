@@ -175,14 +175,17 @@ md"""Podemos crear un píxel de la siguiente forma. """
 a_pixel2=Gray(0.9)
 
 # ╔═╡ 58fe7c61-a29e-4013-b16c-e687c9164fc2
-md"""Podemos cambiar el rango de los píxeles, reescalando la matriz. Un ejemplo de esto es el siguiente:"""
+md"""Podemos cambiar el rango de los píxeles, reescalando la matriz. Un ejemplo se muestra en la Figura 2."""
 
 # ╔═╡ 9841cb7a-6282-4b71-9c5b-a6ba0ad7ddef
 Gray.((A₂ .- minimum(A₂)) ./ (maximum(A₂) - minimum(A₂)))
 
+# ╔═╡ 935a567e-24ae-49d5-833c-89e5a7d11566
+md"""$\texttt{Figura 2. Imagen reescalada Perros `perdiguero de oro'.}$"""
+
 # ╔═╡ 66e9b0bf-21f1-4e51-b83f-f1be71ff391e
 md"""
-También podemos aclarar u oscurecer la imagen añadiendo alguna cantidad a los pixeles.
+También podemos aclarar u oscurecer la imagen añadiendo alguna cantidad a los pixeles, tal como se muestra en la Figura 3.
 """
 
 # ╔═╡ 99f1e042-caa2-4d18-8177-34f886876ef2
@@ -193,13 +196,16 @@ begin
 	plot(plot(Gray.(A₂₁),grid=false),plot(Gray.(A₂₂),grid=false), layout=(1,2),size=(800,600),xaxis=false,yaxis=false)
 end
 
+# ╔═╡ 5f743c4f-3bd7-4979-a5eb-cc5aeced6777
+md"""$\texttt{Figura 3. Imagen aclarada y oscurecida.}$"""
+
 # ╔═╡ 9a92ad72-2e74-4461-bf6a-7e377696e779
 md"""## Construcción de objetos geométricos"""
 
 # ╔═╡ 7b62a3d2-6362-4d19-8158-a79b2dd2f423
 md"""Vamos a construir una matriz que represente los siguientes objetos geométricos:
   
-A continuación se presenta un cuadrado oscuro sobre un fondo claro"""
+A continuación, la Figura 4 presenta un cuadrado oscuro sobre un fondo claro."""
 
 # ╔═╡ e16bebb4-556c-40ba-a465-bf7c9f9b0fb8
 begin
@@ -219,8 +225,11 @@ begin
 	Gray.(img₁ ./ 255)
 end
 
+# ╔═╡ f4333289-f350-4670-8b4d-5770bc602d19
+md"""$\texttt{Figura 4. Cuadrado oscuro sobre un fondo claro.}$"""
+
 # ╔═╡ 4fa17deb-d617-4149-bde3-034dd3326329
-md"""La siguiente imagen muestra un triángulo claro sobre un fondo oscuro"""
+md"""La Figura 5 muestra un triángulo claro sobre un fondo oscuro."""
 
 # ╔═╡ 1007f67f-5895-4d88-b3ea-b65abd578b60
 begin
@@ -240,10 +249,11 @@ begin
 	Gray.(img₂ ./ 255)
 end
 
+# ╔═╡ ed50d1e0-ce07-4572-b889-0949e191fd83
+md"""$\texttt{Figura 5. Triángulo claro sobre un fondo oscuro.}$"""
+
 # ╔═╡ f8dbf824-a5d4-4360-af10-4bb962239cf8
-md"""
-En el siguiente código creamos un gráfico con un diamante gris inscrito en un cuadrado claro, todo sobre un fondo oscuro
-"""
+md"""En la Figura 6 se presenta un gráfico que muestra un diamante gris inscrito en un cuadrado claro, todo ello sobre un fondo oscuro."""
 
 # ╔═╡ 27fa6ad4-2946-457f-b880-0c56de30711e
 begin
@@ -267,9 +277,12 @@ begin
 	Gray.(img₃ ./ 255)
 end
 
+# ╔═╡ bb402045-312c-4b11-91ec-e4c86294e80b
+md"""$\texttt{Figura 6. Diamante gris inscrito en un cuadrado claro.}$"""
+
 # ╔═╡ 895ae5b2-3a9e-4ce0-86ee-414e53bfff63
 md"""
-Podemos "jugar" con las regiones creadas por diferentes desigualdades en el plano, como lo muestran la imágenes a continuación.
+Podemos "jugar" con las regiones creadas por diferentes desigualdades en el plano, tal como lo muestran la Figura 7.
 """
 
 # ╔═╡ be669c5e-1181-4e12-8038-4d1d7bf3c558
@@ -327,10 +340,11 @@ begin
 	[Gray.(img₄ ./ 255) Gray.(ones(500,100)) Gray.(img₅ ./ 255)]
 end
 
+# ╔═╡ ce573e5b-5d66-4f07-832d-45279813bc1f
+md"""$\texttt{Figura 7. Regiones geométricas generadas por desigualdades en el plano.}$"""
+
 # ╔═╡ cf559d3d-625f-4a24-898b-6f8f992d96bf
-md"""
-Ahora, para finalizar, creamos un fractal de Sierpinski usando una función recursiva.
-"""
+md"""En la Figura 8 se muestra un fractal de Sierpinski generado mediante una función recursiva."""
 
 # ╔═╡ 0038eaef-b21e-4134-aaa9-0aa4b97040bf
 begin
@@ -358,6 +372,9 @@ begin
 	plot(Gray.(img₆ ./ 255),label="",size=(800,800),xaxis=false,yaxis=false)
 end
 
+# ╔═╡ da76b869-5f5d-4943-9dea-537af40cd244
+md"""$\texttt{Figura 8. Fractal de Sierpinski.}$"""
+
 # ╔═╡ ed57733c-8fb7-42a7-a2e6-bbfa49521d96
 md"""
 ## Descripción estadística de las imágenes
@@ -366,7 +383,7 @@ Un histograma de una imagen es una representación gráfica que muestra la distr
 """
 
 # ╔═╡ 505dca82-0eec-4068-b7d7-ce5184a4f280
-md"""Veamos como se trabaja esto. Consideremos la siguiente imagen"""
+md"""Vamos a ilustrar cómo se trabaja esto considerando la Figura 9."""
 
 # ╔═╡ fd1d9539-b29c-436e-810d-d1a301a107d8
 begin
@@ -376,19 +393,22 @@ begin
 end
 
 # ╔═╡ a08d4836-0a6f-43a1-ba55-f106223811d1
-md"""$\texttt{Figura 2. Árbol tropical en Campeche. Imagen tomada de Wikipedia}$"""
+md"""$\texttt{Figura 9. Árbol tropical en Campeche. Imagen tomada de Wikipedia.}$"""
 
 # ╔═╡ 0b26b02d-0287-4fa6-ad26-74316de84b44
 md"""Para ver el histograma de una imagen digital, primero se reorganiza la matriz 2D que representa la imagen en una lista unidimensional de valores, esto se realiza con la función $\texttt{vec()}$, y luego con la función $\texttt{histogram()}$ visualizamos el histrograma."""
 
 # ╔═╡ b0518a53-89e0-48c0-9db3-aa24219cb330
-md"""Así el histograma de la imagen es el presentado a continuación"""
+md"""Así el histograma de la Figura 9 es el presentado a continuación."""
 
 # ╔═╡ d8176e80-2558-470e-9043-a009fe57b3ab
 begin
 	B1 = Float64.(channelview(imag1))
-	histogram(vec(B1),label="", title = "Histograma de la Figura 2",color="gray",bins=50)
+	histogram(vec(B1),label="", title = "Histograma de la Figura 9",color="gray",bins=50)
 end
+
+# ╔═╡ 35c76ddf-2d53-4b07-9988-d49abb65ef70
+md"""$\texttt{Figura 10. Histograma de la Figura 9.}$"""
 
 # ╔═╡ df657372-48d8-4dc8-a949-aadef2220511
 md"""Aunque el rango total de valores de píxeles es relevante, es el rango intercuartílico el que influye principalmente en el nivel de contraste de una imagen.
@@ -396,7 +416,7 @@ md"""Aunque el rango total de valores de píxeles es relevante, es el rango inte
 Para determinar la mediana y los cuartiles de una imagen digital, se convierte la matriz $2D$ de la imagen en una lista unidimensional de valores, se ordena dicha lista de menor a mayor, y luego se identifica el valor central, junto con los valores de $Q_1$ y $Q_3$ correspondientes a las mitades inferior y superior."""
 
 # ╔═╡ 6a0dd188-51e0-4e58-b46d-e1d25927b446
-md"""Por ejemplo, continuemos trabajando con la Figura 2 y calculemos algunas estadísticas:"""
+md"""Por ejemplo, continuemos trabajando con la Figura 9 y calculemos algunas estadísticas:"""
 
 # ╔═╡ e9b9ce5c-be98-4bdf-ba0f-69a7cddd6bfa
 Mínimo = minimum(vec(B1))
@@ -427,7 +447,7 @@ Varianza = var(vec(B1))
 
 # ╔═╡ 65ae4195-fc70-4076-bbca-a6b43ece75cf
 md"""
-En la siguiente imágen se muestra la Figura 2 usando solo $5$ tonos en la escala de grises correspondientes a las estadísticas mínimo, quartil uno, mediana, quartil tres y máximo de los valores de la imágen original.
+En la siguiente imágen (Figura 11) se muestra la Figura 9 usando solo $5$ tonos en la escala de grises correspondientes a las estadísticas mínimo, quartil uno, mediana, quartil tres y máximo de los valores de la imágen original.
 """
 
 # ╔═╡ cdc98503-e26e-4608-b041-ba32fa12325c
@@ -448,8 +468,18 @@ begin
 	Gray.(reduced_image)
 end
 
+# ╔═╡ 57c76756-2f19-4c85-a4f1-308860ed3020
+md"""$\texttt{Figura 11. Imagen resultante de usar 5 tonos en la}$
+$\texttt{escala de grises en la Figura 9.}$"""
+
+# ╔═╡ 74cf7e53-d17c-4327-a395-26792b07a4df
+md"""A continuación en la Figura 12 se presenta el histograma de la Figura 11."""
+
 # ╔═╡ baaf7cc2-2933-4a1f-99c9-458a0cae0095
 histogram(vec(reduced_image),label="", title = "Histograma de la Figura 2 con $nocolors colores",color="gray",bins=50)
+
+# ╔═╡ 749ff365-e249-4d05-ad0c-d6a10f8e9956
+md"""$\texttt{Figura 12. Histograma de la Figura 10.}$"""
 
 # ╔═╡ c754f505-ec3b-4c7d-b39d-54d39ae5d32c
 md"""
@@ -502,7 +532,7 @@ White_color == RGB(1.0, 1.0, 1.0)
 Black_color = RGB(0.0, 0.0, 0.0)
 
 # ╔═╡ d0ff380a-3235-4e9d-990f-22f2f94ee7fe
-md"""Consideremos la siguiente imagen a color."""
+md"""Consideremos la siguiente imagen a color, ver Figura 13."""
 
 # ╔═╡ 5a74bb35-bd65-4e42-a112-f71cdf336682
 begin
@@ -512,7 +542,7 @@ begin
 end
 
 # ╔═╡ 20cedaf5-ece2-4b20-82e2-9815a51e841e
-md"""$\texttt{Figura 3. Flag of Seychelles. Imagen tomada de Wikipedia}$"""
+md"""$\texttt{Figura 13. Flag of Seychelles. Imagen tomada de Wikipedia}$"""
 
 # ╔═╡ 0df909e9-1907-4def-9844-8364abeebfe0
 begin
@@ -541,14 +571,20 @@ begin
 	plot(p1, p2, p3, layout = (1, 3) , size=(900, 200))
 end
 
+# ╔═╡ 60ea5c79-9830-4977-9867-08cab423bbd7
+md"""$\texttt{Figura 14. Canales de color R, G y B de la Figura 13.}$"""
+
 # ╔═╡ 19288a59-0392-46c8-a946-c4f10613e0e0
-md"""En la siguiente figura se presentan las imagenes anteriores pero en escala de grises."""
+md"""En la siguiente figura (Figura 15) se presentan las imagenes anteriores pero en escala de grises."""
 
 # ╔═╡ 5652fd36-bde9-4084-9cbf-9e6e62381f79
 [RGB.(Red) RGB.(ones(size(Red)[1], 400)) RGB.(Green) RGB.(ones(size(Red)[1], 400)) RGB.(Blue)]
 
+# ╔═╡ 7bbea68e-46e8-4739-8d45-a4008d767934
+md"""$\texttt{Figura 15. Escala de grises de los canales R, G y B de la Figura 13.}$"""
+
 # ╔═╡ f10c3863-89b9-4913-a095-7feb46827238
-md"""Los histogramas de cada uno de los canales de color de la Figura 3 son presentados a continuación."""
+md"""Los histogramas de cada uno de los canales de color de la Figura 13 son presentados a continuación."""
 
 # ╔═╡ f7e94893-886f-4131-896c-e9cc322cad68
 begin
@@ -559,6 +595,9 @@ begin
 	end
 	p111
 end
+
+# ╔═╡ bc25c3ac-8de8-4b8d-8b3a-397421f05f83
+md"""$\texttt{Figura 16. Histogramas de los canales de color de la Figura 13.}$"""
 
 # ╔═╡ a38e06ea-6e86-4feb-8bae-e8a74192adcc
 md"""## Formato CMY"""
@@ -601,9 +640,22 @@ end
 # ╔═╡ 159721cc-2899-4685-a4ff-47401d388271
 Cyan_color - Magenta_color - Yellow_color
 
+# ╔═╡ 41db01ba-af3a-43e4-b572-884a4820da83
+md"""Las mezclas anteriormente descritas se evidencian en la Figura 17."""
+
+# ╔═╡ 10584a0d-efc7-46fb-b0d8-dab738842fca
+begin
+	URL = "https://upload.wikimedia.org/wikipedia/commons/6/69/CMY%E6%B7%B7%E8%89%B2%E6%A8%A1%E5%BC%8F.png"
+	Fname = download(URL)
+	IMAGE = load(Fname)
+end
+
+# ╔═╡ deb95abb-bbb0-437d-b359-ca9475a50cad
+md"""$\texttt{Figura 17. Formato CMY. Imagen tomada de Wikipedia.}$"""
+
 # ╔═╡ fc1caf73-cf17-47ab-8367-8b4ea1b6c74c
 md"""
-Los canales de color C, M y Y (cyan, magenta, yellow), respectivamente, de la Figura 3 se muestran a continuación.
+La Figura 18 muestra los canales de color C, M y Y (cyan, magenta, yellow), respectivamente, de la Figura 13.
 """
 
 # ╔═╡ 79ad57d8-b2ae-4721-804b-1749bcc710c6
@@ -630,16 +682,20 @@ begin
 	plot(heatmap(img_cyan, aspect_ratio=:equal, title="C",colorbar=false, xaxis=false, yaxis=false), heatmap(img_magenta, aspect_ratio=:equal, title="M",colorbar=false, xaxis=false, yaxis=false), heatmap(img_yellow, aspect_ratio=:equal, title="Y",colorbar=false, xaxis=false, yaxis=false), layout=(1, 3), size=(900, 300))
 end
 
+# ╔═╡ a675264a-777a-4809-8372-c46333eab0ba
+md"""$\texttt{Figura 18. Canales C, M y Y de la Figura 13.}$"""
+
 # ╔═╡ 0f327941-098c-4030-b868-7a1b3bb5c4fb
 md"""
 ## Formato YCbCr
 """
 
 # ╔═╡ b1e736cc-f330-4c2c-9156-d560807b575f
-md"""
-El modelo de color YCbCr es un espacio de color utilizado principalmente en aplicaciones de video y compresión de imágenes. Se basa en la luminancia (Y) y en dos componentes de crominancia (Cb y Cr). Esta representación es especialmente útil en la transmisión de video y la compresión de imágenes, ya que permite separar la información de brillo de la información de color. La componente Y representa la luminancia (brillo) de la imagen, mientras que Cb y Cr representan las diferencias de color, facilitando así la compresión y el procesamiento de imágenes.
+md"""El formato YCbCr nació como una versión digital del modelo YUV $[6]$, pensado para optimizar la transmisión y compresión de video. Diseñado para televisión digital, aprovecha que el ojo humano percibe más la luminancia que la crominancia, lo que permite reducir datos sin sacrificar calidad visual.
 
-La conversión de RGB (Rojo, Verde, Azul) a YCbCr se realiza mediante las siguientes ecuaciones (consultar [4]):
+El modelo de color YCbCr es un espacio de color utilizado principalmente en aplicaciones de video y compresión de imágenes. Se basa en la luminancia (Y) y en dos componentes de crominancia (Cb y Cr). Ver $[5]$. Esta representación es especialmente útil en la transmisión de video y la compresión de imágenes, ya que permite separar la información de brillo de la información de color. La componente Y representa la luminancia (brillo) de la imagen, mientras que Cb y Cr representan las diferencias de color, facilitando así la compresión y el procesamiento de imágenes.
+
+La conversión de RGB (Rojo, Verde, Azul) a YCbCr se realiza mediante las siguientes ecuaciones, ver $[4]$:
 
 $\begin{align}
     Y & = 0.299 \cdot R + 0.587 \cdot G + 0.114 \cdot B \\
@@ -658,7 +714,7 @@ Esta transformación permite una mejor compresión y procesamiento de imágenes 
 
 # ╔═╡ 608851fe-9281-487d-ba20-a2186816d2e1
 md"""
-Los canales de color Y, Cb y Cr (luminancia, crominancia azul y crominancia roja), respectivamente, de la Figura 3 se muestran a continuación.
+Los canales de color Y, Cb y Cr (luminancia, crominancia azul y crominancia roja), respectivamente, de la Figura 13 se muestran en la Figura 19.
 """
 
 # ╔═╡ cbc12e57-2d16-4541-ab72-fb1a9d14563d
@@ -697,6 +753,9 @@ begin
 	layout = (1, 3) , size=(900, 200))
 end
 
+# ╔═╡ 98378c96-6a33-4419-a1ef-fbd5e6b9b15d
+md"""$\texttt{Figura 19. Canales Y, Cb y Cr de la Figura 13.}$"""
+
 # ╔═╡ 103a9b75-0424-4c7b-97ca-13cfaaff2725
 md""" A continuación se presenta la imagen convertida del formato RGB al formato YCbCr. """
 
@@ -705,6 +764,9 @@ begin
 	imagen_YCbCr = permutedims(cat(dims=3, image_ycbcr[:,:,1], image_ycbcr[:,:,2], image_ycbcr[:,:,3]), [3, 1, 2]);
 	colorview(RGB, imagen_YCbCr)
 end
+
+# ╔═╡ 6c8c4b2f-775a-493e-b986-7fd921a083f7
+md"""$\texttt{Figura 20. Formato YCbCr de la Figura 13.}$"""
 
 # ╔═╡ 4484331a-f74e-4f72-b43c-6c3ade5d5687
 md"""# Espacio vectorial RGB
@@ -737,6 +799,9 @@ $\begin{align}
 w_{CMY} &= \begin{pmatrix} -1 & 0 & 0 \\ 0 & -1 & 0 \\ 0 & 0 & -1 \end{pmatrix} \begin{pmatrix} R \\ G \\ B \end{pmatrix} + \begin{pmatrix} 1 \\ 1 \\ 1 \end{pmatrix}\\
 &= \begin{pmatrix} 1 - R \\ 1 - G \\ 1 - B \end{pmatrix}
 \end{align}.$"""
+
+# ╔═╡ f8ce4130-9ba6-4a3e-b630-bb709521ffa2
+md"""Esta transformación la podemos representar como el cubo mostrado en la Figura 21."""
 
 # ╔═╡ da86eb54-ac72-4d9a-9788-1044185fbafa
 md"""De igual forma, el espacio YCbCr está relacionado con RGB a través de una transformación afin.
@@ -818,7 +883,11 @@ md"""# Referencias
 
 [3] MIT Computational Thinking. (2023). Images Abstractions. Recuperado de [https://computationalthinking.mit.edu/Fall22/images_abstractions/images/](https://computationalthinking.mit.edu/Fall22/images_abstractions/images/)
 
-[4] Unión Internacional de Telecomunicaciones, ed. (2012). [«Recomendación UIT-R BT.601-7»](http://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.601-7-201103-I!!PDF-S.pdf). Consultado el 16 de octubre de 2024."""
+[4] Unión Internacional de Telecomunicaciones, ed. (2012). [«Recomendación UIT-R BT.601-7»](http://www.itu.int/dms_pubrec/itu-r/rec/bt/R-REC-BT.601-7-201103-I!!PDF-S.pdf). Consultado el 16 de octubre de 2024.
+
+[5] MathWorks. (n.d.). Understanding color spaces and color space conversion. MathWorks. Recuperado de [https://la.mathworks.com/help/images/understanding-color-spaces-and-color-space-conversion.html](https://la.mathworks.com/help/images/understanding-color-spaces-and-color-space-conversion.html)
+
+[6] PCMag. (n.d.). YUV. PCMag Encyclopedia. Recuperado de [https://www.pcmag.com/encyclopedia/term/yuv](https://www.pcmag.com/encyclopedia/term/yuv)"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2904,20 +2973,27 @@ version = "1.4.1+1"
 # ╟─16a0fca0-3086-4477-bc8c-0ba5be7792fa
 # ╠═5ead5cc6-dfc1-485e-a2d6-c08fe9554c2e
 # ╟─58fe7c61-a29e-4013-b16c-e687c9164fc2
-# ╠═9841cb7a-6282-4b71-9c5b-a6ba0ad7ddef
+# ╟─9841cb7a-6282-4b71-9c5b-a6ba0ad7ddef
+# ╟─935a567e-24ae-49d5-833c-89e5a7d11566
 # ╟─66e9b0bf-21f1-4e51-b83f-f1be71ff391e
-# ╠═99f1e042-caa2-4d18-8177-34f886876ef2
+# ╟─99f1e042-caa2-4d18-8177-34f886876ef2
+# ╟─5f743c4f-3bd7-4979-a5eb-cc5aeced6777
 # ╟─9a92ad72-2e74-4461-bf6a-7e377696e779
 # ╟─7b62a3d2-6362-4d19-8158-a79b2dd2f423
 # ╟─e16bebb4-556c-40ba-a465-bf7c9f9b0fb8
+# ╟─f4333289-f350-4670-8b4d-5770bc602d19
 # ╟─4fa17deb-d617-4149-bde3-034dd3326329
 # ╟─1007f67f-5895-4d88-b3ea-b65abd578b60
+# ╟─ed50d1e0-ce07-4572-b889-0949e191fd83
 # ╟─f8dbf824-a5d4-4360-af10-4bb962239cf8
 # ╟─27fa6ad4-2946-457f-b880-0c56de30711e
+# ╟─bb402045-312c-4b11-91ec-e4c86294e80b
 # ╟─895ae5b2-3a9e-4ce0-86ee-414e53bfff63
 # ╟─be669c5e-1181-4e12-8038-4d1d7bf3c558
+# ╟─ce573e5b-5d66-4f07-832d-45279813bc1f
 # ╟─cf559d3d-625f-4a24-898b-6f8f992d96bf
 # ╟─0038eaef-b21e-4134-aaa9-0aa4b97040bf
+# ╟─da76b869-5f5d-4943-9dea-537af40cd244
 # ╟─ed57733c-8fb7-42a7-a2e6-bbfa49521d96
 # ╟─505dca82-0eec-4068-b7d7-ce5184a4f280
 # ╟─fd1d9539-b29c-436e-810d-d1a301a107d8
@@ -2925,6 +3001,7 @@ version = "1.4.1+1"
 # ╟─0b26b02d-0287-4fa6-ad26-74316de84b44
 # ╟─b0518a53-89e0-48c0-9db3-aa24219cb330
 # ╟─d8176e80-2558-470e-9043-a009fe57b3ab
+# ╟─35c76ddf-2d53-4b07-9988-d49abb65ef70
 # ╟─df657372-48d8-4dc8-a949-aadef2220511
 # ╟─6a0dd188-51e0-4e58-b46d-e1d25927b446
 # ╠═e9b9ce5c-be98-4bdf-ba0f-69a7cddd6bfa
@@ -2939,7 +3016,10 @@ version = "1.4.1+1"
 # ╟─65ae4195-fc70-4076-bbca-a6b43ece75cf
 # ╟─cdc98503-e26e-4608-b041-ba32fa12325c
 # ╟─13d12821-68f2-4c4c-ab69-f0e67a6e9793
+# ╟─57c76756-2f19-4c85-a4f1-308860ed3020
+# ╟─74cf7e53-d17c-4327-a395-26792b07a4df
 # ╟─baaf7cc2-2933-4a1f-99c9-458a0cae0095
+# ╟─749ff365-e249-4d05-ad0c-d6a10f8e9956
 # ╟─c754f505-ec3b-4c7d-b39d-54d39ae5d32c
 # ╟─f495bebc-5d3f-4f4e-a645-01c454164012
 # ╟─d4cdc837-f791-4add-9729-809153d1e5d8
@@ -2956,10 +3036,13 @@ version = "1.4.1+1"
 # ╟─ddd71b1f-7867-4603-a0fb-ccd86265b839
 # ╟─5f20feec-b0a5-4c94-a07d-5f84059f1d15
 # ╟─8e0bf959-2faf-4821-bb25-1b590edab1bf
+# ╟─60ea5c79-9830-4977-9867-08cab423bbd7
 # ╟─19288a59-0392-46c8-a946-c4f10613e0e0
 # ╟─5652fd36-bde9-4084-9cbf-9e6e62381f79
+# ╟─7bbea68e-46e8-4739-8d45-a4008d767934
 # ╟─f10c3863-89b9-4913-a095-7feb46827238
 # ╟─f7e94893-886f-4131-896c-e9cc322cad68
+# ╟─bc25c3ac-8de8-4b8d-8b3a-397421f05f83
 # ╟─a38e06ea-6e86-4feb-8bae-e8a74192adcc
 # ╟─070824d2-fb08-4323-87cf-93f5442e533d
 # ╟─dc8fe48a-2a02-4ac2-9a5d-7eff264e6792
@@ -2969,16 +3052,23 @@ version = "1.4.1+1"
 # ╠═85fa46bd-7873-4d2e-8449-e2029e5f3c04
 # ╠═6073f551-5f38-444e-b9f8-903aea1bd476
 # ╠═159721cc-2899-4685-a4ff-47401d388271
+# ╟─41db01ba-af3a-43e4-b572-884a4820da83
+# ╟─10584a0d-efc7-46fb-b0d8-dab738842fca
+# ╟─deb95abb-bbb0-437d-b359-ca9475a50cad
 # ╟─fc1caf73-cf17-47ab-8367-8b4ea1b6c74c
 # ╟─79ad57d8-b2ae-4721-804b-1749bcc710c6
+# ╟─a675264a-777a-4809-8372-c46333eab0ba
 # ╟─0f327941-098c-4030-b868-7a1b3bb5c4fb
 # ╟─b1e736cc-f330-4c2c-9156-d560807b575f
 # ╟─608851fe-9281-487d-ba20-a2186816d2e1
 # ╟─cbc12e57-2d16-4541-ab72-fb1a9d14563d
+# ╟─98378c96-6a33-4419-a1ef-fbd5e6b9b15d
 # ╟─103a9b75-0424-4c7b-97ca-13cfaaff2725
 # ╟─742c3af1-1639-469e-bc58-c2816cb13f8e
+# ╟─6c8c4b2f-775a-493e-b986-7fd921a083f7
 # ╟─4484331a-f74e-4f72-b43c-6c3ade5d5687
 # ╟─e1594a1d-5b76-4e73-8133-3d2ba4b27a95
+# ╠═f8ce4130-9ba6-4a3e-b630-bb709521ffa2
 # ╟─da86eb54-ac72-4d9a-9788-1044185fbafa
 # ╟─9849bf25-ddbe-4ac3-8400-afc04c93db81
 # ╟─20a95407-0b33-46c1-9fb8-b5f4c2490c63
