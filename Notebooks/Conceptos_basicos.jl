@@ -77,7 +77,7 @@ A = [56 65 21 125 78;
 		5 27 97 204 28] #Definimos la matriz
 
 # ╔═╡ 76a1c4bd-9176-4646-b004-6ab40468095e
-md"""Aquí, en Julia, los pixeles pueden tomar valores entre $0$ y $1$, donde $0$ representa el negro y $1$ el blanco. Reajustemos la matriz anterior."""
+md"""Aquí, en Julia, los píxeles pueden tomar valores entre $0$ y $1$, donde $0$ representa el negro y $1$ el blanco. Reajustemos la matriz anterior."""
 
 # ╔═╡ 3aea3830-27ad-4b12-9048-86c45c7dbd90
 A1 = float(A/255)
@@ -185,7 +185,7 @@ md"""$\texttt{Figura 2. Imagen reescalada Perros `perdiguero de oro'.}$"""
 
 # ╔═╡ 66e9b0bf-21f1-4e51-b83f-f1be71ff391e
 md"""
-También podemos aclarar u oscurecer la imagen añadiendo alguna cantidad a los pixeles, tal como se muestra en la Figura 3.
+También podemos aclarar u oscurecer la imagen añadiendo alguna cantidad a los píxeles, tal como se muestra en la Figura 3.
 """
 
 # ╔═╡ 99f1e042-caa2-4d18-8177-34f886876ef2
@@ -396,10 +396,10 @@ end
 md"""$\texttt{Figura 9. Árbol tropical en Campeche. Imagen tomada de Wikipedia.}$"""
 
 # ╔═╡ 0b26b02d-0287-4fa6-ad26-74316de84b44
-md"""Para ver el histograma de una imagen digital, primero se reorganiza la matriz 2D que representa la imagen en una lista unidimensional de valores, esto se realiza con la función $\texttt{vec()}$, y luego con la función $\texttt{histogram()}$ visualizamos el histrograma."""
+md"""Para ver el histograma de una imagen digital, primero se reorganiza la matriz 2D que representa la imagen en una lista unidimensional de valores, esto se realiza con la función $\texttt{vec()}$, y luego con la función $\texttt{histogram()}$ visualizamos el histograma."""
 
 # ╔═╡ b0518a53-89e0-48c0-9db3-aa24219cb330
-md"""Así el histograma de la Figura 9 es el presentado a continuación."""
+md"""Así el histograma de la Figura 9 es presentado a continuación."""
 
 # ╔═╡ d8176e80-2558-470e-9043-a009fe57b3ab
 begin
@@ -447,7 +447,7 @@ Varianza = var(vec(B1))
 
 # ╔═╡ 65ae4195-fc70-4076-bbca-a6b43ece75cf
 md"""
-En la siguiente imágen (Figura 11) se muestra la Figura 9 usando solo $5$ tonos en la escala de grises correspondientes a las estadísticas mínimo, quartil uno, mediana, quartil tres y máximo de los valores de la imágen original.
+En la siguiente imagen (Figura 11) se muestra la Figura 9 usando solo $5$ tonos en la escala de grises correspondientes a las estadísticas mínimo, cuartil uno, mediana, cuartil tres y máximo de los valores de la imagen original.
 """
 
 # ╔═╡ cdc98503-e26e-4608-b041-ba32fa12325c
@@ -575,7 +575,7 @@ end
 md"""$\texttt{Figura 14. Canales de color R, G y B de la Figura 13.}$"""
 
 # ╔═╡ 19288a59-0392-46c8-a946-c4f10613e0e0
-md"""En la siguiente figura (Figura 15) se presentan las imagenes anteriores pero en escala de grises."""
+md"""En la siguiente figura (Figura 15) se presentan las imágenes anteriores pero en escala de grises."""
 
 # ╔═╡ 5652fd36-bde9-4084-9cbf-9e6e62381f79
 [RGB.(Red) RGB.(ones(size(Red)[1], 400)) RGB.(Green) RGB.(ones(size(Red)[1], 400)) RGB.(Blue)]
@@ -803,6 +803,12 @@ w_{CMY} &= \begin{pmatrix} -1 & 0 & 0 \\ 0 & -1 & 0 \\ 0 & 0 & -1 \end{pmatrix} 
 # ╔═╡ f8ce4130-9ba6-4a3e-b630-bb709521ffa2
 md"""Esta transformación la podemos representar como el cubo mostrado en la Figura 21."""
 
+# ╔═╡ ba17c664-07be-4f2e-a0b4-abd6632ac87e
+load(download("https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Cubo.png?raw=true"))
+
+# ╔═╡ 40706af2-fc1d-4ae0-acca-64d362662664
+md"""$\texttt{Figura 21. Espacio de colores RGB y CMY. Imagen tomada de [7].}$"""
+
 # ╔═╡ da86eb54-ac72-4d9a-9788-1044185fbafa
 md"""De igual forma, el espacio YCbCr está relacionado con RGB a través de una transformación afin.
 El vector 
@@ -827,7 +833,7 @@ $\begin{pmatrix} Y \\ Cb \\ Cr \end{pmatrix} = \begin{pmatrix} 0.299 & 0.587 & 0
 md"""## Ejemplos"""
 
 # ╔═╡ 20a95407-0b33-46c1-9fb8-b5f4c2490c63
-md"""Definamos la matriz $A_1$ y el vector $b_1$ de la tranformación RGB a CMY:"""
+md"""Definamos la matriz $A_1$ y el vector $b_1$ de la transformación RGB a CMY:"""
 
 # ╔═╡ 2fa13862-4d50-4cc7-926c-d715147b56f1
 A₁ = [-1 0 0; 0 -1 0; 0 0 -1]
@@ -887,7 +893,9 @@ md"""# Referencias
 
 [5] MathWorks. (n.d.). Understanding color spaces and color space conversion. MathWorks. Recuperado de [https://la.mathworks.com/help/images/understanding-color-spaces-and-color-space-conversion.html](https://la.mathworks.com/help/images/understanding-color-spaces-and-color-space-conversion.html)
 
-[6] PCMag. (n.d.). YUV. PCMag Encyclopedia. Recuperado de [https://www.pcmag.com/encyclopedia/term/yuv](https://www.pcmag.com/encyclopedia/term/yuv)"""
+[6] PCMag. (n.d.). YUV. PCMag Encyclopedia. Recuperado de [https://www.pcmag.com/encyclopedia/term/yuv](https://www.pcmag.com/encyclopedia/term/yuv)
+
+[7] McAndrew, A. (2015). A computational introduction to digital image processing. CRC Press."""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -3068,7 +3076,9 @@ version = "1.4.1+1"
 # ╟─6c8c4b2f-775a-493e-b986-7fd921a083f7
 # ╟─4484331a-f74e-4f72-b43c-6c3ade5d5687
 # ╟─e1594a1d-5b76-4e73-8133-3d2ba4b27a95
-# ╠═f8ce4130-9ba6-4a3e-b630-bb709521ffa2
+# ╟─f8ce4130-9ba6-4a3e-b630-bb709521ffa2
+# ╟─ba17c664-07be-4f2e-a0b4-abd6632ac87e
+# ╟─40706af2-fc1d-4ae0-acca-64d362662664
 # ╟─da86eb54-ac72-4d9a-9788-1044185fbafa
 # ╟─9849bf25-ddbe-4ac3-8400-afc04c93db81
 # ╟─20a95407-0b33-46c1-9fb8-b5f4c2490c63
