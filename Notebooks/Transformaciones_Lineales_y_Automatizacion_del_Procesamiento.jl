@@ -136,39 +136,41 @@ md"""
 
 # ╔═╡ dbbe2cdd-9fd6-4757-96c9-15ded062e3fc
 md"""
-Observemos la figura 1. Parece que luce demasiado oscura. El problema es que luce demasiado "grisasea" y carece de contraste.
+Observemos la Figura 1, parece que luce demasiado oscura. El problema es que luce demasiado "grisácea" y carece de contraste.
 """
 
 # ╔═╡ 8a092a7f-26db-4055-9ab8-a5274276eb76
 begin
-	URL5 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/elk_in_the_fog.png?raw=true"
+	URL5 = "https://images.unsplash.com/photo-1489179070830-36477bd83c93?q=80&w=1480&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 	fname5 = download(URL5)
 	image5 = load(fname5)
 	[image5 Gray.(image5)]
 end
 
 # ╔═╡ a9e37474-b50a-454e-9a38-409c813dfb90
-md"""$\texttt{Figura 1. Alce en la niebla.}$"""
+md"""$\texttt{Figura 1. Árboles cubiertos de niebla.Imagen recuperada de Unsplash [5].}$"""
 
 # ╔═╡ 2f9fb47f-7daf-453b-ab54-4ece5bb746fc
 md"""
-En los histogramas a continuación se evidencia lo anteriormente dicho: los valores en los pixeles se concentran en una región "pequeña" de todo el rango posible.
+En los histogramas presentados en la Figura 2, se evidencia lo anteriormente dicho: los valores en los píxeles se concentran en una región de todo el rango posible.
 """
 
 # ╔═╡ 429b4082-cf3c-401f-9f3a-17655c1cc435
 plot(Hist(image5), Hist(Gray.(image5)))
 
 # ╔═╡ 172dd730-2284-4085-b484-a955f4a4b411
-md"""$\texttt{Figura 2.}$"""
+md"""$\texttt{Figura 2.Histogramas de las imágenes presentadas en la Figura 1.}$"""
 
 # ╔═╡ 521e6dc1-eeb1-4215-baec-cba89199e0e5
 md"""
-Para intentar resolver el anterior problema intentamos elongar o estirar el intervalo donde se encuentran los valores de los pixeles de la imagen (llamado $[x_{min},x_{max}]$) y llevarlo al intervalo $[0,1]$ (o, alternativamente, $[0,255]$). Un posible acercamiento para realizar la transformación anterior es usando funciones lineales: Al realizar la siguiente trasnformación
+Para intentar resolver el anterior problema intentamos elongar o estirar el intervalo donde se encuentran los valores de los píxeles de la imagen (llamado $[x_{min},x_{max}]$) y llevarlo al intervalo $[0,1]$ (o, alternativamente, $[0,255]$). Un posible acercamiento para realizar la transformación anterior es usando funciones lineales: Al realizar la siguiente transformación
 
 
 $g(x) = \frac{1-0}{x_{max}-x_{min}}(x-x_{min}) + 0 = \frac{1}{x_{max}-x_{min}}(x-x_{min}),$
 
-esta función cumple que $g(x_{min})=0$ y $g(x_{max})=1$. A continuación se declara tal transformación.
+esta función cumple que $g(x_{min})=0$ y $g(x_{max})=1$. 
+
+A continuación se declara tal transformación.
 """
 
 # ╔═╡ fc13b236-113d-450c-a6e4-86e80e063490
@@ -196,7 +198,7 @@ end;
 
 # ╔═╡ b0ec526a-a174-4611-85ed-030b9b95fdd8
 md"""
-Al aplicar esta transformación a la imagen del alce en la niebla se obtiene una mejora significativa, como se muestra a continuación.
+Al aplicar esta transformación a la Figura 1 se obtiene una mejora significativa, como se muestra en la Figura 3.
 """
 
 # ╔═╡ 60a4607f-dc7e-4f6e-b1b5-160d5281836b
@@ -208,7 +210,7 @@ md"""$\texttt{Figura 3. Comparación de imágenes originales y transformadas}$""
 
 # ╔═╡ 9100bd30-b537-4522-a833-cd9ca845ac52
 md"""
-En los histogramas se evidencia que, en efecto, la transformación lineal expande el rango de los valores de los pixeles de las imágenes logrando un mayor contraste.
+En los histogramas se evidencia que, en efecto, la transformación lineal expande el rango de los valores de los píxeles de las imágenes logrando un mayor contraste.
 """
 
 # ╔═╡ a8e25a1f-e8a1-4561-b252-62baa831e1f1
@@ -227,7 +229,9 @@ $g(x) = \begin{cases}
 \frac{1.00-0.75}{x_{max}-Q_2}(x-Q_3)+0.75, & Q_3\leq x\leq x_{max},\\
 \end{cases}$
 
-donde $Q_1$ y $Q_3$ son los percentiles $0.25$ y $0.75$ de los valores de los pixeles de la imagen, respectivamente. Esta transformación trata de hacer la correspondencia entre los cuartiles de la imágen con los cuartiles del intervalo $[0,1]$ uniformememnto distribuido. A continuación se declara la función que hace esta transformación.
+donde $Q_1$ y $Q_3$ son los percentiles $0.25$ y $0.75$ de los valores de los píxeles de la imagen, respectivamente. Esta transformación trata de hacer la correspondencia entre los cuartiles de la imagen con los cuartiles del intervalo $[0,1]$ uniformemente distribuido. 
+
+A continuación se declara la función que hace esta transformación.
 """
 
 # ╔═╡ ab961a4c-0113-4311-bbe9-71ce6273f68d
@@ -274,7 +278,7 @@ md"""$\texttt{Figura 6. Histogramas de imágenes originales y transformadas}$"""
 
 # ╔═╡ 90d6468a-ec89-4f55-85ba-fcdb2e30fbda
 md"""
-Con los resultados anteriores, se muestra que la transformación lineal a trozos distribuye de manera más uniforme la información de los pixeles a lo largo de todo el espectro visual respecto a la transformación lineal; no obstante, parace no conservar la particularidades de la imágen y esto se refleja en el resultado visual que se obtuvo. 
+Con los resultados anteriores, se muestra que la transformación lineal a trozos distribuye de manera más uniforme la información de los píxeles a lo largo de todo el espectro visual respecto a la transformación lineal; no obstante, parece no conservar la particularidades de la imagen y esto se refleja en el resultado visual que se obtuvo. 
 
 
 
@@ -290,7 +294,7 @@ begin
 end
 
 # ╔═╡ e2586409-f79a-4ea6-9fb5-fdeee106f960
-md"""$\texttt{Figura 7.}$"""
+md"""$\texttt{Figura 7. Niño. Imagen tomada de [1].}$"""
 
 # ╔═╡ 8fafb0d8-08c8-4af6-bb58-e99e15735ca9
 md"""
@@ -301,18 +305,18 @@ El histograma para la imagen a escala de grises se muestra a continuación.
 plot(Hist(Gray.(image6)))
 
 # ╔═╡ a3effb01-d543-4b95-8736-4a61db16ba20
-md"""$\texttt{Figura 8.}$"""
+md"""$\texttt{Figura 8. Histograma de la Figura 7.}$"""
 
 # ╔═╡ c7aee762-d2a4-40aa-ba40-d7109aea235e
 md"""
-El resultado de ambas transformaciones se muestra visualmente en la figura 30 y a nivel del histograma en el figura 31.
+El resultado de ambas transformaciones se muestra visualmente en la Figura 9 y a nivel del histograma en el Figura 10.
 """
 
 # ╔═╡ eab0e590-793e-478c-a1bf-744c99faeb9d
 [Gray.(image6) Elongacion_Lineal(Gray.(image6)) Elongacion_Lineal_a_Trozos(Gray.(image6))]
 
 # ╔═╡ 23c57fc3-ec49-439f-bbee-428bfa1f78eb
-md"""$\texttt{Figura 9. Comparación entre imagen original y ambas transformaciones}$"""
+md"""$\texttt{Figura 9. Comparación entre imagen original y ambas transformaciones.}$"""
 
 # ╔═╡ 0e111c5e-3c5a-42c7-9118-ad106a489a1e
 plot(Hist(Gray.(image6)),
@@ -321,7 +325,7 @@ plot(Hist(Gray.(image6)),
 	layout=(3,1),size=(700,900))
 
 # ╔═╡ 1545ff57-b90f-4160-a5ec-4800c40ba2be
-md"""$\texttt{Figura 10.}$"""
+md"""$\texttt{Figura 10. Histogramas de las imágenes presentadas en la Figura 9.}$"""
 
 # ╔═╡ 5cb57d1b-6a82-4269-b657-73d73e00784a
 md"""
@@ -335,17 +339,17 @@ md"""
 
 # ╔═╡ afd64fae-0cb5-49bc-8094-1e406637feb6
 begin
-	URL = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta2.jpg?raw=true"
+	URL = "https://images.unsplash.com/photo-1660270773573-111fbfeeb90c?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 	fname = download(URL)
 	Gray.(load(fname))
 end
 
 # ╔═╡ b45645bc-c676-4e93-8add-c3b1a6eb6333
-md"""$\texttt{Figura 11.}$"""
+md"""$\texttt{Figura 11. Fotografía de un lago. Imagen tomada de Unsplash [5].}$"""
 
 # ╔═╡ 48daba39-595b-4dae-b704-624d0fa48638
 md"""
-Consideremos la figura 11 la cual nos muestra una fotografía de la ciudad de Londres subexpuesta. Recordemos que para resolver este problema en la imagen nosotros aplicamos la una transformación potencial la cual tenía un parámetro que nosotros elegimos llamado $\gamma$. En esta sección se busca automatizar el proceso de elección de tal parámetro. Dado que la función $f(x)=x^{\gamma}$ es una función siempre creciente entonces $x_0$ definido como la moda en el conjunto de valores de los pixeles es el punto maximizador de la función $f$. Para el caso de la figura 5, se tiene que la moda es
+Consideremos la Figura 11 la cual nos muestra una fotografía de un lago subexpuesta. Recordemos que para resolver este problema en la imagen nosotros aplicamos la transformación potencial la cual tenía un parámetro que nosotros elegimos llamado $\gamma$. En esta sección se busca automatizar el proceso de elección de tal parámetro. Dado que la función $f(x)=x^{\gamma}$ es una función siempre creciente entonces $x_0$ definido como la moda en el conjunto de valores de los píxeles es el punto maximizador de la función $f$. Para el caso de la Figura 5, se tiene que la moda es
 """
 
 # ╔═╡ 05a9e937-aea2-4530-8daa-d970dba534da
@@ -405,18 +409,18 @@ end;
 
 # ╔═╡ a51878d1-46ff-4c5c-afd1-25c957af75b3
 md"""
-En la siguiente figura se muestra el resultado de aplicar la transformación potencial automatizada.
+En la Figura 13 se muestra el resultado de aplicar la transformación potencial automatizada.
 """
 
 # ╔═╡ 71d7ed89-9c75-4574-b2be-a24e6c161da7
 Transformacion_potencial_sin_gamma(Gray.(load(fname)))
 
 # ╔═╡ 371295c5-1606-4aaf-906b-57573fc641a3
-md"""$\texttt{Figura 13.}$"""
+md"""$\texttt{Figura 13. Imagen resultante al aplicar la transformación potencial automatizada.}$"""
 
 # ╔═╡ 3b3722f4-ef77-432b-94e8-87c1e9f0bdd3
 md"""
-En la figura 34 se exhibe la traslación que sufre el histograma al aplicar la transformación potencial.
+En la Figura 14 se exhibe la traslación que sufre el histograma al aplicar la transformación potencial.
 """
 
 # ╔═╡ c855a749-1c0f-40e2-9785-c868f953ecdc
@@ -433,35 +437,35 @@ begin
 end
 
 # ╔═╡ 6307e54c-f4c0-44d2-a8e6-8e5857504962
-md"""$\texttt{Figura 14.}$"""
+md"""$\texttt{Figura 14. Histogramas de la Figura 11 y Figura 13, respectivamente.}$"""
 
 # ╔═╡ b8bf02e6-9f23-4ca4-ad8f-2e35627f239b
 md"""
-En la figura 35 se muestra el resultado de la imagen a color con la transformación potencial automatizada. Posteriormente, en la figura 36 se comparan los histogramas de las imagen a color original y transformada.
+En la Figura 15 se muestra el resultado de la imagen a color con la transformación potencial automatizada. Posteriormente, en la Figura 16 se comparan los histogramas de las imagen a color original y transformada.
 """
 
 # ╔═╡ e7f3e5bc-83b8-476d-aca7-625ec73e7759
 clip_pixel.(function_RBG(Transformacion_potencial_sin_gamma(load(fname))))
 
 # ╔═╡ 8eb3ee9d-2524-4ba5-9f49-6f4e2a95fbf8
-md"""$\texttt{Figura 15.}$"""
+md"""$\texttt{Figura 15.Imagen resultante al aplicar la transformación potencial automatizada. }$"""
 
 # ╔═╡ e5073afc-b19b-4429-9669-66fd547e20bf
 plot(Hist(load(fname)), Hist(clip_pixel.(function_RBG(Transformacion_potencial_sin_gamma(load(fname))))), size=(700,400))
 
 # ╔═╡ 4912bef3-926d-41a3-b745-a07bd7558650
-md"""$\texttt{Figura 16.}$"""
+md"""$\texttt{Figura 16. Histogramas de la Figura 13 y Figura 15, respectivamente.}$"""
 
 # ╔═╡ b03c9720-e3b9-4529-bdd6-d1a900e9892f
 md"""
-Ahora, consideremos la transformación exponencial y la transformación logaritmica:
+Ahora, consideremos la transformación exponencial y la transformación logarítmica:
 
 $g_{exp}(x) = \frac{1}{b − 1} (b^x-1),$
 
 $g_{log}(x) = log_{b}((b-1)x+1),$
 
 
-Sea $x_0$ la moda de los valores de los pixeles de la imagen. Las funciones con las que se relaciona el efecto de *estiramiento de contraste* son, respectivamente:
+Sea $x_0$ la moda de los valores de los píxeles de la imagen. Las funciones con las que se relaciona el efecto de *estiramiento de contraste* son, respectivamente:
 
 $m_{exp}(b) = g'_{exp}(x_0),$
 
@@ -501,7 +505,7 @@ end;
 
 # ╔═╡ 44b0fea5-38e2-45bb-9bde-850eb0fa2045
 md"""
-A continuación se implementa la transformación exponencial y la transformación logaritmica automatizando la elección del parámetro "b".
+A continuación se implementa la transformación exponencial y la transformación logarítmica automatizando la elección del parámetro "$b$".
 """
 
 # ╔═╡ 023ccb2c-9b07-4f18-9404-a8ae8a7e4bdf
@@ -555,13 +559,16 @@ function Transformacion_logaritmica_sin_b(image, pto)
 end;
 
 # ╔═╡ 59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
-md"""Veamos algunos ejemplos de la imagenes que hemos usado a lo largo del cuaderno."""
+md"""Veamos algunos ejemplos de la imágenes que hemos usado a lo largo del cuaderno."""
 
 # ╔═╡ f3325da5-a44d-4d90-a00f-a93b7bc48ef8
 md"""**Ejemplo 1:**"""
 
 # ╔═╡ a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
 Transformacion_exponencial_sin_b(Gray.(image5), 0.5)
+
+# ╔═╡ 1267fba5-c455-4361-a89f-4938b7c89388
+md"""$\texttt{Figura 17. Árboles cubiertos de niebla.Imagen recuperada de Unsplash [5].}$"""
 
 # ╔═╡ 9f53b4f6-10ea-4847-98fb-b0d4cd2c0b63
 begin
@@ -572,11 +579,19 @@ begin
 	plot!([255*m₁,255*m₁],[0,10000],label="Moda original",color="red")
 end
 
+# ╔═╡ c3de1fc2-03dd-4f4d-a63e-902e752b7801
+md"""$\texttt{Figura 18. Histogramas de la Figura 17 y su mejora con la}$
+
+$\texttt{transformación exponencial.}$"""
+
 # ╔═╡ 7ee4efd6-7d32-4215-a07a-78961aaff8a4
 md"""**Ejemplo 2:**"""
 
 # ╔═╡ 3d44d161-342a-4b01-9e9d-a5debddfdd91
 Transformacion_logaritmica_sin_b(Gray.(load(fname)), 50)
+
+# ╔═╡ d1ccbca2-851e-4749-b753-65982fb3a78a
+md"""$\texttt{Figura 19. Lagos. Imagen recuperada de Unsplash [5].}$"""
 
 # ╔═╡ b165680a-6b3d-4f18-a133-0012f19236a3
 begin
@@ -587,9 +602,14 @@ begin
 	plot!([255*m₂,255*m₂],[0,10000],label="Moda original",color="red")
 end
 
+# ╔═╡ b85dfa46-5222-4ba2-b1ad-411efe5e4c32
+md"""$\texttt{Figura 20. Histogramas de la Figura 19 y su mejora con la}$
+
+$\texttt{transformación logarítmica.}$"""
+
 # ╔═╡ 3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 md"""
-# Concavidad y convexidad en las trasnformaciones
+# Concavidad y convexidad en las transformaciones
 """
 
 # ╔═╡ ad26e460-1eb8-4870-89c5-bbd1e30964cf
@@ -603,7 +623,7 @@ $g(x) = \frac{cos(4\pi x)+1}{2}.$
 plot(0:0.001:1,[(cos(10*π*t)+1)/2 for t in 0:0.001:1],title="Función g",label="")
 
 # ╔═╡ b5f02386-197a-4e0b-8e8c-a5a968d4005a
-md"""$\texttt{Figura 17.}$"""
+md"""$\texttt{Figura 21. Gráfica de la función g(x).}$"""
 
 # ╔═╡ bcf1b464-eb09-4a47-a76c-31daa5730386
 md"""
@@ -630,26 +650,29 @@ function Transformacion_sin_sentido(image)
 	end
 end;
 
+# ╔═╡ 64e8f826-f70b-4e16-8d92-d18d1f8737b2
+md"""Consideremos la siguiente imagen, ver Figura 22."""
+
 # ╔═╡ c14c9ab8-bd23-4efc-bec1-63d93cf7b596
 begin
-	url₁ = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Subexpuesta.jpg?raw=true"
+	url₁ = "https://images.unsplash.com/photo-1683484017525-8e1ec8d2da05?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 	fname₁ = download(url₁)
 	image₁ = Gray.(load(fname₁))
 end
 
 # ╔═╡ 0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
-md"""$\texttt{Figura 18.}$"""
+md"""$\texttt{Figura 22. Un campo brumoso. Imagen tomada de Unsplash [5].}$"""
 
 # ╔═╡ 9fa9cf3c-db3b-460c-8e1a-2cd615799b31
 md"""
-Y en la siguientes dos figuras se muestra su resultado:
+En la siguiente Figura se muestra la imagen original (Figura 22) y su resultado mediante la transformación $g.$
 """
 
 # ╔═╡ c1365070-69e6-4e0a-a799-368d35fd9b97
 [image₁ Transformacion_sin_sentido(image₁)]
 
 # ╔═╡ 82a87b96-9ccf-4c39-b848-3a13add95be2
-md"""$\texttt{Figura 19. Transformación sin sentido}$"""
+md"""$\texttt{Figura 23. Transformación sin sentido}$"""
 
 # ╔═╡ 15ed9cd9-bb68-446b-b06f-2691d1da2c0e
 plot(Hist(image₁),Hist(Transformacion_sin_sentido(image₁)))
@@ -665,6 +688,10 @@ md"""# Referencias
 [2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
 
 [3] MIT Computational Thinking. (2023). Images Abstractions. Recuperado de [https://computationalthinking.mit.edu/Fall22/images_abstractions/images/](https://computationalthinking.mit.edu/Fall22/images_abstractions/images/)
+
+[4] JuliaImages. (s.f.). TestImages: Image data for Julia. Recuperado de [https://testimages.juliaimages.org/stable/](https://testimages.juliaimages.org/stable/)
+
+[5] Unsplash. (n.d.). Unsplash: Fotos gratis para todos. Recuperado de [https://unsplash.com/es](https://unsplash.com/es)
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -2951,16 +2978,21 @@ version = "1.4.1+1"
 # ╟─59c3a60e-efb1-4cc8-a2f2-a44a0dbb8532
 # ╟─f3325da5-a44d-4d90-a00f-a93b7bc48ef8
 # ╟─a0e10b2a-2d8b-45a7-8a9d-16a251e3cde0
+# ╟─1267fba5-c455-4361-a89f-4938b7c89388
 # ╟─9f53b4f6-10ea-4847-98fb-b0d4cd2c0b63
+# ╟─c3de1fc2-03dd-4f4d-a63e-902e752b7801
 # ╟─7ee4efd6-7d32-4215-a07a-78961aaff8a4
 # ╟─3d44d161-342a-4b01-9e9d-a5debddfdd91
+# ╟─d1ccbca2-851e-4749-b753-65982fb3a78a
 # ╟─b165680a-6b3d-4f18-a133-0012f19236a3
+# ╟─b85dfa46-5222-4ba2-b1ad-411efe5e4c32
 # ╟─3c979d1b-144f-4ea7-8cf6-f3c3e6832945
 # ╟─ad26e460-1eb8-4870-89c5-bbd1e30964cf
-# ╠═c63cd23a-a6b9-40e6-aa0b-29b35b755b1e
+# ╟─c63cd23a-a6b9-40e6-aa0b-29b35b755b1e
 # ╟─b5f02386-197a-4e0b-8e8c-a5a968d4005a
 # ╟─bcf1b464-eb09-4a47-a76c-31daa5730386
 # ╠═193d3566-094b-439b-8184-df326b5cb148
+# ╟─64e8f826-f70b-4e16-8d92-d18d1f8737b2
 # ╟─c14c9ab8-bd23-4efc-bec1-63d93cf7b596
 # ╟─0c7bd04b-1a25-426c-ae9f-9908ba8c7d7b
 # ╟─9fa9cf3c-db3b-460c-8e1a-2cd615799b31
