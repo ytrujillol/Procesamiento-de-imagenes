@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.19.40
+# v0.20.0
 
 using Markdown
 using InteractiveUtils
@@ -29,8 +29,15 @@ end
 # ╔═╡ d10e8d7b-4bb4-4a07-b187-27398005974d
 PlutoUI.TableOfContents(title="Conceptos Básicos", aside=true)
 
-# ╔═╡ d33f3e9b-7e6d-4b5a-8b17-ba7f918192e0
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+# ╔═╡ ab78e5c6-1d72-4443-ab02-ca841668dce5
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ 85a2f3ce-482a-417a-9b17-238b8c468caf
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 3259395b-4af3-4e59-ba4c-7e652bbb0842
 md"""Vamos a usar las siguientes librerías:"""
@@ -2941,7 +2948,8 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─69376a37-b807-4ba3-8b1a-3ce75f6a89e6
 # ╟─d10e8d7b-4bb4-4a07-b187-27398005974d
-# ╟─d33f3e9b-7e6d-4b5a-8b17-ba7f918192e0
+# ╟─ab78e5c6-1d72-4443-ab02-ca841668dce5
+# ╟─85a2f3ce-482a-417a-9b17-238b8c468caf
 # ╟─3259395b-4af3-4e59-ba4c-7e652bbb0842
 # ╠═6013c427-44da-44ce-bb61-3485cc326f01
 # ╟─21dd2bb3-2290-4de8-8ef8-e319d7ed1f9b

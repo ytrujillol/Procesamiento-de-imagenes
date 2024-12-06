@@ -32,8 +32,15 @@ using ImageFiltering, FFTW, DSP
 # ╔═╡ 8ffc3a7d-71a6-4d2e-9aff-a5cf8fe83777
 PlutoUI.TableOfContents(title="Convolución y filtrado de imágenes", aside=true)
 
-# ╔═╡ 3f9aefad-d2e9-4c3d-88a8-7cfbaf34bbbd
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+# ╔═╡ 8641635e-d2ef-431c-95cb-28e69daed703
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ d30e4cce-0032-43da-b0e9-882dd317908d
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 483934b8-54f8-44de-a64a-e479c6ae2fe9
 md"""Vamos a usar las siguientes librerías:"""
@@ -45,15 +52,13 @@ md"""
 Existen muchas variantes diferentes de convoluciones: continuas y discretas, lineales, circulares y torcidas, entre otras. En este cuaderno, nos centraremos en estudiar dos tipos: la convolución lineal discreta y la convolución circular de secuencias y matrices.
 """
 
-# ╔═╡ ac2250af-3a32-4aae-a6d6-40b734e96dd6
-md"""
-# Borrosidad de imagen y reducción de ruido.
-"""
-
 # ╔═╡ 807c0507-3b03-4ed3-924a-ea3f6fd71483
 md"""
 # Convolución
 """
+
+# ╔═╡ eb0fe789-7d12-48f4-a424-a26b0156af4e
+md"""## Convolución lineal discreta"""
 
 # ╔═╡ 628e3fb3-8294-4c10-993b-35d8c153485a
 md"""**Definición:**
@@ -196,6 +201,9 @@ end
 
 # ╔═╡ 367b6a6d-e70c-4ee2-8ed1-21403c8a6505
 C = convolucion_matrices2(matriz1, matriz2)
+
+# ╔═╡ 27d7829e-8085-4d28-9832-d5af7a7209d9
+md"""## Convolución circular discreta"""
 
 # ╔═╡ f1d00aa0-0320-4438-8009-721cc11a542c
 md"""**Definición:** 
@@ -2612,13 +2620,14 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─17704af0-a82b-11ef-004c-016d20bbe507
 # ╟─8ffc3a7d-71a6-4d2e-9aff-a5cf8fe83777
-# ╟─3f9aefad-d2e9-4c3d-88a8-7cfbaf34bbbd
+# ╟─8641635e-d2ef-431c-95cb-28e69daed703
+# ╟─d30e4cce-0032-43da-b0e9-882dd317908d
 # ╟─483934b8-54f8-44de-a64a-e479c6ae2fe9
 # ╠═8b474220-ac28-4ef5-9639-0157db478e7c
 # ╠═dc7ab333-44fb-4008-ad00-f72ff0e38981
 # ╟─e857d023-a8d5-4cb4-a4b2-d443c927e788
-# ╟─ac2250af-3a32-4aae-a6d6-40b734e96dd6
 # ╟─807c0507-3b03-4ed3-924a-ea3f6fd71483
+# ╟─eb0fe789-7d12-48f4-a424-a26b0156af4e
 # ╟─628e3fb3-8294-4c10-993b-35d8c153485a
 # ╟─2f7612e1-fa7b-4e41-bf4a-7531d2ab7537
 # ╠═73814885-4984-449e-a732-32ce32264303
@@ -2636,6 +2645,7 @@ version = "1.4.1+1"
 # ╠═a6628c01-fe52-4f1c-b454-50d5fc62c222
 # ╠═136e8377-c295-42cf-a656-b96d275bb067
 # ╠═367b6a6d-e70c-4ee2-8ed1-21403c8a6505
+# ╟─27d7829e-8085-4d28-9832-d5af7a7209d9
 # ╟─f1d00aa0-0320-4438-8009-721cc11a542c
 # ╟─0a41a48e-bb45-4137-b61b-b3aec471f378
 # ╠═27337fb8-0618-4f8f-b4e8-cdf6adbf4e3b

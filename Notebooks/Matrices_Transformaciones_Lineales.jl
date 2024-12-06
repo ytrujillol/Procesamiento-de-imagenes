@@ -22,8 +22,15 @@ using Interpolations
 # ╔═╡ 855fbf64-5944-460c-a0d4-523066030e4e
 PlutoUI.TableOfContents(title="Matrices y transformaciones lineales", aside=true)
 
-# ╔═╡ 87c3b810-a0aa-11ef-0912-35ff6b4822de
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+# ╔═╡ 00fbe8cf-cd1e-451c-9a30-b83223fe3c10
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ ecbeadd0-14ba-47ae-826a-d97f0695ef1e
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 3981068a-8063-4f30-bb4b-c954f1780090
 md"""Vamos a usar las siguientes librerías:"""
@@ -3160,7 +3167,8 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─3885aed6-7596-471c-87e4-b246dadbe898
 # ╟─855fbf64-5944-460c-a0d4-523066030e4e
-# ╟─87c3b810-a0aa-11ef-0912-35ff6b4822de
+# ╟─00fbe8cf-cd1e-451c-9a30-b83223fe3c10
+# ╟─ecbeadd0-14ba-47ae-826a-d97f0695ef1e
 # ╟─3981068a-8063-4f30-bb4b-c954f1780090
 # ╠═87509cb1-de05-41f2-b30e-ad065ccde690
 # ╟─21d43d86-b0cd-43ec-a434-ecb564971d24
