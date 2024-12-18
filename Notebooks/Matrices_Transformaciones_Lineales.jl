@@ -22,8 +22,15 @@ using Interpolations
 # ╔═╡ 855fbf64-5944-460c-a0d4-523066030e4e
 PlutoUI.TableOfContents(title="Matrices y transformaciones lineales", aside=true)
 
-# ╔═╡ 87c3b810-a0aa-11ef-0912-35ff6b4822de
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+# ╔═╡ 00fbe8cf-cd1e-451c-9a30-b83223fe3c10
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ ecbeadd0-14ba-47ae-826a-d97f0695ef1e
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 3981068a-8063-4f30-bb4b-c954f1780090
 md"""Vamos a usar las siguientes librerías:"""
@@ -94,17 +101,20 @@ md"""A contiuación en la Figura 1 se muestra un tablero de ajedrez con su posic
 
 # ╔═╡ bf509d53-b239-4514-bdb2-30d5f52219e8
 begin
-	url="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Ajedrez.png?raw=true"
+	url="https://upload.wikimedia.org/wikipedia/commons/7/76/Latex_chessboard_4.png"
 	fname = download(url)
 	imag = Gray.(load(fname))
 	[imag Gray.(ones(size(imag)[1], 100)) Negativo(imag)]
 end
 
 # ╔═╡ 7ff384fb-e482-4bf9-a70f-34bdd4fa840a
-md"""$\texttt{Figura 1. Tablero de Ajedrez}$"""
+md"""$\texttt{Figura 1. Tablero de Ajedrez. Imagen tomada de Wikipedia.}$"""
 
-# ╔═╡ b4ccdbde-1226-4a8a-a348-487342a2b728
-md"""$\texttt{Figura 2.}$"""
+# ╔═╡ 0fdf5d20-9fcc-4404-b364-8bdb16237eea
+md"""En la Figura 2 se puede evidenciar un conejo en escala RGB y su negativo."""
+
+# ╔═╡ 5886e131-99cf-4ed6-a06c-2b281d710ef6
+md"""$\texttt{Figura 2. Conejo. Imagen tomada de Wikipedia.}$"""
 
 # ╔═╡ 6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
 md"""##   $\cdot$ Transpuesta de una imagen"""
@@ -143,26 +153,26 @@ md"""A contiuación en la Figura 3 se muestra un conejo y su reflejo y rotación
 
 # ╔═╡ a5c73baf-5367-470d-8e82-2874d5f90fd6
 begin
-	url1="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/conejo.jpg?raw=true"
+	url1="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Oryctolagus_cuniculus_Rcdo.jpg/640px-Oryctolagus_cuniculus_Rcdo.jpg"
 	fname1 = download(url1)
-	imag1 = Gray.(load(fname1))[1:600,150:749]
+	imag1 = Gray.(load(fname1))[101:700,40:639]
 	[imag1 Gray.(ones(size(imag1)[1], 100)) Transpuesta(imag1)]
 end
 
 # ╔═╡ cb534937-101c-439d-b515-e0d99212894f
 begin
-	Imag1 = load(fname1)[1:600,150:749]
+	Imag1 = load(fname1)[101:700,40:639]
 	[Imag1 RGB.(ones(size(Imag1)[1], 100)) Negativo(Imag1)]
 end
 
 # ╔═╡ cd1e19bd-190d-4d29-9223-485318476099
-md"""$\texttt{Figura 3.}$"""
+md"""$\texttt{Figura 3. Rotación de la Figura 2.}$"""
 
 # ╔═╡ 14df04a2-8d3e-4b85-a7a2-e2e455f31e73
 md"""##   $\cdot$ Sobreposición de imágenes"""
 
 # ╔═╡ 0709425c-688d-40c3-9c80-eac32426d1b5
-md"""Ahora, si deseamos superponer una imagen sobre otra, podemos sumar las matrices que representa cada imagen, es decir, sean $A$ y $B$ las matrices que asociadas a dos imágenes, su sobreppsición estará dado por: 
+md"""Ahora, si deseamos sobreponer una imagen sobre otra, podemos sumar las matrices que representa cada imagen, es decir, sean $A$ y $B$ las matrices que asociadas a dos imágenes, su sobreposición estará dado por: 
 
 $A + B = 
 \begin{bmatrix} 
@@ -182,41 +192,46 @@ function Sobreposicion(image1, image2)
 	B = channelview(image2)
 	n = min(size(A)[1], size(B)[1])
 	m = min(size(A)[2], size(B)[2])
-	Sum = A[1:n,1:m] + B[1:n,1:m]
-	return Gray.(Sum)
+	#Sum = A[1:n,1:m] + B[1:n,1:m]
+	#Image_sobre = (Sum .- minimum(Sum))/(maximum(Sum)-minimum(Sum))
+	Image_sobre = 0.5*A[1:n,1:m] + 0.5*B[1:n,1:m]
+	return Gray.(Image_sobre)
 end
 
 # ╔═╡ 7726e89f-04b1-4664-89d8-bcdba5ec4129
-md"""Sobrepongamos las siguientes dos imágenes"""
+md"""Sobrepongamos la Figura 4 la figura 5."""
 
 # ╔═╡ f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
 begin
-	url2 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Leon.jpg?raw=true"
+	url2 = "https://images.unsplash.com/photo-1518877593221-1f28583780b4?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 	fname2 = download(url2)
 	imag2 = Gray.(load(fname2))
 end
 
 # ╔═╡ 971750a7-dfef-4c44-a703-1ce02dedbe81
-md"""$\texttt{Figura x.}$"""
+md"""$\texttt{Figura 4. Ballena. Imagen recuperada de Unsplash [5].}$"""
 
 # ╔═╡ 895c92f0-6124-446f-a4dd-5a51316a5ed3
 begin
-	url3 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Pumba.jpg?raw=true"
+	url3 = "https://plus.unsplash.com/premium_photo-1700182582594-ad98628ebc76?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
 	fname3 = download(url3)
 	imag3 = Gray.(load(fname3))
 end
 
-# ╔═╡ e9ba5ec0-4c45-466b-b530-b38ff98e632c
-md"""$\texttt{Figura x.}$"""
+# ╔═╡ 89faf96d-0af9-462d-a84f-6f3505f9a604
+md"""$\texttt{Figura 5. Cola de ballena. Imagen recuperada de Unsplash [5].}$"""
 
 # ╔═╡ 005fb905-a248-4bbf-8ceb-0271a1824deb
-md"""A contiuación en la Figura , se muestra la sobreposición de las imágenes."""
+md"""A continuación en la Figura 6, se muestra la sobreposición de las imágenes."""
 
 # ╔═╡ 5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
 Sobreposicion(imag2, imag3)
 
 # ╔═╡ c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
-md"""$\texttt{Figura x.}$"""
+md"""$\texttt{Figura 6. Sobreposición de la Figura 4 y la Figura 5.}$"""
+
+# ╔═╡ aeca23b3-8494-4f1d-b4fb-09e523e3f78a
+md"""Consideremos otro ejemplo."""
 
 # ╔═╡ 1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
 begin
@@ -228,13 +243,11 @@ begin
 	fname5 = download(url5)
 	imag5 = Gray.(load(fname5))
 	
-	[imag4
-	imag5
-	Sobreposicion(imag4, imag5)]
+	[imag4 imag5 Sobreposicion(imag4, imag5)]
 end
 
 # ╔═╡ 2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
-md"""$\texttt{Figura x.}$"""
+md"""$\texttt{Figura 7. Sobreposición de los peluches. Imágenes tomadas de [1].}$"""
 
 # ╔═╡ 90b15d0a-748a-4d0b-ad20-800b35fdb9be
 md"""##   $\cdot$ Producto de imágenes"""
@@ -323,19 +336,25 @@ function G(m, n)
     return G
 end
 
+# ╔═╡ c0b80aea-e931-4aa0-82cf-1ecc600fc7fe
+md"""Veamos un ejemplo cómo aplicar la matriz H."""
+
 # ╔═╡ fc506b2d-3295-49b4-b81a-04a922242f24
 [imag Gray.(ones(size(imag)[1], 80)) Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag))
 Gray.(ones(80, 2*size(imag)[2]+ 80))
 Gray.(channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2]))) Gray.(ones(size(imag)[1], 80))  Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2])))]
 
 # ╔═╡ 710d89b9-13d8-4501-aed3-2befbdc36c10
-md"""$\texttt{Figura x.}$"""
+md"""$\texttt{Figura 8. Aplicación de la matriz H al tablero de ajedrez.}$"""
+
+# ╔═╡ 18ae06c3-d765-4b60-ae3c-4d55217b437d
+md"""La Figura 9 muestra el resultado de aplicar la matriz $G$ a la izquierda y $G^T$ a la derecha a la imagen del tablero de ajedrez."""
 
 # ╔═╡ 480d1d73-bd2e-488e-b936-4749956e45b7
-Gray.(G(size(imag)[1], size(imag)[1])*channelview(imag))
+[Gray.(G(size(imag)[1], size(imag)[1])*channelview(imag)) Gray.(ones(size(imag)[1], 80)) Gray.(channelview(imag)*Transpose(G(size(imag)[2], size(imag)[2])))]
 
-# ╔═╡ a1a4aae3-96c1-46b5-8ce3-78d9082a2b55
-Gray.(channelview(imag)*Transpose(G(size(imag)[2], size(imag)[2])))
+# ╔═╡ 3b8543e3-42ef-4bfa-ad34-9dc3a0a072df
+md"""$\texttt{Figura 9. Aplicación de la matriz G al tablero de ajedrez.}$"""
 
 # ╔═╡ 9a431f74-107d-4db1-859e-bb4ca74f07cb
 md"""Este método se aplica también a la segmentación de partes específicas de una imagen, como bandas horizontales, verticales o rectángulos. Por ejemplo, para extraer la mitad horizontal central de una imagen $A$, se multiplica a la izquierda por una matriz con una identidad en el centro y ceros alrededor.
@@ -349,7 +368,7 @@ Z_{m/2} & I_{m/2} & Z_{m/2} \\
 Z_{m/4} & Z_{m/2} & Z_{m/4}
 \end{bmatrix},$
 
-donde $I_{m/2}$ es la matriz identidad de tamaño $m/2$ y $Z_{m/4}$ es la matriz nula de tamaño $m/4 \times m/4$.
+donde $I_{m/2}$ es la matriz identidad de tamaño $m/2$ y $Z_{m/4}$ es la matriz nula de tamaño $m/4$.
 
 Alternativamente, si se desea mostrar la parte central vertical de la imagen, se debe multiplicar $A$ a la derecha por la matriz:  
 
@@ -363,6 +382,9 @@ Z_{n/4} & Z_{n/2} & Z_{n/4}
 Para extraer un rectángulo central en la imagen, se pueden realizar ambas operaciones en sucesión, descritas formalmente como:  
 
 $A \to K \cdot A \cdot V.$"""
+
+# ╔═╡ db4128bc-fffd-4928-a2f5-d26e64582039
+md"""Con la siguiente función podemos crear la matriz $K$ o $V$."""
 
 # ╔═╡ 1f286685-9bd8-4da2-9187-f62416077814
 function Matrix(n)
@@ -384,13 +406,16 @@ function Matrix(n)
     return new_matrix
 end
 
+# ╔═╡ 6a0ad91f-5047-4fc4-92f6-24f0ea5ff1f3
+md"""Consideremos nuevamente la Figura 3 y mostremos algunos resultados de la aplicación mencionada. Ver Figura 10."""
+
 # ╔═╡ 834e4649-2624-45f5-b98a-1dda03a914ff
 [imag1 Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1))
 Gray.(ones(80, 2*size(imag1)[2]+ 80))
 Gray.(channelview(imag1)*Matrix(size(imag1)[2])) Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1)*Matrix(size(imag1)[2]))]
 
 # ╔═╡ 77fdb7f1-cef6-437b-a793-3443d1f6ad6f
-md"""$\texttt{Figura x.}$"""
+md"""$\texttt{Figura 10. Segmentación de la Figura 3.}$"""
 
 # ╔═╡ 2ea0c762-0377-4db9-b891-002f189a3ada
 md"""
@@ -421,14 +446,6 @@ md"""
 ## Cambio de coordenadas
 """
 
-# ╔═╡ 55f3a84d-87e0-4ef6-b151-87c94520d141
-md"""
-
-"""
-
-# ╔═╡ c3830d67-feb5-497a-93ee-b48af24809df
-imag1[1:500,1:300]
-
 # ╔═╡ c63131b0-fc8a-4fc5-991b-25eff5950aef
 function circulo(n)
 	img = fill(0,n,n)
@@ -438,41 +455,6 @@ function circulo(n)
 		end
 	end
 	return Gray.(img)
-end
-
-# ╔═╡ 9d897011-ef70-4848-aca4-ad6fe26e28cc
-[0 1; -1 0] * [0 -1; 1 0]
-
-# ╔═╡ e36c3717-685c-46a3-b028-06eceed80d9e
-let 
-# Ángulo de rotación en grados y conversión a radianes
-θ_deg = 30
-θ_rad = deg2rad(θ_deg)
-
-# Vector inicial
-v = [1, 0]  # Vector en el eje x positivo
-
-# Matriz de rotación
-R = [cos(θ_rad) -sin(θ_rad);
-     sin(θ_rad)  cos(θ_rad)]
-
-# Vector rotado
-v_rotado = R * v
-
-# Graficar
-plot([0, v[1]], [0, v[2]], arrow=true, label="Vector original", linewidth=2)
-plot!([0, v_rotado[1]], [0, v_rotado[2]], arrow=true, label="Vector rotado", linewidth=2, color=:red)
-
-# Opcional: Círculo unitario para referencia
-circle_x = [cos(t) for t in 0:0.01:2π]
-circle_y = [sin(t) for t in 0:0.01:2π]
-plot!(circle_x, circle_y, label="", aspect_ratio=:equal, linestyle=:dash)
-
-# Configurar el gráfico
-xlims!(-1.5, 1.5)
-ylims!(-1.5, 1.5)
-scatter!([v_rotado[1]], [v_rotado[2]], label="Extremo del vector rotado")
-
 end
 
 # ╔═╡ 8a9438fc-4754-4ece-8601-d3f075681db1
@@ -486,8 +468,8 @@ function rotate_image_no_interp(image, angle)
         x = n - N / 2
         y = M / 2 - m
         new_coords = A * [x; y]
-        y_p = new_coords[1] + N / 2
         x_p = M / 2 - new_coords[2]
+        y_p = new_coords[1] + N / 2
         
         x_p = round(Int, x_p)
         y_p = round(Int, y_p)
@@ -498,8 +480,23 @@ function rotate_image_no_interp(image, angle)
     return rotated_image
 end
 
-# ╔═╡ 0f47dce7-bef1-46a7-80ba-2480f861563c
+# ╔═╡ df624514-b98c-4f4d-8348-96577a54167e
+L = Gray.([0 0 0 0 0 0 0 0 0 0; 
+	0 0 0 0 0 0 0 0 0 0;
+	0 0 0 0 0 0 0 0 0 0;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1;
+	0 0 0 1 1 1 1 1 1 1])
 
+# ╔═╡ 0de7918c-fa71-4523-a314-653e1e190288
+rotate_image_no_interp(L, 90)
+
+# ╔═╡ 225bbc0a-205f-4221-b945-ebc0aeaeae63
+rotate_image_no_interp(L, -90)
 
 # ╔═╡ 0307bca1-6358-4181-92b4-6d7fbeb50bf5
 [circulo(100) rotate_image_no_interp(circulo(100), 20)]
@@ -1088,7 +1085,11 @@ md"""# Referencias
 
 [2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
 
-[3] Labmatecc. (s.f.). Conceptos básicos. Recuperado de [https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/](https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/)"""
+[3] Labmatecc. (s.f.). Conceptos básicos. Recuperado de [https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/](https://labmatecc.github.io/Notebooks/AlgebraLineal/Conceptosbasicos/)
+
+[4] JuliaImages. (s.f.). TestImages: Image data for Julia. Recuperado de [https://testimages.juliaimages.org/stable/](https://testimages.juliaimages.org/stable/)
+
+[5] Unsplash. (n.d.). Unsplash: Fotos gratis para todos. Recuperado de [https://unsplash.com/es](https://unsplash.com/es)"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -2941,7 +2942,8 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─3885aed6-7596-471c-87e4-b246dadbe898
 # ╟─855fbf64-5944-460c-a0d4-523066030e4e
-# ╟─87c3b810-a0aa-11ef-0912-35ff6b4822de
+# ╟─00fbe8cf-cd1e-451c-9a30-b83223fe3c10
+# ╟─ecbeadd0-14ba-47ae-826a-d97f0695ef1e
 # ╟─3981068a-8063-4f30-bb4b-c954f1780090
 # ╠═87509cb1-de05-41f2-b30e-ad065ccde690
 # ╟─21d43d86-b0cd-43ec-a434-ecb564971d24
@@ -2954,8 +2956,9 @@ version = "1.4.1+1"
 # ╟─8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
 # ╟─bf509d53-b239-4514-bdb2-30d5f52219e8
 # ╟─7ff384fb-e482-4bf9-a70f-34bdd4fa840a
+# ╟─0fdf5d20-9fcc-4404-b364-8bdb16237eea
 # ╟─cb534937-101c-439d-b515-e0d99212894f
-# ╟─b4ccdbde-1226-4a8a-a348-487342a2b728
+# ╟─5886e131-99cf-4ed6-a06c-2b281d710ef6
 # ╟─6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
 # ╟─065a2edb-82b6-428a-9c33-7af11ec75ae1
 # ╟─214d8d87-347c-47ac-8e0f-139f86c68b85
@@ -2971,10 +2974,11 @@ version = "1.4.1+1"
 # ╟─f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
 # ╟─971750a7-dfef-4c44-a703-1ce02dedbe81
 # ╟─895c92f0-6124-446f-a4dd-5a51316a5ed3
-# ╟─e9ba5ec0-4c45-466b-b530-b38ff98e632c
+# ╟─89faf96d-0af9-462d-a84f-6f3505f9a604
 # ╟─005fb905-a248-4bbf-8ceb-0271a1824deb
-# ╠═5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
+# ╟─5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
 # ╟─c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
+# ╟─aeca23b3-8494-4f1d-b4fb-09e523e3f78a
 # ╟─1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
 # ╟─2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
 # ╟─90b15d0a-748a-4d0b-ad20-800b35fdb9be
@@ -2982,24 +2986,26 @@ version = "1.4.1+1"
 # ╟─b955394f-4bac-4e1c-8620-a4403cfd3d35
 # ╠═db613b98-f00f-4028-a7df-0b5309243021
 # ╠═a36bc04e-b611-4244-9e86-81c4dfd01a1d
+# ╟─c0b80aea-e931-4aa0-82cf-1ecc600fc7fe
 # ╟─fc506b2d-3295-49b4-b81a-04a922242f24
 # ╟─710d89b9-13d8-4501-aed3-2befbdc36c10
-# ╠═480d1d73-bd2e-488e-b936-4749956e45b7
-# ╠═a1a4aae3-96c1-46b5-8ce3-78d9082a2b55
+# ╟─18ae06c3-d765-4b60-ae3c-4d55217b437d
+# ╟─480d1d73-bd2e-488e-b936-4749956e45b7
+# ╟─3b8543e3-42ef-4bfa-ad34-9dc3a0a072df
 # ╟─9a431f74-107d-4db1-859e-bb4ca74f07cb
+# ╟─db4128bc-fffd-4928-a2f5-d26e64582039
 # ╠═1f286685-9bd8-4da2-9187-f62416077814
+# ╟─6a0ad91f-5047-4fc4-92f6-24f0ea5ff1f3
 # ╟─834e4649-2624-45f5-b98a-1dda03a914ff
 # ╟─77fdb7f1-cef6-437b-a793-3443d1f6ad6f
 # ╟─2ea0c762-0377-4db9-b891-002f189a3ada
 # ╟─ad2006cb-0f8a-400b-b352-3228d7383fc9
 # ╟─d341cf66-93ea-4857-b8f8-3518760259df
-# ╠═55f3a84d-87e0-4ef6-b151-87c94520d141
-# ╠═c3830d67-feb5-497a-93ee-b48af24809df
 # ╟─c63131b0-fc8a-4fc5-991b-25eff5950aef
-# ╠═9d897011-ef70-4848-aca4-ad6fe26e28cc
-# ╟─e36c3717-685c-46a3-b028-06eceed80d9e
 # ╠═8a9438fc-4754-4ece-8601-d3f075681db1
-# ╠═0f47dce7-bef1-46a7-80ba-2480f861563c
+# ╠═df624514-b98c-4f4d-8348-96577a54167e
+# ╠═0de7918c-fa71-4523-a314-653e1e190288
+# ╠═225bbc0a-205f-4221-b945-ebc0aeaeae63
 # ╠═0307bca1-6358-4181-92b4-6d7fbeb50bf5
 # ╠═eb9116f9-2aa8-4f55-9c4f-f27891f46e30
 # ╠═450ce71e-2fcb-4c32-ae96-bba24b7584b1

@@ -23,8 +23,15 @@ using PyCall
 # ╔═╡ 6fdb4745-b175-4ed8-938e-87774afecaa6
 PlutoUI.TableOfContents(title="Transformaciones Lineales y Automatización del Procesamiento", aside=true)
 
-# ╔═╡ 070e0a0e-c4bc-479e-85ab-74908a8595b1
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+# ╔═╡ 25bb5e14-3e85-46dd-abb0-5a5ed187ff9e
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ d0846742-1721-4350-8c8c-36d4fbac647a
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 5ece519c-9988-4ef9-acdd-a099712f0a51
 md"""Vamos a usar las siguientes librerías:"""
@@ -2904,7 +2911,8 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─a530c361-6a99-45c3-9efa-ed85e9ff2535
 # ╟─6fdb4745-b175-4ed8-938e-87774afecaa6
-# ╟─070e0a0e-c4bc-479e-85ab-74908a8595b1
+# ╟─25bb5e14-3e85-46dd-abb0-5a5ed187ff9e
+# ╟─d0846742-1721-4350-8c8c-36d4fbac647a
 # ╟─5ece519c-9988-4ef9-acdd-a099712f0a51
 # ╠═ba6f0c68-e06b-4f33-82e0-66ff452d3763
 # ╟─19e85962-868f-41fb-9103-d9d7868b5137
