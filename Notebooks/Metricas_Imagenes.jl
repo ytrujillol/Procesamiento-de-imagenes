@@ -1,531 +1,38 @@
 ### A Pluto.jl notebook ###
-# v0.20.0
+# v0.20.3
 
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
-# ╔═╡ 17704af0-a82b-11ef-004c-016d20bbe507
+# ╔═╡ 44a476c0-c3e9-11ef-2e85-278c304ad5d6
 using PlutoUI
 
-# ╔═╡ 8b474220-ac28-4ef5-9639-0157db478e7c
+# ╔═╡ 9d423fa4-c492-4cb1-a282-9ad2b3946376
 begin
 	using Plots,Colors,ColorVectorSpace,ImageShow,FileIO,ImageIO
 	using HypertextLiteral
-	using Images, ImageShow, TestImages
+	using Images, ImageShow 
 	using Statistics,  Distributions, LinearAlgebra
 	using StatsBase, StatsPlots
 end
 
-# ╔═╡ dc7ab333-44fb-4008-ad00-f72ff0e38981
-using ImageFiltering, FFTW, DSP
+# ╔═╡ 7bf7af2c-61fd-4a28-9000-d347d41adaa8
+PlutoUI.TableOfContents(title="Métricas en imágenes", aside=true)
 
-# ╔═╡ 8ffc3a7d-71a6-4d2e-9aff-a5cf8fe83777
-PlutoUI.TableOfContents(title="Convolución y filtrado de imágenes", aside=true)
+# ╔═╡ afbdb718-75cf-4d70-9f09-50e70c9805d3
+md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
 
-# ╔═╡ 8641635e-d2ef-431c-95cb-28e69daed703
-md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
-
-Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
-
-# ╔═╡ d30e4cce-0032-43da-b0e9-882dd317908d
-md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
-
-Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
-
-# ╔═╡ 483934b8-54f8-44de-a64a-e479c6ae2fe9
+# ╔═╡ 5ecd8671-9166-4c83-8422-32c006e5a2d1
 md"""Vamos a usar las siguientes librerías:"""
 
-# ╔═╡ e857d023-a8d5-4cb4-a4b2-d443c927e788
+# ╔═╡ 71961e63-0c78-4221-9d5f-126a54513d57
 md"""
 # Introducción
-
-Existen muchas variantes diferentes de convoluciones: continuas y discretas, lineales, circulares y torcidas, entre otras. En este cuaderno, nos centraremos en estudiar dos tipos: la convolución lineal discreta y la convolución circular de secuencias y matrices.
 """
 
-# ╔═╡ 807c0507-3b03-4ed3-924a-ea3f6fd71483
-md"""
-# Convolución
-"""
-
-# ╔═╡ eb0fe789-7d12-48f4-a424-a26b0156af4e
-md"""## Convolución lineal discreta"""
-
-# ╔═╡ 628e3fb3-8294-4c10-993b-35d8c153485a
-md"""**Definición:**
-
-Supongamos que  
-
-$x = (\dots, x_{-2}, x_{-1}, x_0, x_1, x_2, x_3, \dots)$
-y 
-
-$y = (\dots, y_{-2}, y_{-1}, y_0, y_1, y_2, y_3, \dots)$
-son dos secuencias (finitas o infinitas). Su convolución lineal se define como la secuencia $z = x * y$ dada por  
-
-$z_n = \sum_k x_k y_{n-k}$
-donde la suma se calcula sobre todos los valores del índice $k$ para los cuales el producto $x_k y_{n-k}$ no es cero."""
-
-# ╔═╡ 2f7612e1-fa7b-4e41-bf4a-7531d2ab7537
-md"""La siguiente función realiza la convolución lineal discreta en sucesiones
-"""
-
-# ╔═╡ 73814885-4984-449e-a732-32ce32264303
-function convolucion(seq1, seq2)
-    seq2 = reverse(seq2)
-    len_seq1 = length(seq1)
-    len_seq2 = length(seq2)
-    result_length = len_seq1 + len_seq2 - 1
-    result = zeros(Float64, result_length)
-    for i in 1:result_length
-        for j in 1:len_seq2
-            if i - j + 1 > 0 && i - j + 1 <= len_seq1
-                result[i] += seq1[i - j + 1] * seq2[j]
-            end
-        end
-    end
-    
-    return result
-end
-
-# ╔═╡ 6c66800d-e0b3-4478-90d4-b70d970d0e14
-md"""**Ejemplo:** Consideremos $x=[1,2,3,4], y=[5,6,7]$, así $z=\text{conv}(x,y)$ es:"""
-
-# ╔═╡ 3e3fae74-41a8-44f4-a026-97a771fec0d5
-begin
-	seq1 = [1, 2, 3]
-	seq2 = [0, 1, 0.5]
-	
-	resultado = convolucion(seq1, seq2)
-end
-
-# ╔═╡ a25139a4-3e5d-44eb-99dd-2f2bd76f2da8
-function plot_sequence(arr)
-    k = 1:length(arr) 
-    plot()
-
-    for i in k
-        plot!([i, i], [0, arr[i]], lw=2, color=:blue, label=false)
-    end
-    scatter!(k, arr, color=:red, label="x[k]", markersize=8)
-    title!("$arr")
-    xlabel!("k")
-    ylabel!("x[k]")
-end
-
-# ╔═╡ 6d406c34-098c-4b17-91ca-0b379acded43
-plot(plot_sequence(seq1), plot_sequence(seq2), plot_sequence(resultado), layout=(1, 3), size=(800, 400))
-
-# ╔═╡ c50ce2d7-fc1d-4000-abb9-32174e3de7e2
-md"""$\texttt{Figura 1. Gráficas de las dos secuencias y su convolución lineal.}$"""
-
-# ╔═╡ b030fd72-0330-48b9-80be-81f57870d188
-md"""La convolución de una matriz $A$ de tamaño $m \times n$ y una matriz $B$ de tamaño $p \times q$ se define de la siguiente manera:
-
-$A * B = \sum_{u=0}^{p} \sum_{v=0}^{q} A_{u,v} \cdot B_{i-u, j-v}$
-"""
-
-# ╔═╡ 521a167d-6625-4b20-b267-b004e5bd2f91
-#$A * B = \sum_{u=1}^{p} \sum_{v=1}^{q} A_{i+u-1, j+v-1} \cdot B_{u,v}$
-
-# ╔═╡ a97ac0e4-845b-4382-88e9-4b6e1d5a51f5
-md"""La siguiente función realiza la convolución lineal discreta en matrices.
-"""
-
-# ╔═╡ 77226374-17c4-41de-af15-0ee85df02343
-function convolucion_matrices(matriz1, matriz2)
-    m1, n1 = size(matriz1)
-    m2, n2 = size(matriz2)
-    resultado = zeros(Float64, m1 - m2 + 1, n1 - n2 + 1)
-    
-    for i in 1:(m1 - m2 + 1)
-        for j in 1:(n1 - n2 + 1)
-            submatriz = matriz1[i:i + m2 - 1, j:j + n2 - 1]
-            resultado[i, j] = sum(submatriz .* matriz2)
-        end
-    end
-    
-    return resultado
-end
-
-# ╔═╡ 84952426-6fdb-4b04-a517-168fcf17e34c
-md"""**Ejemplo:** Consideremos $A = \begin{bmatrix}
-1 & 2 & 3 \\
-4 & 5 & 6 \\
-7 & 8 & 9
-\end{bmatrix}$, y $B = \begin{bmatrix}
-0 & 1 \\
-2 & 3
-\end{bmatrix}$, así $C=A*B$ es:"""
-
-# ╔═╡ eddb9bad-7637-4bb0-bc54-64308b787b09
-begin
-	matriz1 = [1 2 3; 4 5 6; 7 8 9]
-	matriz2 =[1 -1;-2 3]
-	
-	resultado_m = convolucion_matrices(matriz1, matriz2)	
-end
-
-# ╔═╡ a6628c01-fe52-4f1c-b454-50d5fc62c222
-#Según el libro:
-#Duda, ¿Beneficios?
-
-# ╔═╡ 136e8377-c295-42cf-a656-b96d275bb067
-function convolucion_matrices2(A, B)
-    m, n = size(A)
-    p, q = size(B)
-    C = zeros(Float64, m + p - 1, n + q - 1)
-
-    for i in 1:(m + p - 1)
-        for j in 1:(n + q - 1)
-            for u in 1:p
-                for v in 1:q
-                    if i - u + 1 > 0 && i - u + 1 <= m && j - v + 1 > 0 && j - v + 1 <= n
-                        C[i, j] += A[i - u + 1, j - v + 1] * B[u, v]
-                    end
-                end
-            end
-        end
-    end
-    
-    return C
-end
-
-# ╔═╡ 367b6a6d-e70c-4ee2-8ed1-21403c8a6505
-C = convolucion_matrices2(matriz1, matriz2)
-
-# ╔═╡ 27d7829e-8085-4d28-9832-d5af7a7209d9
-md"""## Convolución circular discreta"""
-
-# ╔═╡ f1d00aa0-0320-4438-8009-721cc11a542c
-md"""**Definición:** 
-
-Supongamos que $x = (x_0, x_1, \dots, x_{N-1})$ y $y = (y_0, y_1, \dots, y_{N-1})$ son dos sucesiones finitas de la misma longitud $N$. Su convolución circular se define como $z = x * y$ de longitud $N$ dada por:
-
-$z_n = \sum_{k=0}^{N-1} x_k y_{n-k \mod N}$"""
-
-# ╔═╡ 0a41a48e-bb45-4137-b61b-b3aec471f378
-md"""La siguiente función calcula la convolución circular discreta en sucesiones.
-"""
-
-# ╔═╡ 27337fb8-0618-4f8f-b4e8-cdf6adbf4e3b
-function convolucion_circular(seq1, seq2)
-    if length(seq1) != length(seq2)
-        throw("Las secuencias deben tener el mismo tamaño")
-    end
-    
-    N = length(seq1) 
-    result = zeros(Float64, N)
-    for i in 1:N
-        for j in 1:N
-            k = mod(i - j, N) + 1
-            result[i] += seq1[k] * seq2[j]
-        end
-    end
-    return result
-end
-
-
-# ╔═╡ 02b2becd-0211-4dce-961c-df792360c4b7
-md"""**Ejemplo:**"""
-
-# ╔═╡ 4a2c4b78-83fc-420a-9968-134e5ed22bfd
-begin
-	seq3 = [1, 2, 3, 4]
-	seq4 = [0, 1, 0.5, 1]
-	
-	resultado_circ = convolucion_circular(seq3, seq4)
-end
-
-# ╔═╡ 82c1efc1-412b-4dd6-adf6-09f9a514b396
-md"""**Definición:**
-
-Sean $A$ y $B$ son dos matrices de tamaño $M \times N$. Su convolución circular se define como la matriz $C = A * B$ de tamaño $M \times N$, dada por:
-
-$C(m, n) = \sum_{k=1}^{M} \sum_{l=1}^{N} A(k, l) B(m - k \mod M, n - l \mod N).$"""
-
-# ╔═╡ 3b1dfb97-e3ef-440d-ae1c-c8e3ae986ec9
-md"""La siguiente función realiza la convolución circular discreta en matrices.
-"""
-
-# ╔═╡ 62a9e2b1-c866-454f-9a95-7eb6edc06a25
-function convolucion_matrices_circular(A, B)
-    M, N = size(A)
-    p, q = size(B)
-    C = zeros(Float64, M, N)
-
-    for m in 1:M
-        for n in 1:N
-            suma = 0.0
-            for k in 1:p
-                for l in 1:q
-                    row_idx = mod(m - k, M) + 1
-                    col_idx = mod(n - l, N) + 1
-                    suma += A[k, l] * B[row_idx, col_idx]
-                end
-            end
-            C[m, n] = suma
-        end
-    end
-    return C
-end
-
-# ╔═╡ f9d64d9a-c9f3-4934-bce0-59c00f9bc3ff
-begin
-	matriz3 = [1 2; 3 -4]
-	matriz4 = [1 -1; 2 3]
-	convolucion_matrices_circular(matriz3, matriz4)
-end
-
-# ╔═╡ fced86c0-bae7-4d85-9cf9-d8c769cb7cbf
-md"""
-## Convolución en procesamiento de imágenes
-"""
-
-# ╔═╡ f29c85a0-50e5-4e66-ad6d-1690966b53da
-md"""**Definición:**
-
-Sea $f(x, y)$ la imagen original de tamaño $m \times n$ y un filtro o kernel $\omega$ de tamaño $(a+1) \times (b+1)$, la operación de convolución de la imagen con el filtro es la siguiente:
-
-$\omega * f_{x,y}= \sum_{i=0}^{a} \sum_{j=0}^{b} \omega_{i,j} \cdot f(x-i, y-j).$
-
-Este proceso permite incorporar información del entorno de cada píxel, lo que facilita la aplicación de efectos como el suavizado, la mejora de bordes o diversas transformaciones locales en la imagen."""
-
-# ╔═╡ 6d0adeb3-cc85-4a5f-ad11-c7112cd6d448
-md"""**Ejemplo:**"""
-
-# ╔═╡ c5b4a93a-d835-422e-a7eb-afc887e3a401
-md"""Consideremos la siguiente muestra de colores y un kernel."""
-
-# ╔═╡ 06cb1a9e-1d49-4799-9cfc-961f8dc73979
-begin
-	muestra=[RGB(1,0,1) RGB(0,0,0)  RGB(1,1,1) RGB(1,1,1)
-		RGB(0,0,0) RGB(1,1,1) RGB(0,0,1) RGB(0.3,0,0.5)
-		RGB(0,1,0) RGB(0,0,0) RGB(1,0,0.5) RGB(1,0.1,0)
-		RGB(1,0,1) RGB(0,0,0)  RGB(1,1,1) RGB(1,1,1)]
-	muestra1 = Gray.(muestra)
-end
-
-# ╔═╡ b5c8491a-39c4-4f84-9fb1-4de37df14ef4
-md"""$\texttt{Figura 2. Muestra.}$"""
-
-# ╔═╡ d61f4db6-7480-4a4d-a286-0e98496050da
-kernela=[1 0 1;1 1 1;1 1 1]/8
-
-# ╔═╡ 4d53cf63-2b92-4996-9b3d-9182e3493980
-Gray.(convolucion_matrices(kernela, muestra1))
-
-# ╔═╡ 55dd568f-4eb2-46e1-80cd-df924c349106
-Gray.(convolucion_matrices2(kernela, muestra1))
-
-# ╔═╡ 8ae1a5f2-8ef0-4aaf-8b5f-d6e79ac53a8d
-md"""$\texttt{Figura 3. Muestra con filtro.}$"""
-
-# ╔═╡ 33f8a618-672b-4d0d-ae17-7489c9beb284
-md"""**Ejemplo:**
-
-Consideremos la siguiente imagen y un kernel."""
-
-# ╔═╡ 3cfe2e38-40e0-4bb8-b451-fdc5cd4eb86d
-Image1 = Gray.(imresize(testimage(TestImages.remotefiles[15]), (30, 50)))
-
-# ╔═╡ 07695475-962d-44ad-b1d4-458b775acfa7
-md"""$\texttt{Figura 4. Gato. Imagen tomada de [7].}$"""
-
-# ╔═╡ bf305550-f36d-4c2b-b479-a8c1fa792b40
-kernelb=[1 1 1;1 1 1;1 1 1]/9
-
-# ╔═╡ db790747-fd96-4d3c-befb-07dd98b2f2e4
-md"""La matriz asociada a la imagen es"""
-
-# ╔═╡ 0f80572d-d678-41f5-acf6-81cb8d78af3e
-A = channelview(Image1)
-
-# ╔═╡ 4405667d-83f5-4d61-acd1-04ae53cf95d1
-md"""Así, el resultado de realizar la convolución es la siguiente matriz."""
-
-# ╔═╡ 075fd82e-5be7-48b2-b0c4-ac9c69fd4b58
-result = convolucion_matrices2(kernelb, A)
-
-# ╔═╡ a852d092-7949-4c60-b1c8-6db5f34d494d
-md"""Cuya imagen asociada es:"""
-
-# ╔═╡ a2859d65-d39d-43e3-93aa-7af78c863ed4
-Gray.(result)
-
-# ╔═╡ 75100b66-840a-4586-b776-36fb60bfd23d
-md"""$\texttt{Figura 5. Resultado de aplicar el filtro a la Figura 4.}$"""
-
-# ╔═╡ f79e9699-4a90-4c65-a907-c8fe44b2e098
-md"""La función $\texttt{imfilter}$ aplica un kernel (también conocido como filtro) a una imagen utilizando el proceso de convolución."""
-
-# ╔═╡ 30ea44e0-d12b-4852-847a-f59018d4f632
-md"""Consideremos la siguiente muestra"""
-
-# ╔═╡ 545a0ed4-ccac-4208-b463-b0309c32920a
-muestra
-
-# ╔═╡ 40e60bda-2258-4c22-a95c-ad2ad39ba5e1
-md"""$\texttt{Figura 6.}$"""
-
-# ╔═╡ 5b618a30-22e5-45e3-966e-4b3304ae809f
-muestra_filtrada=imfilter(muestra, kernelb)
-
-# ╔═╡ 0ba16b94-99d6-4bad-84be-bd2012eb979f
-md"""$\texttt{Figura 7.}$"""
-
-# ╔═╡ 6ff8b413-a409-4d23-8f0f-f0d4bf37890d
-md"""
-### Diferentes tipo de kernels
-"""
-
-# ╔═╡ 65c2f9ca-5efa-4168-96ad-6fb98d834879
-md"""Material tomado de [6]."""
-
-# ╔═╡ 6977e2f0-d30c-4982-b166-baf9a8a61fb5
-begin
-	identity = [0 0 0 ; 0 1 0 ; 0 0 0]
-	kernel1 = [-1 -2 -1; -2 12 -2; -1 -2 -1] 
-	
-	edge_detect = [0 -1 0; -1 4 -1; 0 -1 0] 
-	sharpen = identity .+ edge_detect
-	box_blur = [1 1 1;1 1 1;1 1 1]/9
-	∇x = [-1 0 1;-1 0 1;-1 0 1]/2 
-	∇y = ∇x'
-	kernels = [identity, kernel1, edge_detect, sharpen, box_blur, ∇x, ∇y]
-	kernel_keys =["identity", "kernel1", "edge_detect", "sharpen", "box_blur", "∇x", "∇y"]
-	selections = kernel_keys .=> kernel_keys
-	kernel_matrix = Dict(kernel_keys .=> kernels)
-	md"$(@bind kernel_name Select(selections))"
-end
-
-# ╔═╡ 32e9571e-a0f8-4a59-bf7c-67e178b95e80
-imfilter(muestra, kernel_matrix[kernel_name])
-
-# ╔═╡ 7fcea7e9-474c-4aad-9ca2-03a6a4dcec1b
-md"""$\texttt{Figura 8.}$"""
-
-# ╔═╡ a3dd9f6f-2b52-4d2d-85a0-682f15405776
-begin
-	img = testimage_dip3e(TestImages.remotefiles_dip3e[100]) 
-
-	convoluted_img = imfilter(img, kernel_matrix[kernel_name])
-	
-	[img Gray.(ones(size(img)[1], 10)) convoluted_img]
-end
-
-# ╔═╡ f18a23cd-2f3d-4cd0-a9f5-0a583063850e
-img
-
-# ╔═╡ cefb7a0d-f4ea-4a98-a632-bf1d1ac0cc3a
-imfilter(img, [0 0  0 0 1/5; 0 0 0 1/5 0; 0 0 1/5 0 0; 0 1/5 0 0 0; 1/5 0 0 0 0])
-
-# ╔═╡ 0571b4d4-ec84-4d17-ba16-d8126f63fa9b
-md"""$\texttt{Figura 9.}$"""
-
-# ╔═╡ 19d39eed-ae09-44d3-93fd-de962db7184c
-begin
-	gato = testimage(TestImages.remotefiles[15]) 
-	
-	[gato RGB.(ones(size(gato)[1], 10)) imfilter(gato,Kernel.gaussian(2));
-	RGB.(ones(10, size(gato)[2])) RGB.(ones(10, 10)) RGB.(ones(10, size(gato)[2]));
-	imfilter(gato,Kernel.gaussian(15)) RGB.(ones(size(gato)[1], 10)) imfilter(gato,Kernel.Laplacian())]
-end
-
-# ╔═╡ 33693d4c-eda3-4293-8011-7c9653b8606b
-Gray.(1 .- channelview(Gray.(imfilter(gato,Kernel.Laplacian()))))
-
-# ╔═╡ 5b9993e8-bfce-4bcb-8f01-332108805603
-md"""$\texttt{Figura 10.}$"""
-
-# ╔═╡ 751c740d-820e-46ef-8580-597156c45fe6
-[gato RGB.(ones(size(gato)[1], 10)) imfilter(gato,Kernel.gaussian(2)) RGB.(ones(size(gato)[1], 10)) imfilter(gato,Kernel.gaussian(5)) RGB.(ones(size(gato)[1], 10)) imfilter(gato,Kernel.gaussian(10))]
-
-# ╔═╡ e6b4dca6-30b7-4547-b31e-753eb0c664a9
-md"""$\texttt{Figura 11.}$"""
-
-# ╔═╡ deff83be-762c-404f-b2e4-1bccc64786e2
-[padarray(gato, Pad(:replicate,100,100)) RGB.(ones(500, 10)) padarray(gato, Pad(:circular,100,100));
-	RGB.(ones(10, 651)) RGB.(ones(10, 10)) RGB.(ones(10, 651));
-	padarray(gato, Pad(:symmetric,100,100)) RGB.(ones(500, 10)) padarray(gato, Pad(:reflect,100,100))]
-
-# ╔═╡ 0f726a33-b4e2-4966-8711-3ee2e69814ce
-md"""$\texttt{Figura 12.}$"""
-
-# ╔═╡ 62c66af2-97d4-4202-ad69-36d7211b9f4e
-[padarray(gato, Pad(:replicate,100,100)) RGB.(ones(500, 10)) imfilter( padarray(gato, Pad(:replicate,100,100)) ,Kernel.gaussian(5));
-	RGB.(ones(10, 651)) RGB.(ones(10, 10)) RGB.(ones(10, 651));
-padarray(gato, Pad(:circular,100,100)) RGB.(ones(500, 10)) imfilter( padarray(gato, Pad(:circular,100,100)) ,Kernel.gaussian(5));
-	RGB.(ones(10, 651)) RGB.(ones(10, 10)) RGB.(ones(10, 651));
-padarray(gato, Pad(:symmetric,100,100)) RGB.(ones(500, 10)) imfilter( padarray(gato, Pad(:symmetric,100,100)) ,Kernel.gaussian(5));
-	RGB.(ones(10, 651)) RGB.(ones(10, 10)) RGB.(ones(10, 651));
-padarray(gato, Pad(:reflect,100,100)) RGB.(ones(500, 10)) imfilter( padarray(gato, Pad(:reflect,100,100)) ,Kernel.gaussian(5));]
-
-# ╔═╡ cffdb4b0-4e4b-4d12-8464-bd9cd226f2e0
-md"""$\texttt{Figura 13.}$"""
-
-# ╔═╡ f947931d-4589-4518-82aa-65fd44a5779e
-begin
-	# Dimensiones de la imagen
-	n = 500  # Tamaño de la imagen (n x n)
-	imgcirc = fill(0, n, n)  # Fondo oscuro (negro)
-	
-	# Dibujar el cuadrado claro
-	for i in 1:n, j in 1:n
-	    if (abs(i - n/2)^2 + 2*abs(j - n/4)^2)^(1/2) <= n/5
-	        imgcirc[i, j] = 255
-	    end
-		if (5*abs(i - 4*n/5)^2 + 1*abs(j - 4*n/5)^2)^(1/2) <= n/10
-	        imgcirc[i, j] = 100 
-	    end
-		if (1*abs(i - 2*n/5)^3 + 10*abs(j -4*n/7)^3)^(1/3) <= n/10
-	        imgcirc[i, j] = 200
-	    end
-		if (1*abs(i - n/10)^(1/3) + 1*abs(j - 4*n/5)^(1/3))^(3) <= n/4
-	        imgcirc[i, j] = 150
-	    end
-	end
-	
-
-	imgcirc = Gray.(imgcirc./ 255)
-end;
-
-# ╔═╡ d30bd493-34fd-400d-9c40-0441e8395524
-[imgcirc Gray.(ones(size(imgcirc)[1], 10)) imfilter(imgcirc,Kernel.gaussian(5)) Gray.(ones(size(imgcirc)[1], 10)) imfilter(imgcirc,Kernel.gaussian(10)) Gray.(ones(size(imgcirc)[1], 10)) imfilter(imgcirc,Kernel.gaussian(15))]
-
-# ╔═╡ 8a7d5ccd-23ea-4a3c-aea5-7c6a5deb3906
-md"""$\texttt{Figura 14.}$"""
-
-# ╔═╡ 875071cf-73d2-466b-a00f-524d5b5837ec
-[imgcirc Gray.(ones(size(imgcirc)[1], 10)) imfilter(imgcirc,Kernel.Laplacian())]
-
-# ╔═╡ bd695d1e-6636-463d-a20c-27099bff0986
-md"""$\texttt{Figura 15.}$"""
-
-# ╔═╡ 80d01139-369e-4063-aa4d-549e37fdf80b
+# ╔═╡ 534ecf5b-9050-499e-b6f4-a2df527c6d5a
 md"""
 # Referencias
-[1] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
-
-[2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
-
-[3] McAndrew, A. (2015). A computational introduction to digital image processing. CRC Press.
-
-[4] Convolution — Basics of Image Processing. [https://vincmazet.github.io/bip/filtering/convolution.html](https://vincmazet.github.io/bip/filtering/convolution.html). Accedido 3 de diciembre de 2024.
-
-[5] ImageFiltering.jl · ImageFiltering. [https://juliaimages.org/ImageFiltering.jl/stable/](https://juliaimages.org/ImageFiltering.jl/stable/). Accedido 3 de diciembre de 2024.
-
-[6] Labmatecc. (n.d.). Introducción al procesamiento de imágenes. Recuperado el 6 de diciembre de 2024, de [https://labmatecc.github.io/Notebooks/AlgebraLineal/Introduccionalprocesamientodeimagenes](https://labmatecc.github.io/Notebooks/AlgebraLineal/Introduccionalprocesamientodeimagenes)
-
-[7] JuliaImages. (s.f.). TestImages: Image data for Julia. Recuperado de [https://testimages.juliaimages.org/stable/](https://testimages.juliaimages.org/stable/)
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -533,12 +40,9 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 [deps]
 ColorVectorSpace = "c3611d14-8923-5661-9e6a-0046d554d3a4"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
-DSP = "717857b8-e6f2-59f4-9121-6e50c889abd2"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
-FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
-ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
@@ -548,35 +52,30 @@ PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
-TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
 [compat]
-ColorVectorSpace = "~0.10.0"
+ColorVectorSpace = "~0.11.0"
 Colors = "~0.13.0"
-DSP = "~0.7.9"
 Distributions = "~0.25.113"
-FFTW = "~1.8.0"
 FileIO = "~1.16.6"
 HypertextLiteral = "~0.9.5"
-ImageFiltering = "~0.7.8"
 ImageIO = "~0.6.9"
 ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
-PlutoUI = "~0.7.60"
+PlutoUI = "~0.7.23"
 Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
-TestImages = "~1.9.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.0"
+julia_version = "1.11.1"
 manifest_format = "2.0"
-project_hash = "baf6fadee8abe722a0b473ee8f34516f9d0c4e04"
+project_hash = "da7925006d3f77e6e1623a5c20b742d756cff28d"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -761,15 +260,19 @@ version = "3.27.1"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
-git-tree-sha1 = "b10d0b65641d57b8b4d5e234446582de5047050d"
+git-tree-sha1 = "c7acce7a7e1078a20a285211dd73cd3941a871d6"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
-version = "0.11.5"
+version = "0.12.0"
+weakdeps = ["StyledStrings"]
+
+    [deps.ColorTypes.extensions]
+    StyledStringsExt = "StyledStrings"
 
 [[deps.ColorVectorSpace]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "Requires", "Statistics", "TensorCore"]
-git-tree-sha1 = "a1f44953f2382ebb937d60dafbe2deea4bd23249"
+git-tree-sha1 = "8b3b6f87ce8f65a2b4f857528fd8d70086cd72b1"
 uuid = "c3611d14-8923-5661-9e6a-0046d554d3a4"
-version = "0.10.0"
+version = "0.11.0"
 weakdeps = ["SpecialFunctions"]
 
     [deps.ColorVectorSpace.extensions]
@@ -844,12 +347,6 @@ version = "0.3.1"
 git-tree-sha1 = "1a3f97f907e6dd8983b744d2642651bb162a3f7a"
 uuid = "dc8bdbbb-1ca9-579f-8c36-e416f6a65cce"
 version = "1.0.2"
-
-[[deps.DSP]]
-deps = ["Compat", "FFTW", "IterTools", "LinearAlgebra", "Polynomials", "Random", "Reexport", "SpecialFunctions", "Statistics"]
-git-tree-sha1 = "f7f4319567fe769debfcf7f8c03d8da1dd4e2fb0"
-uuid = "717857b8-e6f2-59f4-9121-6e50c889abd2"
-version = "0.7.9"
 
 [[deps.DataAPI]]
 git-tree-sha1 = "abe83f3a2f1b857aac70ef8b269080af17764bbe"
@@ -929,9 +426,9 @@ version = "1.6.0"
 
 [[deps.EpollShim_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "8e9441ee83492030ace98f9789a654a6d0b1f643"
+git-tree-sha1 = "8a4be429317c42cfae6a7fc03c31bad1970c310d"
 uuid = "2702e6a9-849d-5ed8-8c21-79e8b8f9ee43"
-version = "0.0.20230411+0"
+version = "0.0.20230411+1"
 
 [[deps.ExceptionUnwrapping]]
 deps = ["Test"]
@@ -941,9 +438,9 @@ version = "0.1.11"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "cc5231d52eb1771251fbd37171dbc408bcc8a1b6"
+git-tree-sha1 = "e51db81749b0777b2147fbe7b783ee79045b8e99"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.6.4+0"
+version = "2.6.4+1"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -1009,9 +506,9 @@ version = "0.8.5"
 
 [[deps.Fontconfig_jll]]
 deps = ["Artifacts", "Bzip2_jll", "Expat_jll", "FreeType2_jll", "JLLWrappers", "Libdl", "Libuuid_jll", "Zlib_jll"]
-git-tree-sha1 = "db16beca600632c95fc8aca29890d83788dd8b23"
+git-tree-sha1 = "21fac3c77d7b5a9fc03b0ec503aa1a6392c34d2b"
 uuid = "a3f928ae-7b40-5064-980b-68af3947d34b"
-version = "2.13.96+0"
+version = "2.15.0+0"
 
 [[deps.Format]]
 git-tree-sha1 = "9c68794ef81b08086aeb32eeaf33531668d5f5fc"
@@ -1020,9 +517,9 @@ version = "1.3.7"
 
 [[deps.FreeType2_jll]]
 deps = ["Artifacts", "Bzip2_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "fa8e19f44de37e225aa0f1695bc223b05ed51fb4"
+git-tree-sha1 = "786e968a8d2fb167f2e4880baba62e0e26bd8e4e"
 uuid = "d7e528f0-a631-5988-bf34-fe36492bcfd7"
-version = "2.13.3+0"
+version = "2.13.3+1"
 
 [[deps.FriBidi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1073,9 +570,9 @@ version = "5.2.2+0"
 
 [[deps.Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE2_jll", "Zlib_jll"]
-git-tree-sha1 = "b36c7e110080ae48fdef61b0c31e6b17ada23b33"
+git-tree-sha1 = "48b5d4c75b2c9078ead62e345966fa51a25c05ad"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.82.2+0"
+version = "2.82.2+1"
 
 [[deps.Graphics]]
 deps = ["Colors", "LinearAlgebra", "NaNMath"]
@@ -1102,15 +599,15 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "PrecompileTools", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "ae350b8225575cc3ea385d4131c81594f86dfe4f"
+git-tree-sha1 = "6c22309e9a356ac1ebc5c8a217045f9bae6f8d9a"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.12"
+version = "1.10.13"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
-git-tree-sha1 = "401e4f3f30f43af2c8478fc008da50096ea5240f"
+git-tree-sha1 = "55c53be97790242c29031e5cd45e8ac296dadda3"
 uuid = "2e76f6c2-a576-52d4-95c1-20adfe4de566"
-version = "8.3.1+0"
+version = "8.5.0+0"
 
 [[deps.HistogramThresholding]]
 deps = ["ImageBase", "LinearAlgebra", "MappedArrays"]
@@ -1132,9 +629,9 @@ version = "0.3.25"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
-git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
+git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
 uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.5"
+version = "0.0.4"
 
 [[deps.HypertextLiteral]]
 deps = ["Tricks"]
@@ -1475,10 +972,10 @@ uuid = "d4300ac3-e22c-5743-9152-c294e39db1e4"
 version = "1.11.0+0"
 
 [[deps.Libglvnd_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll", "Xorg_libXext_jll"]
-git-tree-sha1 = "6f73d1dd803986947b2c750138528a999a6c7733"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll", "Xorg_libXext_jll"]
+git-tree-sha1 = "ff3b4b9d35de638936a525ecd36e86a8bb919d11"
 uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
-version = "1.6.0+0"
+version = "1.7.0+0"
 
 [[deps.Libgpg_error_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1561,11 +1058,6 @@ version = "0.12.171"
     ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
     SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
-
-[[deps.MIMEs]]
-git-tree-sha1 = "65f28ad4b594aebe22157d6fac869786a255b7eb"
-uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
-version = "0.1.4"
 
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
@@ -1841,10 +1333,10 @@ version = "1.40.7"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.PlutoUI]]
-deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
-git-tree-sha1 = "eba4810d5e6a01f612b948c9fa94f905b49087b0"
+deps = ["AbstractPlutoDingetjes", "Base64", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
+git-tree-sha1 = "5152abbdab6488d5eec6a01029ca6697dff4ec8f"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.60"
+version = "0.7.23"
 
 [[deps.PolyesterWeave]]
 deps = ["BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "Static", "ThreadingUtilities"]
@@ -2205,12 +1697,6 @@ git-tree-sha1 = "3b1dcbf62e469a67f6733ae493401e53d92ff543"
 uuid = "f3b207a7-027a-5e70-b257-86293d7955fd"
 version = "0.15.7"
 
-[[deps.StringDistances]]
-deps = ["Distances", "StatsAPI"]
-git-tree-sha1 = "5b2ca70b099f91e54d98064d5caf5cc9b541ad06"
-uuid = "88034a9c-02f8-509d-84a9-84ec65e18404"
-version = "0.11.3"
-
 [[deps.StyledStrings]]
 uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 version = "1.11.0"
@@ -2262,12 +1748,6 @@ version = "0.1.1"
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
 version = "1.11.0"
-
-[[deps.TestImages]]
-deps = ["AxisArrays", "ColorTypes", "FileIO", "ImageIO", "ImageMagick", "OffsetArrays", "Pkg", "StringDistances"]
-git-tree-sha1 = "fc32a2c7972e2829f34cf7ef10bbcb11c9b0a54c"
-uuid = "5e47fb64-e119-507b-a336-dd2b206d9990"
-version = "1.9.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
@@ -2324,9 +1804,9 @@ version = "0.4.1"
 
 [[deps.Unitful]]
 deps = ["Dates", "LinearAlgebra", "Random"]
-git-tree-sha1 = "d95fe458f26209c66a187b1114df96fd70839efd"
+git-tree-sha1 = "01915bfcd62be15329c9a07235447a89d588327c"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.21.0"
+version = "1.21.1"
 
     [deps.Unitful.extensions]
     ConstructionBaseUnitfulExt = "ConstructionBase"
@@ -2397,9 +1877,9 @@ version = "1.1.42+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
-git-tree-sha1 = "afead5aba5aa507ad5a3bf01f58f82c8d1403495"
+git-tree-sha1 = "9dafcee1d24c4f024e7edc92603cedba72118283"
 uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
-version = "1.8.6+0"
+version = "1.8.6+1"
 
 [[deps.Xorg_libXau_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2421,9 +1901,9 @@ version = "1.1.4+1"
 
 [[deps.Xorg_libXext_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "d2d1a5c49fae4ba39983f63de6afcbea47194e85"
+git-tree-sha1 = "d7155fea91a4123ef59f42c4afb5ab3b4ca95058"
 uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
-version = "1.3.6+0"
+version = "1.3.6+1"
 
 [[deps.Xorg_libXfixes_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
@@ -2463,9 +1943,9 @@ version = "0.1.1+1"
 
 [[deps.Xorg_libxcb_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
-git-tree-sha1 = "bcd466676fef0878338c61e655629fa7bbc69d8e"
+git-tree-sha1 = "1a74296303b6524a0472a8cb12d3d87a78eb3612"
 uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
-version = "1.17.0+0"
+version = "1.17.0+1"
 
 [[deps.Xorg_libxkbfile_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2627,93 +2107,12 @@ version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─17704af0-a82b-11ef-004c-016d20bbe507
-# ╟─8ffc3a7d-71a6-4d2e-9aff-a5cf8fe83777
-# ╟─8641635e-d2ef-431c-95cb-28e69daed703
-# ╟─d30e4cce-0032-43da-b0e9-882dd317908d
-# ╟─483934b8-54f8-44de-a64a-e479c6ae2fe9
-# ╠═8b474220-ac28-4ef5-9639-0157db478e7c
-# ╠═dc7ab333-44fb-4008-ad00-f72ff0e38981
-# ╟─e857d023-a8d5-4cb4-a4b2-d443c927e788
-# ╟─807c0507-3b03-4ed3-924a-ea3f6fd71483
-# ╟─eb0fe789-7d12-48f4-a424-a26b0156af4e
-# ╟─628e3fb3-8294-4c10-993b-35d8c153485a
-# ╟─2f7612e1-fa7b-4e41-bf4a-7531d2ab7537
-# ╠═73814885-4984-449e-a732-32ce32264303
-# ╟─6c66800d-e0b3-4478-90d4-b70d970d0e14
-# ╠═3e3fae74-41a8-44f4-a026-97a771fec0d5
-# ╟─a25139a4-3e5d-44eb-99dd-2f2bd76f2da8
-# ╟─6d406c34-098c-4b17-91ca-0b379acded43
-# ╟─c50ce2d7-fc1d-4000-abb9-32174e3de7e2
-# ╟─b030fd72-0330-48b9-80be-81f57870d188
-# ╠═521a167d-6625-4b20-b267-b004e5bd2f91
-# ╟─a97ac0e4-845b-4382-88e9-4b6e1d5a51f5
-# ╠═77226374-17c4-41de-af15-0ee85df02343
-# ╟─84952426-6fdb-4b04-a517-168fcf17e34c
-# ╠═eddb9bad-7637-4bb0-bc54-64308b787b09
-# ╠═a6628c01-fe52-4f1c-b454-50d5fc62c222
-# ╠═136e8377-c295-42cf-a656-b96d275bb067
-# ╠═367b6a6d-e70c-4ee2-8ed1-21403c8a6505
-# ╟─27d7829e-8085-4d28-9832-d5af7a7209d9
-# ╟─f1d00aa0-0320-4438-8009-721cc11a542c
-# ╟─0a41a48e-bb45-4137-b61b-b3aec471f378
-# ╠═27337fb8-0618-4f8f-b4e8-cdf6adbf4e3b
-# ╟─02b2becd-0211-4dce-961c-df792360c4b7
-# ╠═4a2c4b78-83fc-420a-9968-134e5ed22bfd
-# ╟─82c1efc1-412b-4dd6-adf6-09f9a514b396
-# ╟─3b1dfb97-e3ef-440d-ae1c-c8e3ae986ec9
-# ╠═62a9e2b1-c866-454f-9a95-7eb6edc06a25
-# ╠═f9d64d9a-c9f3-4934-bce0-59c00f9bc3ff
-# ╟─fced86c0-bae7-4d85-9cf9-d8c769cb7cbf
-# ╟─f29c85a0-50e5-4e66-ad6d-1690966b53da
-# ╟─6d0adeb3-cc85-4a5f-ad11-c7112cd6d448
-# ╟─c5b4a93a-d835-422e-a7eb-afc887e3a401
-# ╟─06cb1a9e-1d49-4799-9cfc-961f8dc73979
-# ╟─b5c8491a-39c4-4f84-9fb1-4de37df14ef4
-# ╠═d61f4db6-7480-4a4d-a286-0e98496050da
-# ╠═4d53cf63-2b92-4996-9b3d-9182e3493980
-# ╟─55dd568f-4eb2-46e1-80cd-df924c349106
-# ╟─8ae1a5f2-8ef0-4aaf-8b5f-d6e79ac53a8d
-# ╟─33f8a618-672b-4d0d-ae17-7489c9beb284
-# ╟─3cfe2e38-40e0-4bb8-b451-fdc5cd4eb86d
-# ╟─07695475-962d-44ad-b1d4-458b775acfa7
-# ╠═bf305550-f36d-4c2b-b479-a8c1fa792b40
-# ╟─db790747-fd96-4d3c-befb-07dd98b2f2e4
-# ╠═0f80572d-d678-41f5-acf6-81cb8d78af3e
-# ╟─4405667d-83f5-4d61-acd1-04ae53cf95d1
-# ╠═075fd82e-5be7-48b2-b0c4-ac9c69fd4b58
-# ╟─a852d092-7949-4c60-b1c8-6db5f34d494d
-# ╟─a2859d65-d39d-43e3-93aa-7af78c863ed4
-# ╟─75100b66-840a-4586-b776-36fb60bfd23d
-# ╟─f79e9699-4a90-4c65-a907-c8fe44b2e098
-# ╟─30ea44e0-d12b-4852-847a-f59018d4f632
-# ╠═545a0ed4-ccac-4208-b463-b0309c32920a
-# ╟─40e60bda-2258-4c22-a95c-ad2ad39ba5e1
-# ╠═5b618a30-22e5-45e3-966e-4b3304ae809f
-# ╟─0ba16b94-99d6-4bad-84be-bd2012eb979f
-# ╟─6ff8b413-a409-4d23-8f0f-f0d4bf37890d
-# ╟─65c2f9ca-5efa-4168-96ad-6fb98d834879
-# ╠═6977e2f0-d30c-4982-b166-baf9a8a61fb5
-# ╠═32e9571e-a0f8-4a59-bf7c-67e178b95e80
-# ╟─7fcea7e9-474c-4aad-9ca2-03a6a4dcec1b
-# ╠═a3dd9f6f-2b52-4d2d-85a0-682f15405776
-# ╠═f18a23cd-2f3d-4cd0-a9f5-0a583063850e
-# ╠═cefb7a0d-f4ea-4a98-a632-bf1d1ac0cc3a
-# ╟─0571b4d4-ec84-4d17-ba16-d8126f63fa9b
-# ╠═19d39eed-ae09-44d3-93fd-de962db7184c
-# ╠═33693d4c-eda3-4293-8011-7c9653b8606b
-# ╟─5b9993e8-bfce-4bcb-8f01-332108805603
-# ╠═751c740d-820e-46ef-8580-597156c45fe6
-# ╟─e6b4dca6-30b7-4547-b31e-753eb0c664a9
-# ╠═deff83be-762c-404f-b2e4-1bccc64786e2
-# ╟─0f726a33-b4e2-4966-8711-3ee2e69814ce
-# ╟─62c66af2-97d4-4202-ad69-36d7211b9f4e
-# ╟─cffdb4b0-4e4b-4d12-8464-bd9cd226f2e0
-# ╟─f947931d-4589-4518-82aa-65fd44a5779e
-# ╟─d30bd493-34fd-400d-9c40-0441e8395524
-# ╟─8a7d5ccd-23ea-4a3c-aea5-7c6a5deb3906
-# ╟─875071cf-73d2-466b-a00f-524d5b5837ec
-# ╟─bd695d1e-6636-463d-a20c-27099bff0986
-# ╟─80d01139-369e-4063-aa4d-549e37fdf80b
+# ╟─44a476c0-c3e9-11ef-2e85-278c304ad5d6
+# ╟─7bf7af2c-61fd-4a28-9000-d347d41adaa8
+# ╟─afbdb718-75cf-4d70-9f09-50e70c9805d3
+# ╟─5ecd8671-9166-4c83-8422-32c006e5a2d1
+# ╠═9d423fa4-c492-4cb1-a282-9ad2b3946376
+# ╟─71961e63-0c78-4221-9d5f-126a54513d57
+# ╟─534ecf5b-9050-499e-b6f4-a2df527c6d5a
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
