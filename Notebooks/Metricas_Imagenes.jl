@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.3
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -19,8 +19,15 @@ end
 # ╔═╡ 7bf7af2c-61fd-4a28-9000-d347d41adaa8
 PlutoUI.TableOfContents(title="Métricas en imágenes", aside=true)
 
+# ╔═╡ a36c9b9e-c7ef-427b-8554-1b353528edff
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
 # ╔═╡ afbdb718-75cf-4d70-9f09-50e70c9805d3
-md"""Elaborado por  Jorge Mauricio Ruíz, Carlos Nosa, y Yessica Trujillo. """
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
+
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
 # ╔═╡ 5ecd8671-9166-4c83-8422-32c006e5a2d1
 md"""Vamos a usar las siguientes librerías:"""
@@ -30,9 +37,316 @@ md"""
 # Introducción
 """
 
+# ╔═╡ 1d9501b7-3d36-4a2e-9836-fd5e54a6b605
+md"""
+La calidad de una imagen puede verse degradada debido a diversas distorsiones durante su adquisición y procesamiento. Ejemplos comunes de estas distorsiones incluyen el ruido, el desenfoque, y los artefactos de anillo y de compresión. Para evaluar de manera objetiva el impacto de estas distorsiones, se han desarrollado métricas de calidad que permiten medir la fidelidad de una imagen procesada en comparación con su versión ideal o de referencia.
+
+Estas métricas no solo sirven para evaluar la calidad de las imágenes, sino también para correlacionarse con la percepción subjetiva de un observador humano. En muchas aplicaciones, una métrica de calidad efectiva refleja bien la calidad percibida por las personas, lo que la convierte en una herramienta crucial tanto para la evaluación de resultados como para la comparación entre diferentes algoritmos de procesamiento de imágenes.
+
+Cuando se dispone de una imagen sin distorsión, esta puede utilizarse como referencia para evaluar otras imágenes. Por ejemplo, en el caso de imágenes comprimidas, la versión sin comprimir de la imagen actúa como una referencia útil. En estos casos, las métricas de calidad con referencia completa permiten comparar directamente la imagen de destino con la imagen de referencia.
+
+Sin embargo, cuando no se tiene una imagen de referencia sin distorsión, se pueden utilizar métricas de calidad sin referencia. Estas métricas calculan las puntuaciones de calidad basándose en estadísticas de la imagen que se espera, proporcionando una manera eficaz de medir la calidad incluso en ausencia de una imagen ideal de comparación.
+"""
+
+# ╔═╡ 4e5e8a6f-ede5-47a7-abee-f73e9cb034f3
+md"""
+# Métricas de calidad con referencia completa
+"""
+
+# ╔═╡ 571379b1-f9b9-4bcd-b4de-2dc71e4a2da7
+md"""
+Los algoritmos con referencia completa comparan la imagen de entrada con una imagen de referencia ideal, sin distorsión.
+
+Para esta sección, considere $I$ y $R$ dos matrices que representan dos imágenes en sus arreglos de píxeles, donde se busca medir qué tanto se asemeja la imagen $I$ a la imagen de referencia $R$.
+"""
+
+# ╔═╡ e232d1ad-8a02-4dd8-904b-4f4f38ac1653
+begin
+	I = [50 105 110; 120 125 130; 135 140 145]/255
+	R = [52 103 108; 121 126 129; 134 139 250]/255
+end
+
+# ╔═╡ d5f6b1fc-caa7-45d5-a2ad-3f6aa5148bf7
+begin
+	p1 = plot(heatmap(Gray.(I)), title = "Imagen de prueba I", color = :grays, grid=false, axis=false)
+	p2 = plot(heatmap(Gray.(R)), title = "Imagen de prueba R", color = :grays, grid=false, axis=false)
+	plot(p1,p2,layout=(1,2))
+end
+
+# ╔═╡ a42e6025-827b-48d4-8703-61e360357c7b
+md"""
+## Error cuadrático medio (ECM)
+"""
+
+# ╔═╡ 04cfa99d-97a0-4310-84f6-beca8e2aa278
+md"""
+El **Error Cuadrático Medio** (ECM) es una métrica fundamental utilizada para evaluar la calidad de una imagen al medir la diferencia cuadrática promedio entre los valores de píxeles reales e ideales. Esta métrica se calcula de la siguiente manera:
+
+$ECM = \frac{1}{nm} \sum_{i=1}^{n} \sum_{j=1}^{m} (I_{ij} - R_{ij})^2$
+
+Donde:
+-  $I_{ij}$ es el valor del píxel $(i, j)$ de la imagen procesada o restaurada.
+-  $R_{ij}$ es el valor del píxel $(i, j)$ de la imagen de referencia o ideal.
+-  $n$ y $m$ son las dimensiones de la imagen en términos de filas y columnas de píxeles.
+
+El ECM calcula la diferencia cuadrada entre los píxeles correspondientes de las dos imágenes (la procesada y la de referencia), y luego promedia estas diferencias a lo largo de toda la imagen. Cuanto menor sea el valor del ECM, mayor será la similitud entre las dos imágenes.
+
+Aunque el ECM es fácil de calcular y proporciona una medida objetiva de la diferencia entre las imágenes, tiene limitaciones importantes. No necesariamente se correlaciona con la percepción humana de la calidad de la imagen. Esto se debe a que el ECM no tiene en cuenta aspectos perceptuales importantes como el contraste, la estructura o los detalles visuales que son fundamentales para los humanos al evaluar la calidad de una imagen. Por lo tanto, una imagen con un bajo ECM puede no siempre ser percibida como de alta calidad, especialmente si tiene distorsiones que afectan la percepción visual, como el desenfoque o el ruido.
+"""
+
+# ╔═╡ d11a9dc3-b4b5-4cf5-b716-4d182550eef0
+begin
+	# Función para calcular el Error Cuadrático Medio (ECM) entre dos matrices de imagen
+	function calcular_ecm(I, R)
+	    if size(I) != size(R)
+	        throw(ErrorException("Las imágenes deben tener el mismo tamaño"))
+	    end
+	    
+	    n, m = size(I)
+	    ecm = 0.0
+	    for i in 1:n
+	        for j in 1:m
+	            ecm += (I[i, j] - R[i, j])^2
+	        end
+	    end
+	    ecm /= (n * m)
+	    return ecm
+	end
+	
+	ecm_value = calcular_ecm(I, R)
+	println("El Error Cuadrático Medio (ECM) es: $ecm_value")
+end
+
+# ╔═╡ 7256f297-0781-4772-a45a-57ff3faf9ca8
+md"""
+## Proporción Máxima de Señal a Ruido (PSNR)
+"""
+
+# ╔═╡ 37193883-0f10-48bb-8279-30191ba264c3
+md"""
+La **Relación Señal-Ruido Máxima** (PSNR, por sus siglas en inglés) es una métrica utilizada para evaluar la calidad de una imagen. Se deriva del **Error Cuadrático Medio** (ECM) y mide la relación entre la intensidad máxima de los píxeles y la potencia de la distorsión presente en la imagen. 
+
+El **PSNR** se calcula con la siguiente fórmula:
+
+$PSNR(I, R) = 10 \log_{10} \left( \frac{Max^2}{ECM} \right)$
+
+Donde:
+-  $Max$ es el valor máximo de intensidad de píxel que puede tomar la imagen. Para una imagen con $b$ bits por píxel, $Max = 2^b - 1$.
+-  $ECM$ es el **Error Cuadrático Medio**, que mide la diferencia cuadrática promedio entre los valores de píxeles de la imagen $I$ (procesada) y la imagen de referencia $R$ (ideal).
+
+El PSNR se expresa en **decibelios (dB)**. Cuanto mayor sea el valor de PSNR, mejor será la calidad de la imagen procesada en comparación con la imagen de referencia, lo que indica que la distorsión es menor.
+
+Al igual que el ECM, la métrica **PSNR** es fácil de calcular y proporciona una medida objetiva de la diferencia entre las imágenes. Sin embargo, al igual que el ECM, el PSNR no siempre se corresponde con la calidad percibida por los humanos. Aunque un valor alto de PSNR indica una menor distorsión, esto no significa necesariamente que la imagen sea visualmente perfecta, ya que el PSNR no tiene en cuenta factores perceptuales importantes como el contraste, la estructura o los detalles visuales.
+
+"""
+
+# ╔═╡ 319d8ff4-75d2-4dd1-b7b9-b8503d94b30a
+begin
+	# Función para calcular la Relación Señal-Ruido Máxima (PSNR)
+	function calcular_psnr(I, R, max_val)
+	    # Calcula el ECM entre las imágenes
+	    ecm = calcular_ecm(I, R)
+	    
+	    # Calcula el PSNR utilizando la fórmula
+	    psnr = 10 * log10((max_val^2) / ecm)
+	    return psnr
+	end
+	
+	# Ejemplo de uso
+	max_val = 1.0  # Valor máximo de píxel, por ejemplo, para imágenes de 8 bits
+	
+	psnr_value = calcular_psnr(I, R, max_val)
+	println("La Relación Señal-Ruido Máxima (PSNR) es: $psnr_value dB")
+end
+
+# ╔═╡ d2ca5d55-91e4-474a-871d-8c6ca2dcbcc5
+md"""
+## Índice de similitud estructural (SSIM)
+"""
+
+# ╔═╡ 44f5a8dc-12fd-426f-a508-1f1715495f8e
+md"""
+El **Índice de Similitud Estructural** (SSIM, por sus siglas en inglés) es una métrica que evalúa la similitud entre dos imágenes al considerar tres componentes fundamentales: la luminancia, el contraste y la estructura. Esta métrica es más acorde con la percepción humana de la calidad de la imagen, ya que refleja cómo el sistema visual humano percibe las estructuras, especialmente las relaciones locales entre píxeles vecinos.
+
+El **SSIM** se calcula utilizando la siguiente fórmula:
+
+$SSIM(I, R) = \frac{(2 \mu_I \mu_R + c_1)(2 \sigma_{IR} + c_2)}{(\mu_I^2 + \mu_R^2 + c_1)(\sigma_I^2 + \sigma_R^2 + c_2)}$
+
+Donde:
+-  $\mu_I$ y $\mu_R$ son los promedios de intensidad de las imágenes $I$ (procesada) y $R$ (referencia), respectivamente.
+-  $\sigma_I^2$ y $\sigma_R^2$ son las varianzas de las intensidades de las imágenes $I$ y $R$, respectivamente.
+-  $\sigma_{IR}$ es la covarianza de las imágenes $I$ y $R$.
+-  $c_1 = (k_1 L)^2$ y $c_2 = (k_2 L)^2$ son constantes pequeñas para evitar divisiones por cero, donde $L$ es el valor máximo posible de intensidad de píxel y $k_1$ y $k_2$ son constantes empíricas.
+
+
+El **SSIM** se utiliza para medir la similitud estructural entre dos imágenes, y su valor varía entre 0 y 1:
+- Un valor de $SSIM = 1$ indica que las imágenes son idénticas en cuanto a estructura, luminancia y contraste.
+- Un valor de $SSIM = 0$ indica que no hay similitud estructural entre las imágenes.
+
+A diferencia de otras métricas como el ECM o el PSNR, que se centran en las diferencias de píxeles, el SSIM tiene en cuenta los patrones de intensidad de píxeles en un contexto local, lo que lo hace más alineado con la percepción humana. Dado que el sistema visual humano es especialmente sensible a la estructura en las imágenes, el SSIM ofrece una evaluación de calidad que suele correlacionarse mejor con las puntuaciones subjetivas de calidad.
+
+"""
+
+# ╔═╡ 9a4aaa0e-7e85-4b22-8063-0919d29b08ed
+begin
+	# Función para calcular el índice SSIM entre dos imágenes
+	function calcular_ssim(I, R)
+	    # Asegúrate de que las imágenes tengan el mismo tamaño
+	    if size(I) != size(R)
+	        throw(ErrorException("Las imágenes deben tener el mismo tamaño"))
+	    end
+	
+	    # Convertir las imágenes a formato flotante para asegurar la precisión en los cálculos
+	    I = float(I)
+	    R = float(R)
+	
+	    # Cálculos de las medias (μ) de las imágenes
+	    μI = mean(I)
+	    μR = mean(R)
+	
+	    # Cálculos de las varianzas (σ²) y la covarianza (σ)
+	    σI2 = var(I)
+	    σR2 = var(R)
+	    σIR = cov(vec(I), vec(R))
+	
+	    # Parámetros de estabilización
+	    c1 = 6.5025
+	    c2 = 58.5225
+	
+	    # Fórmula SSIM con corrección de difusión
+	    numerator = (2 * μI * μR + c1) * (2 * σIR .+ c2)
+	    denominator = (μI^2 + μR^2 + c1) * (σI2 + σR2 + c2)
+	
+	    ssim = numerator / denominator
+	    return ssim
+	end
+	ssim_value = calcular_ssim(I, R)
+	println("El índice de similitud estructural (SSIM) es: $ssim_value")
+end
+
+# ╔═╡ 1df9d895-07ff-45e2-b558-4097271b62be
+md"""
+## Error relativo
+"""
+
+# ╔═╡ 653336fa-c30b-4041-a324-8ef38f2cbc70
+md"""
+El **Error Relativo** es una métrica que compara las diferencias entre dos matrices, en este caso entre las matrices $I$ (imagen procesada) y $R$ (imagen de referencia), y proporciona una medida de la magnitud del error en relación con la magnitud de la imagen de referencia. Este tipo de métrica es útil para evaluar la precisión de una restauración o procesamiento de imagen.
+
+El **Error Relativo** se calcula utilizando la siguiente fórmula:
+
+$Err(I, R) = 100 \cdot \frac{\| I - R \|_F}{\| R \|_F} \%$
+
+Donde:
+-  $\| A \|_F$ es la norma de Frobenius de una matriz $A$, que se calcula como la raíz cuadrada de la suma de los cuadrados de todos sus elementos:
+  
+  $\| A \|_F = \sqrt{\sum_{i=1}^{n} \sum_{j=1}^{m} |a_{ij}|^2}$
+
+ En este caso, $A$ es una matriz de tamaño $n \times m$, y sus entradas están dadas por los números $a_{ij}$, con $i = 1, \ldots, n$ y $j = 1, \ldots, m$.
+
+El **Error Relativo** proporciona una medida del error en relación con la magnitud de la imagen original. Un valor bajo de **Error Relativo** indica que la imagen procesada es similar a la imagen de referencia, mientras que un valor alto sugiere una mayor diferencia entre las imágenes.
+
+Esta métrica es particularmente útil cuando se desea evaluar el rendimiento de un algoritmo de procesamiento de imágenes sin tener en cuenta el rango absoluto de las intensidades de píxeles, sino su relación con la imagen original.
+
+"""
+
+# ╔═╡ 731c1a25-0428-4975-ad27-ba0d1735cd1c
+begin
+	function calcular_error_relativo(I, R)
+	    # Calculamos la norma Frobenius de las matrices I - R y R
+	    error_frobenius = norm(vec(I-R))
+	    norma_frobenius_ref = norm(vec(R))
+	    
+	    # Calculamos el error relativo
+	    error_relativo = (error_frobenius / norma_frobenius_ref) * 100
+	    return error_relativo
+	end
+	error_relativo_value = calcular_error_relativo(I, R)
+	println("El error relativo es: $error_relativo_value%")
+end
+
+# ╔═╡ 300bd6a4-9cda-42ac-ae11-2bafed69ed80
+md"""
+# Métricas de calidad sin referencia
+"""
+
+# ╔═╡ 935df1e6-431c-4206-ae7e-1fd1653d3b95
+md"""
+Los algoritmos sin referencia usan características estadísticas de la imagen de entrada para evaluar la calidad de la imagen.
+"""
+
+# ╔═╡ d4c41a1e-cc43-4d12-bb71-ba4d083565b8
+md"""
+## BRISQUE
+"""
+
+# ╔═╡ d7dd657e-e5ba-417c-b9c6-0d44a109e397
+md"""
+**Puntuación de la Calidad de la Imagen sin Referencia con el Evaluador de la Calidad Espacial de la Imagen sin Referencia/a Ciegas (BRISQUE)**
+
+El **BRISQUE** (Blind/Referenceless Image Spatial Quality Evaluator) es una métrica que evalúa la calidad de una imagen sin necesidad de una imagen de referencia. A diferencia de las métricas que requieren una imagen original para comparar, **BRISQUE** estima la calidad de la imagen basándose en características estadísticas extraídas de la imagen misma, lo que lo hace útil para evaluar la calidad perceptual en situaciones donde no se tiene acceso a una referencia.
+
+**Método de cálculo**
+
+El método **BRISQUE** se basa en una evaluación de la estructura espacial local y utiliza un conjunto de características estadísticas relacionadas con la percepción humana de la calidad visual. Estas características incluyen la medida de la distorsión de la imagen a nivel de textura y otras propiedades relacionadas con la percepción de la calidad.
+
+El proceso de cálculo de la puntuación **BRISQUE** involucra los siguientes pasos:
+
+1. **Extracción de características**: Se extraen características estadísticas de la imagen que incluyen la variabilidad de la luminancia, el contraste y la estructura de la imagen a nivel local.
+   
+2. **Modelado de la calidad**: Estas características se analizan para determinar la calidad global de la imagen utilizando un modelo entrenado previamente. Este modelo fue entrenado utilizando una base de imágenes y sus respectivas puntuaciones de calidad obtenidas de evaluaciones humanas.
+
+3. **Puntuación final**: La puntuación final se obtiene como una medida de la calidad perceptual de la imagen, donde un valor bajo indica una imagen de alta calidad y un valor alto indica una imagen de baja calidad.
+
+**Consideraciones**
+
+El **BRISQUE** es una métrica ciega, lo que significa que no requiere una imagen de referencia para hacer su evaluación. Esto lo convierte en una herramienta útil para medir la calidad de imágenes en situaciones donde no se dispone de una imagen original de referencia.
+
+La puntuación **BRISQUE** tiene una correlación significativa con la percepción humana de la calidad de la imagen, lo que lo convierte en una de las métricas más efectivas para evaluar imágenes en condiciones reales de procesamiento, como la compresión o el filtrado, donde las distorsiones son comunes.
+
+Al no necesitar una referencia, **BRISQUE** es muy útil en aplicaciones prácticas donde la imagen de referencia no está disponible, como en la evaluación de sistemas de visión por computadora o en la mejora de la calidad de imágenes en sistemas en tiempo real.
+
+"""
+
+# ╔═╡ 2335c2e3-a721-4594-926f-3863c1be52b4
+
+
+# ╔═╡ 8a5ab2ec-c931-4946-990a-f07ad8463114
+md"""
+## NIQE
+"""
+
+# ╔═╡ 584814b8-bd47-4cc4-ae68-2e6ae8a6e18e
+md"""
+
+"""
+
+# ╔═╡ 40b04914-1921-4828-84ad-a99f20d78fc0
+
+
+# ╔═╡ a1031f8d-b356-4fcc-8d5e-ca3acd3189fa
+md"""
+## PIQE
+"""
+
+# ╔═╡ ce7dabf9-59c8-469c-be3c-980c5b06a18e
+md"""
+
+"""
+
+# ╔═╡ 3a3ae995-1b9f-4d35-9833-5a9389288b5e
+
+
 # ╔═╡ 534ecf5b-9050-499e-b6f4-a2df527c6d5a
 md"""
 # Referencias
+"""
+
+# ╔═╡ 78a07ba9-5811-40c0-9201-103ba6a5953f
+md"""
+[1] Exequiel Fuentes, J., & Ruiz Vera, J. M. (2021). Restauración de imágenes borrosas usando un modelo regularizado de programación lineal. Ingeniería, 26(2), 254-272. https://doi.org/10.14483/23448393.17240
+
+[2] Métricas de calidad de imagen . (2024). Centro de Ayuda; MathWorks. https://la.mathworks.com/help/images/image-quality-metrics.html
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -64,7 +378,6 @@ ImageShow = "~0.3.8"
 Images = "~0.26.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.23"
-Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
 """
@@ -73,9 +386,9 @@ StatsPlots = "~0.15.7"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "da7925006d3f77e6e1623a5c20b742d756cff28d"
+project_hash = "ca923e95a2cf1dd08c2a15370782eef1d85f53fd"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -112,7 +425,7 @@ version = "1.1.3"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-version = "1.1.2"
+version = "1.1.1"
 
 [[deps.ArnoldiMethod]]
 deps = ["LinearAlgebra", "Random", "StaticArrays"]
@@ -133,21 +446,16 @@ uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
-deps = ["Adapt", "LinearAlgebra"]
-git-tree-sha1 = "d5140b60b87473df18cf4fe66382b7c3596df047"
+deps = ["Adapt", "LinearAlgebra", "Requires", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "c5aeb516a84459e0318a02507d2261edad97eb75"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.17.1"
+version = "7.7.1"
 
     [deps.ArrayInterface.extensions]
     ArrayInterfaceBandedMatricesExt = "BandedMatrices"
     ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
     ArrayInterfaceCUDAExt = "CUDA"
-    ArrayInterfaceCUDSSExt = "CUDSS"
-    ArrayInterfaceChainRulesCoreExt = "ChainRulesCore"
-    ArrayInterfaceChainRulesExt = "ChainRules"
     ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
-    ArrayInterfaceReverseDiffExt = "ReverseDiff"
-    ArrayInterfaceSparseArraysExt = "SparseArrays"
     ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
     ArrayInterfaceTrackerExt = "Tracker"
 
@@ -155,18 +463,12 @@ version = "7.17.1"
     BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
     BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-    CUDSS = "45b445bb-4962-46a0-9369-b4df9d0f772e"
-    ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
-    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
     Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
-version = "1.11.0"
 
 [[deps.AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -182,7 +484,6 @@ version = "0.4.7"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
-version = "1.11.0"
 
 [[deps.BitFlags]]
 git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
@@ -263,10 +564,12 @@ deps = ["FixedPointNumbers", "Random"]
 git-tree-sha1 = "c7acce7a7e1078a20a285211dd73cd3941a871d6"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 version = "0.12.0"
-weakdeps = ["StyledStrings"]
 
     [deps.ColorTypes.extensions]
     StyledStringsExt = "StyledStrings"
+
+    [deps.ColorTypes.weakdeps]
+    StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 
 [[deps.ColorVectorSpace]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "Requires", "Statistics", "TensorCore"]
@@ -284,11 +587,6 @@ git-tree-sha1 = "64e15186f0aa277e174aa81798f7eb8598e0157e"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.13.0"
 
-[[deps.CommonWorldInvalidations]]
-git-tree-sha1 = "ae52d1c52048455e85a387fbee9be553ec2b68d0"
-uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
-version = "1.0.0"
-
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
 git-tree-sha1 = "8ae8d32e09f0dcf42a36b90d4e17f5dd2e4c4215"
@@ -302,7 +600,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.1+0"
+version = "1.0.5+0"
 
 [[deps.ComputationalResources]]
 git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
@@ -311,9 +609,9 @@ version = "0.3.2"
 
 [[deps.ConcurrentUtilities]]
 deps = ["Serialization", "Sockets"]
-git-tree-sha1 = "ea32b83ca4fefa1768dc84e504cc0a94fb1ab8d1"
+git-tree-sha1 = "f36e5e8fdffcb5646ea5da81495a5a7566005127"
 uuid = "f0e56b4a-5159-44fe-b623-3e5288b988bb"
-version = "2.4.2"
+version = "2.4.3"
 
 [[deps.ConstructionBase]]
 git-tree-sha1 = "76219f1ed5771adbb096743bff43fb5fdd4c1157"
@@ -367,7 +665,6 @@ version = "1.0.0"
 [[deps.Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
-version = "1.11.0"
 
 [[deps.Dbus_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl"]
@@ -395,13 +692,12 @@ weakdeps = ["ChainRulesCore", "SparseArrays"]
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
-version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
-git-tree-sha1 = "3101c32aab536e7a27b1763c0797dba151b899ad"
+git-tree-sha1 = "4b138e4643b577ccf355377c2bc70fa975af25de"
 uuid = "31c24e10-a181-5473-b8eb-7969acd0382f"
-version = "0.25.113"
+version = "0.25.115"
 
     [deps.Distributions.extensions]
     DistributionsChainRulesCoreExt = "ChainRulesCore"
@@ -484,7 +780,6 @@ weakdeps = ["HTTP"]
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
-version = "1.11.0"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra"]
@@ -523,14 +818,13 @@ version = "2.13.3+1"
 
 [[deps.FriBidi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1ed150b39aebcc805c26b93a8d0122c940f64ce2"
+git-tree-sha1 = "846f7026a9decf3679419122b49f8a1fdb48d2d5"
 uuid = "559328eb-81f9-559d-9380-de523a88c83c"
-version = "1.0.14+0"
+version = "1.0.16+0"
 
 [[deps.Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
-version = "1.11.0"
 
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "libdecor_jll", "xkbcommon_jll"]
@@ -599,9 +893,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "PrecompileTools", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "6c22309e9a356ac1ebc5c8a217045f9bae6f8d9a"
+git-tree-sha1 = "627fcacdb7cb51dc67f557e1598cdffe4dda386d"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.13"
+version = "1.10.14"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
@@ -694,9 +988,9 @@ version = "0.2.17"
 
 [[deps.ImageFiltering]]
 deps = ["CatIndices", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageBase", "ImageCore", "LinearAlgebra", "OffsetArrays", "PrecompileTools", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "TiledIteration"]
-git-tree-sha1 = "432ae2b430a18c58eb7eca9ef8d0f2db90bc749c"
+git-tree-sha1 = "33cb509839cc4011beb45bde2316e64344b0f92b"
 uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
-version = "0.7.8"
+version = "0.7.9"
 
 [[deps.ImageIO]]
 deps = ["FileIO", "IndirectArrays", "JpegTurbo", "LazyModules", "Netpbm", "OpenEXR", "PNGFiles", "QOI", "Sixel", "TiffImages", "UUIDs", "WebP"]
@@ -789,7 +1083,6 @@ version = "2024.2.1+0"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
-version = "1.11.0"
 
 [[deps.Interpolations]]
 deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArrays", "Random", "Ratios", "Requires", "SharedArrays", "SparseArrays", "StaticArrays", "WoodburyMatrices"]
@@ -923,7 +1216,6 @@ version = "0.1.17"
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
-version = "1.11.0"
 
 [[deps.LazyModules]]
 git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
@@ -933,37 +1225,30 @@ version = "0.3.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.6.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-version = "1.11.0"
-
-[[deps.LibGit2_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
-uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
-version = "1.7.2+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
-version = "1.11.0"
 
 [[deps.Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "0b4a5d71f3e5200a7dff793393e09dfc2d874290"
+git-tree-sha1 = "27ecae93dd25ee0909666e6835051dd684cc035e"
 uuid = "e9f186c6-92d2-5b65-8a66-fee21dc1b490"
-version = "3.2.2+1"
+version = "3.2.2+2"
 
 [[deps.Libgcrypt_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll"]
@@ -1010,7 +1295,6 @@ version = "2.40.2+0"
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-version = "1.11.0"
 
 [[deps.LittleCMS_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg"]
@@ -1036,7 +1320,6 @@ version = "0.3.28"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
-version = "1.11.0"
 
 [[deps.LoggingExtras]]
 deps = ["Dates", "Logging"]
@@ -1084,7 +1367,6 @@ version = "0.4.2"
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-version = "1.11.0"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
@@ -1095,7 +1377,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.6+0"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1116,7 +1398,6 @@ version = "1.2.0"
 
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
-version = "1.11.0"
 
 [[deps.MosaicViews]]
 deps = ["MappedArrays", "OffsetArrays", "PaddedViews", "StackViews"]
@@ -1126,7 +1407,7 @@ version = "0.3.4"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2023.12.12"
+version = "2022.10.11"
 
 [[deps.MultivariateStats]]
 deps = ["Arpack", "Distributions", "LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI", "StatsBase"]
@@ -1162,9 +1443,9 @@ uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
 version = "0.5.5"
 
 [[deps.OffsetArrays]]
-git-tree-sha1 = "1a27764e945a152f7ca7efa04de513d473e9542e"
+git-tree-sha1 = "5e1897147d1ff8d98883cda2be2187dcf57d8f0c"
 uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.14.1"
+version = "1.15.0"
 weakdeps = ["Adapt"]
 
     [deps.OffsetArrays.extensions]
@@ -1179,7 +1460,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.27+1"
+version = "0.3.21+4"
 
 [[deps.OpenEXR]]
 deps = ["Colors", "FileIO", "OpenEXR_jll"]
@@ -1202,7 +1483,7 @@ version = "2.4.0+0"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1236,7 +1517,7 @@ version = "1.7.0"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+1"
+version = "10.42.0+0"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
@@ -1286,13 +1567,9 @@ uuid = "30392449-352a-5448-841d-b1acce4e97dc"
 version = "0.43.4+0"
 
 [[deps.Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "Random", "SHA", "TOML", "Tar", "UUIDs", "p7zip_jll"]
+deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.11.0"
-weakdeps = ["REPL"]
-
-    [deps.Pkg.extensions]
-    REPLExt = "REPL"
+version = "1.9.2"
 
 [[deps.PkgVersion]]
 deps = ["Pkg"]
@@ -1377,7 +1654,6 @@ version = "1.4.3"
 [[deps.Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-version = "1.11.0"
 
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
@@ -1421,14 +1697,12 @@ uuid = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
 version = "0.7.6"
 
 [[deps.REPL]]
-deps = ["InteractiveUtils", "Markdown", "Sockets", "StyledStrings", "Unicode"]
+deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
-version = "1.11.0"
 
 [[deps.Random]]
-deps = ["SHA"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-version = "1.11.0"
 
 [[deps.RangeArrays]]
 git-tree-sha1 = "b9039e93773ddcfc828f12aadf7115b4b4d225f5"
@@ -1537,13 +1811,12 @@ version = "1.2.1"
 
 [[deps.SentinelArrays]]
 deps = ["Dates", "Random"]
-git-tree-sha1 = "d0553ce4031a081cc42387a9b9c8441b7d99f32d"
+git-tree-sha1 = "712fb0231ee6f9120e005ccd56297abbc053e7e0"
 uuid = "91c51154-3ec4-41a3-a24f-3f23e20d615c"
-version = "1.4.7"
+version = "1.4.8"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
-version = "1.11.0"
 
 [[deps.Setfield]]
 deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
@@ -1554,7 +1827,6 @@ version = "1.1.1"
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
-version = "1.11.0"
 
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
@@ -1587,7 +1859,6 @@ version = "0.1.3"
 
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
-version = "1.11.0"
 
 [[deps.SortingAlgorithms]]
 deps = ["DataStructures"]
@@ -1598,13 +1869,12 @@ version = "1.2.1"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-version = "1.11.0"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "2f5d4697f21388cbe1ff299430dd169ef97d7e14"
+git-tree-sha1 = "64cca0c26b4f31ba18f13f6c12af7c85f478cfde"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.4.0"
+version = "2.5.0"
 weakdeps = ["ChainRulesCore"]
 
     [deps.SpecialFunctions.extensions]
@@ -1623,16 +1893,16 @@ uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.1"
 
 [[deps.Static]]
-deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools"]
-git-tree-sha1 = "87d51a3ee9a4b0d2fe054bdd3fc2436258db2603"
+deps = ["IfElse"]
+git-tree-sha1 = "b366eb1eb68075745777d80861c6706c33f588ae"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "1.1.1"
+version = "0.8.9"
 
 [[deps.StaticArrayInterface]]
-deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Static"]
-git-tree-sha1 = "96381d50f1ce85f2663584c8e886a6ca97e60554"
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "Static"]
+git-tree-sha1 = "c3668ff1a3e4ddf374fc4f8c25539ce7194dcc39"
 uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
-version = "1.8.0"
+version = "1.6.0"
 weakdeps = ["OffsetArrays", "StaticArrays"]
 
     [deps.StaticArrayInterface.extensions]
@@ -1656,14 +1926,9 @@ uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
 version = "1.4.3"
 
 [[deps.Statistics]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "ae3bb1eb3bba077cd276bc5cfc337cc65c3075c0"
+deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.11.1"
-weakdeps = ["SparseArrays"]
-
-    [deps.Statistics.extensions]
-    SparseArraysExt = ["SparseArrays"]
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -1672,10 +1937,10 @@ uuid = "82ae8749-77ed-4fe6-ae5f-f523153014b0"
 version = "1.7.0"
 
 [[deps.StatsBase]]
-deps = ["DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
-git-tree-sha1 = "5cf7606d6cef84b543b483848d4ae08ad9832b21"
+deps = ["AliasTables", "DataAPI", "DataStructures", "LinearAlgebra", "LogExpFunctions", "Missings", "Printf", "Random", "SortingAlgorithms", "SparseArrays", "Statistics", "StatsAPI"]
+git-tree-sha1 = "29321314c920c26684834965ec2ce0dacc9cf8e5"
 uuid = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
-version = "0.34.3"
+version = "0.34.4"
 
 [[deps.StatsFuns]]
 deps = ["HypergeometricFunctions", "IrrationalConstants", "LogExpFunctions", "Reexport", "Rmath", "SpecialFunctions"]
@@ -1697,18 +1962,14 @@ git-tree-sha1 = "3b1dcbf62e469a67f6733ae493401e53d92ff543"
 uuid = "f3b207a7-027a-5e70-b257-86293d7955fd"
 version = "0.15.7"
 
-[[deps.StyledStrings]]
-uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
-version = "1.11.0"
-
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
 uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "7.7.0+0"
+version = "5.10.1+6"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -1747,7 +2008,6 @@ version = "0.1.1"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-version = "1.11.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
@@ -1757,9 +2017,9 @@ version = "0.5.2"
 
 [[deps.TiffImages]]
 deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedPointNumbers", "IndirectArrays", "Inflate", "Mmap", "OffsetArrays", "PkgVersion", "ProgressMeter", "SIMD", "UUIDs"]
-git-tree-sha1 = "0248b1b2210285652fbc67fd6ced9bf0394bcfec"
+git-tree-sha1 = "3c0faa42f2bd3c6d994b06286bba2328eae34027"
 uuid = "731e570b-9d59-4bfa-96dc-6df516fadf69"
-version = "0.11.1"
+version = "0.11.2"
 
 [[deps.TiledIteration]]
 deps = ["OffsetArrays", "StaticArrayInterface"]
@@ -1785,7 +2045,6 @@ version = "1.5.1"
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-version = "1.11.0"
 
 [[deps.UnPack]]
 git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
@@ -1794,7 +2053,6 @@ version = "1.0.2"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
-version = "1.11.0"
 
 [[deps.UnicodeFun]]
 deps = ["REPL"]
@@ -1835,9 +2093,9 @@ version = "0.21.71"
 
 [[deps.Wayland_jll]]
 deps = ["Artifacts", "EpollShim_jll", "Expat_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Pkg", "XML2_jll"]
-git-tree-sha1 = "7558e29847e99bc3f04d6569e82d0f5c54460703"
+git-tree-sha1 = "85c7811eddec9e7f22615371c3cc81a504c508ee"
 uuid = "a2964d1f-97da-50d4-b82a-358c7fce9d89"
-version = "1.21.0+1"
+version = "1.21.0+2"
 
 [[deps.Wayland_protocols_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1888,10 +2146,10 @@ uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
 version = "1.0.11+1"
 
 [[deps.Xorg_libXcursor_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "12e0eb3bc634fa2080c1c37fccf56f7c22989afd"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "807c226eaf3651e7b2c468f687ac788291f9a89b"
 uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
-version = "1.2.0+4"
+version = "1.2.3+0"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1906,34 +2164,34 @@ uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
 version = "1.3.6+1"
 
 [[deps.Xorg_libXfixes_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libX11_jll"]
-git-tree-sha1 = "0e0dc7431e7a0587559f9294aeec269471c991a4"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
+git-tree-sha1 = "6fcc21d5aea1a0b7cce6cab3e62246abd1949b86"
 uuid = "d091e8ba-531a-589c-9de9-94069b037ed8"
-version = "5.0.3+4"
+version = "6.0.0+0"
 
 [[deps.Xorg_libXi_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
-git-tree-sha1 = "89b52bc2160aadc84d707093930ef0bffa641246"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
+git-tree-sha1 = "984b313b049c89739075b8e2a94407076de17449"
 uuid = "a51aa0fd-4e3c-5386-b890-e753decda492"
-version = "1.7.10+4"
+version = "1.8.2+0"
 
 [[deps.Xorg_libXinerama_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll"]
-git-tree-sha1 = "26be8b1c342929259317d8b9f7b53bf2bb73b123"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll"]
+git-tree-sha1 = "a1a7eaf6c3b5b05cb903e35e8372049b107ac729"
 uuid = "d1454406-59df-5ea1-beac-c340f2130bc3"
-version = "1.1.4+4"
+version = "1.1.5+0"
 
 [[deps.Xorg_libXrandr_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "34cea83cb726fb58f325887bf0612c6b3fb17631"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
+git-tree-sha1 = "b6f664b7b2f6a39689d822a6300b14df4668f0f4"
 uuid = "ec84b674-ba8e-5d96-8ba1-2a689ba10484"
-version = "1.5.2+4"
+version = "1.5.4+0"
 
 [[deps.Xorg_libXrender_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "47e45cd78224c53109495b3e324df0c37bb61fbe"
+git-tree-sha1 = "a490c6212a0e90d2d55111ac956f7c4fa9c277a6"
 uuid = "ea2f1a96-1ddc-540d-b46f-429655e07cfa"
-version = "0.9.11+0"
+version = "0.9.11+1"
 
 [[deps.Xorg_libpthread_stubs_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1949,9 +2207,9 @@ version = "1.17.0+1"
 
 [[deps.Xorg_libxkbfile_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "730eeca102434283c50ccf7d1ecdadf521a765a4"
+git-tree-sha1 = "dbc53e4cf7701c6c7047c51e17d6e64df55dca94"
 uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
-version = "1.1.2+0"
+version = "1.1.2+1"
 
 [[deps.Xorg_xcb_util_image_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
@@ -1985,9 +2243,9 @@ version = "0.4.1+1"
 
 [[deps.Xorg_xkbcomp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxkbfile_jll"]
-git-tree-sha1 = "330f955bc41bb8f5270a369c473fc4a5a4e4d3cb"
+git-tree-sha1 = "ab2221d309eda71020cdda67a973aa582aa85d69"
 uuid = "35661453-b289-5fab-8a00-3d9160c6a3a4"
-version = "1.4.6+0"
+version = "1.4.6+1"
 
 [[deps.Xorg_xkeyboard_config_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_xkbcomp_jll"]
@@ -2004,7 +2262,7 @@ version = "1.5.0+1"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+1"
+version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2033,7 +2291,7 @@ version = "0.15.2+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.11.0+0"
+version = "5.8.0+0"
 
 [[deps.libdecor_jll]]
 deps = ["Artifacts", "Dbus_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pango_jll", "Wayland_jll", "xkbcommon_jll"]
@@ -2074,7 +2332,7 @@ version = "1.4.0+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.59.0+0"
+version = "1.48.0+0"
 
 [[deps.oneTBB_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2085,7 +2343,7 @@ version = "2021.12.0+0"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+2"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2109,10 +2367,40 @@ version = "1.4.1+1"
 # ╔═╡ Cell order:
 # ╟─44a476c0-c3e9-11ef-2e85-278c304ad5d6
 # ╟─7bf7af2c-61fd-4a28-9000-d347d41adaa8
+# ╟─a36c9b9e-c7ef-427b-8554-1b353528edff
 # ╟─afbdb718-75cf-4d70-9f09-50e70c9805d3
 # ╟─5ecd8671-9166-4c83-8422-32c006e5a2d1
 # ╠═9d423fa4-c492-4cb1-a282-9ad2b3946376
 # ╟─71961e63-0c78-4221-9d5f-126a54513d57
+# ╟─1d9501b7-3d36-4a2e-9836-fd5e54a6b605
+# ╟─4e5e8a6f-ede5-47a7-abee-f73e9cb034f3
+# ╟─571379b1-f9b9-4bcd-b4de-2dc71e4a2da7
+# ╟─e232d1ad-8a02-4dd8-904b-4f4f38ac1653
+# ╠═d5f6b1fc-caa7-45d5-a2ad-3f6aa5148bf7
+# ╟─a42e6025-827b-48d4-8703-61e360357c7b
+# ╟─04cfa99d-97a0-4310-84f6-beca8e2aa278
+# ╠═d11a9dc3-b4b5-4cf5-b716-4d182550eef0
+# ╟─7256f297-0781-4772-a45a-57ff3faf9ca8
+# ╟─37193883-0f10-48bb-8279-30191ba264c3
+# ╠═319d8ff4-75d2-4dd1-b7b9-b8503d94b30a
+# ╟─d2ca5d55-91e4-474a-871d-8c6ca2dcbcc5
+# ╟─44f5a8dc-12fd-426f-a508-1f1715495f8e
+# ╠═9a4aaa0e-7e85-4b22-8063-0919d29b08ed
+# ╟─1df9d895-07ff-45e2-b558-4097271b62be
+# ╟─653336fa-c30b-4041-a324-8ef38f2cbc70
+# ╠═731c1a25-0428-4975-ad27-ba0d1735cd1c
+# ╟─300bd6a4-9cda-42ac-ae11-2bafed69ed80
+# ╟─935df1e6-431c-4206-ae7e-1fd1653d3b95
+# ╟─d4c41a1e-cc43-4d12-bb71-ba4d083565b8
+# ╟─d7dd657e-e5ba-417c-b9c6-0d44a109e397
+# ╠═2335c2e3-a721-4594-926f-3863c1be52b4
+# ╟─8a5ab2ec-c931-4946-990a-f07ad8463114
+# ╠═584814b8-bd47-4cc4-ae68-2e6ae8a6e18e
+# ╠═40b04914-1921-4828-84ad-a99f20d78fc0
+# ╟─a1031f8d-b356-4fcc-8d5e-ca3acd3189fa
+# ╠═ce7dabf9-59c8-469c-be3c-980c5b06a18e
+# ╠═3a3ae995-1b9f-4d35-9833-5a9389288b5e
 # ╟─534ecf5b-9050-499e-b6f4-a2df527c6d5a
+# ╟─78a07ba9-5811-40c0-9201-103ba6a5953f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
