@@ -4,10 +4,10 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 3885aed6-7596-471c-87e4-b246dadbe898
+# ╔═╡ a403c522-cc82-11ef-1553-8de0ed8d5f4a
 using PlutoUI
 
-# ╔═╡ 87509cb1-de05-41f2-b30e-ad065ccde690
+# ╔═╡ adb6a5e0-5865-4aec-8e3d-df58d59775f3
 begin
 	using Plots,Colors,ColorVectorSpace,ImageShow,FileIO,ImageIO
 	using HypertextLiteral
@@ -16,550 +16,273 @@ begin
 	using StatsBase, StatsPlots
 end
 
-# ╔═╡ 450ce71e-2fcb-4c32-ae96-bba24b7584b1
-using Interpolations
+# ╔═╡ 18913108-9c4d-4d1b-85df-3298328b68db
+PlutoUI.TableOfContents(title="Coordenadas homogéneas", aside=true)
 
-# ╔═╡ 855fbf64-5944-460c-a0d4-523066030e4e
-PlutoUI.TableOfContents(title="Matrices y transformaciones lineales", aside=true)
-
-# ╔═╡ 00fbe8cf-cd1e-451c-9a30-b83223fe3c10
+# ╔═╡ 119aeece-8f6f-4065-a3de-949dea08e546
 md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
 
 Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
 
-# ╔═╡ ecbeadd0-14ba-47ae-826a-d97f0695ef1e
+# ╔═╡ 87914b3e-cab8-4ee1-af34-59db742949c0
 md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruiz en 2024-2.**
 
 Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
-# ╔═╡ 3981068a-8063-4f30-bb4b-c954f1780090
+# ╔═╡ da74b942-d331-404e-87d0-8665211a01a0
 md"""Vamos a usar las siguientes librerías:"""
 
-# ╔═╡ 21d43d86-b0cd-43ec-a434-ecb564971d24
+# ╔═╡ 909579b1-c4ce-4b74-8493-f31e0b70116d
 md"""
 # Introducción
 """
 
-# ╔═╡ 8992f9b8-3660-490e-aed3-8be32742183d
+# ╔═╡ 5b293f7e-323b-4e87-a61b-d84449640128
 md"""
-En este cuaderno se descubrirá que diversas transformaciones de imágenes, como el mezclado, el enmascarado, la rotación y el cambio de perspectiva, pueden realizarse mediante el uso de aritmética matricial y transformaciones lineales.
+Falta
 """
 
-# ╔═╡ 7806626e-81e1-4b48-9756-b8277213d268
+# ╔═╡ 4a9860ae-38af-4626-8b19-6015291c5c95
 md"""
-# Operaciones básicas con matrices
+# Coordenadas homogéneas y transformaciones proyectivas
 """
 
-# ╔═╡ 98b24728-d29c-4d14-ba92-4e51fdbc7b10
-md"""##   $\cdot$ Negativo de una imagen"""
-
-# ╔═╡ dcea8986-c1ed-4dab-976b-b9f4931f051f
-md"""Como ya vimos en cuadernos anteriores, las imágenes en escala de grises son matrices de valores de píxeles entre 0 y 255. Así, para generar el negativo de una imagen, debemos "invertir" el brillo de cada píxel. Esto se realiza de la siguiente manera, consideremos $A$ la matriz que representa la imagen y $B$ una matriz del mismo tamaño, es decir, ambas matrices son de tamaño $m\times n$:
-
-$A = 
-\begin{bmatrix} 
-a_{11} & a_{12} & \cdots & a_{1n} \\ 
-a_{21} & a_{22} & \cdots & a_{2n} \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-a_{m1} & a_{m2} & \cdots & a_{mn} 
-\end{bmatrix}
-\quad \text{y} \quad 
-B = 
-\begin{bmatrix} 
-255 & 255 & \cdots & 255 \\ 
-255 & 255 & \cdots & 255 \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-255 & 255 & \cdots & 255 
-\end{bmatrix}$
-luego la imagen en negativo es la siguiente:
-
-$B - A = 
-\begin{bmatrix} 
-255 - a_{11} & 255 - a_{12} & \cdots & 255 - a_{1n} \\ 
-255 - a_{21} & 255 - a_{22} & \cdots & 255 - a_{2n} \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-255 - a_{m1} & 255 - a_{m2} & \cdots & 255 - a_{mn} 
-\end{bmatrix}.$
-"""
-
-# ╔═╡ c035d077-763e-46e8-9807-08be974ddf61
-md"""La siguiente función halla el negativo de una imagen."""
-
-# ╔═╡ 552aab87-728c-4ec0-b9ee-a41c8a38f51a
-function Negativo(image)
-	A = Float64.(channelview(image))
-	if length(size(A)) == 2
-		return Gray.(ones(size(A))-A)
-	else
-		Ones_Matrix = ones(size(A[1, :, :]))
-		return colorview(RGB, permutedims(cat(dims=3, Ones_Matrix-A[1, :, :], Ones_Matrix-A[2, :, :], Ones_Matrix-A[3, :, :]), [3, 1, 2]))
+# ╔═╡ 37916b3b-b6b8-40df-936f-4cc5e42fb33b
+begin
+	L_window = fill(1.0, 201, 451)  
+	for i in 1:201
+	    for j in 1:451
+	        if i % 100 == 1 || j % 150 == 1  
+	            L_window[i, j] = 0.0     
+	        end
+	    end
 	end
+	L_window = Gray.(L_window)
 end
 
-# ╔═╡ 8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
-md"""A contiuación en la Figura 1 se muestra un tablero de ajedrez con su posición inicial y su negativo."""
-
-# ╔═╡ bf509d53-b239-4514-bdb2-30d5f52219e8
-begin
-	url="https://upload.wikimedia.org/wikipedia/commons/7/76/Latex_chessboard_4.png"
-	fname = download(url)
-	imag = Gray.(load(fname))
-	[imag Gray.(ones(size(imag)[1], 100)) Negativo(imag)]
-end
-
-# ╔═╡ 7ff384fb-e482-4bf9-a70f-34bdd4fa840a
-md"""$\texttt{Figura 1. Tablero de Ajedrez. Imagen tomada de Wikipedia.}$"""
-
-# ╔═╡ 0fdf5d20-9fcc-4404-b364-8bdb16237eea
-md"""En la Figura 2 se puede evidenciar un conejo en escala RGB y su negativo."""
-
-# ╔═╡ 5886e131-99cf-4ed6-a06c-2b281d710ef6
-md"""$\texttt{Figura 2. Conejo. Imagen tomada de Wikipedia.}$"""
-
-# ╔═╡ 6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
-md"""##   $\cdot$ Transpuesta de una imagen"""
-
-# ╔═╡ 065a2edb-82b6-428a-9c33-7af11ec75ae1
-md"""Ahora si deseamos reflejar una imagen y rotarla 90° en sentido antihorario, todo en un solo paso podemos usar la transposición de la matriz. Formalmente, sea $A$ $(n\times m)$ la matriz asociada a la imagen  
-
-$A = 
-\begin{bmatrix} 
-a_{11} & a_{12} & \cdots & a_{1n} \\ 
-a_{21} & a_{22} & \cdots & a_{2n} \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-a_{m1} & a_{m2} & \cdots & a_{mn} 
-\end{bmatrix},$
-su transpuesta es $A^T ( m \times n)$ definida como:  
-
-$A^T = 
-\begin{bmatrix} 
-a_{11} & a_{21} & \cdots & a_{m1} \\ 
-a_{12} & a_{22} & \cdots & a_{m2} \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-a_{1n} & a_{2n} & \cdots & a_{mn} 
-\end{bmatrix}.$"""
-
-# ╔═╡ 214d8d87-347c-47ac-8e0f-139f86c68b85
-md"""La siguiente función halla la transpuesta de una imagen."""
-
-# ╔═╡ fc100c97-e447-4a7a-b42f-4adb9729bfda
-function Transpuesta(image)
-	Trans = transpose(channelview(image))
-	return Gray.(Trans)
-end
-
-# ╔═╡ 5ab89eea-6d7b-490f-96f7-8b4d36249722
-md"""A contiuación en la Figura 3 se muestra un conejo y su reflejo y rotación de 90°."""
-
-# ╔═╡ a5c73baf-5367-470d-8e82-2874d5f90fd6
-begin
-	url1="https://upload.wikimedia.org/wikipedia/commons/thumb/1/1f/Oryctolagus_cuniculus_Rcdo.jpg/640px-Oryctolagus_cuniculus_Rcdo.jpg"
-	fname1 = download(url1)
-	imag1 = Gray.(load(fname1))[101:700,40:639]
-	[imag1 Gray.(ones(size(imag1)[1], 100)) Transpuesta(imag1)]
-end
-
-# ╔═╡ cb534937-101c-439d-b515-e0d99212894f
-begin
-	Imag1 = load(fname1)[101:700,40:639]
-	[Imag1 RGB.(ones(size(Imag1)[1], 100)) Negativo(Imag1)]
-end
-
-# ╔═╡ cd1e19bd-190d-4d29-9223-485318476099
-md"""$\texttt{Figura 3. Rotación de la Figura 2.}$"""
-
-# ╔═╡ 14df04a2-8d3e-4b85-a7a2-e2e455f31e73
-md"""##   $\cdot$ Sobreposición de imágenes"""
-
-# ╔═╡ 0709425c-688d-40c3-9c80-eac32426d1b5
-md"""Ahora, si deseamos sobreponer una imagen sobre otra, podemos sumar las matrices que representa cada imagen, es decir, sean $A$ y $B$ las matrices que asociadas a dos imágenes, su sobreposición estará dado por: 
-
-$A + B = 
-\begin{bmatrix} 
-a_{11} + b_{11} & a_{12} + b_{12} & \cdots & a_{1n} + b_{1n} \\ 
-a_{21} + b_{21} & a_{22} + b_{22} & \cdots & a_{2n} + b_{2n} \\ 
-\vdots & \vdots & \ddots & \vdots \\ 
-a_{m1} + b_{m1} & a_{m2} + b_{m2} & \cdots & a_{mn} + b_{mn} 
-\end{bmatrix}.$
-**Nota:** Para realizar la suma, primero debemos asegurarnos de que las imágenes tengan el mismo tamaño, recortando o extendiendo la más pequeña según sea necesario."""
-
-# ╔═╡ fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
-md"""La siguiente función halla la sobreposición de dos imágenes."""
-
-# ╔═╡ 80431850-0e2d-4ca8-9589-abd9117382b3
-function Sobreposicion(image1, image2)
-	A = channelview(image1)
-	B = channelview(image2)
-	n = min(size(A)[1], size(B)[1])
-	m = min(size(A)[2], size(B)[2])
-	Image_sobre = 0.5*A[1:n,1:m] + 0.5*B[1:n,1:m]
-	return Gray.(Image_sobre)
-end
-
-# ╔═╡ 7726e89f-04b1-4664-89d8-bcdba5ec4129
-md"""Sobrepongamos la Figura 4 la figura 5."""
-
-# ╔═╡ f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
-begin
-	url2 = "https://images.unsplash.com/photo-1518877593221-1f28583780b4?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-	fname2 = download(url2)
-	imag2 = Gray.(load(fname2))
-end
-
-# ╔═╡ 971750a7-dfef-4c44-a703-1ce02dedbe81
-md"""$\texttt{Figura 4. Ballena. Imagen recuperada de Unsplash [5].}$"""
-
-# ╔═╡ 895c92f0-6124-446f-a4dd-5a51316a5ed3
-begin
-	url3 = "https://plus.unsplash.com/premium_photo-1700182582594-ad98628ebc76?q=80&w=1471&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-	fname3 = download(url3)
-	imag3 = Gray.(load(fname3))
-end
-
-# ╔═╡ 89faf96d-0af9-462d-a84f-6f3505f9a604
-md"""$\texttt{Figura 5. Cola de ballena. Imagen recuperada de Unsplash [5].}$"""
-
-# ╔═╡ 005fb905-a248-4bbf-8ceb-0271a1824deb
-md"""A continuación en la Figura 6, se muestra la sobreposición de las imágenes."""
-
-# ╔═╡ 5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
-Sobreposicion(imag2, imag3)
-
-# ╔═╡ c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
-md"""$\texttt{Figura 6. Sobreposición de la Figura 4 y la Figura 5.}$"""
-
-# ╔═╡ aeca23b3-8494-4f1d-b4fb-09e523e3f78a
-md"""Consideremos otro ejemplo."""
-
-# ╔═╡ 1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
-begin
-	url4 = "https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Oso1.png?raw=true"
-	fname4 = download(url4)
-	imag4 = Gray.(load(fname4))
-	
-	url5="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Oso2.png?raw=true"
-	fname5 = download(url5)
-	imag5 = Gray.(load(fname5))
-	
-	[imag4 imag5 Sobreposicion(imag4, imag5)]
-end
-
-# ╔═╡ 2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
-md"""$\texttt{Figura 7. Sobreposición de los peluches. Imágenes tomadas de [1].}$"""
-
-# ╔═╡ 90b15d0a-748a-4d0b-ad20-800b35fdb9be
-md"""##   $\cdot$ Producto de imágenes"""
-
-# ╔═╡ 23f61001-cc7e-4ebc-9cac-474e217538f7
-md""" Recordemos la multiplicación de matrices, dadas dos matrices $A$ de tamaño $m \times p$ y $B$ de tamaño $p \times n$, el producto $C = A \cdot B$ es otra matriz $m \times n$ donde cada elemento $c_{ij}$ se obtiene sumando el producto de los elementos correspondientes de la fila $i$ de $A$ y la columna $j$ de $B$: $c_{ij} = \sum_{k=1}^{p} a_{ik} \cdot b_{kj}$. De la siguiente forma:
-
-$\begin{align}A\cdot B &= \begin{bmatrix}
-a_{11} & a_{12} & \ldots & a_{1p} \\
-a_{21} & a_{22} & \ldots & a_{2p} \\
-\vdots & \vdots & \ddots & \vdots \\
-a_{m1} & a_{m2} & \ldots & a_{mp}
-\end{bmatrix}\cdot\begin{bmatrix}
-b_{11} & b_{12} & \ldots & b_{1n} \\
-b_{21} & b_{22} & \ldots & b_{2n} \\
-\vdots & \vdots & \ddots & \vdots \\
-b_{p1} & b_{p2} & \ldots & b_{pn}
-\end{bmatrix}\\
-
-&= \begin{bmatrix}
-a_{11} \cdot b_{11} + a_{12} \cdot b_{21} + \ldots + a_{1p} \cdot b_{p1} & \ldots & a_{i1} \cdot b_{1n} + a_{12} \cdot b_{2n} + \ldots + a_{1p} \cdot b_{pn} \\
-a_{21} \cdot b_{11} + a_{22} \cdot b_{21} + \ldots + a_{2p} \cdot b_{p1} & \ldots & a_{21} \cdot b_{1n} + a_{22} \cdot b_{2n} + \ldots + a_{2p} \cdot b_{pn} \\
-\vdots & \ddots & \vdots \\
-a_{m1} \cdot b_{11} + a_{m2} \cdot b_{21} + \ldots + a_{mp} \cdot b_{p1} & \ldots & a_{m1} \cdot b_{1n} + a_{m2} \cdot b_{2n} + \ldots + a_{mp} \cdot b_{pn}
-\end{bmatrix}\\
-
-&=\begin{bmatrix}
-c_{11} & c_{12} & \ldots & c_{1n} \\
-c_{21} & c_{22} & \ldots & c_{2n} \\
-\vdots & \vdots & \ddots & \vdots \\
-c_{m1} & c_{m2} & \ldots & c_{mn}
-\end{bmatrix}\\
-
-&=C\end{align}$
-"""
-
-# ╔═╡ b955394f-4bac-4e1c-8620-a4403cfd3d35
-md"""A continuación mostraremos algunos ejemplos del uso de la multiplicación de matrices en el procesamiento de imágenes. Por ejemplo, multiplicar una imagen a la izquierda por la matriz  
-
-$H = 
-\begin{bmatrix}
-1/2 & 1/2 & 0 & 0 & \cdots & 0 & 0 \\ 
-0 & 0 & 1/2  & 1/2 & \cdots & 0 & 0 \\ 
-\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\ 
-0 & 0 & 0 & 0 & \cdots & 1/2 & 1/2
-\end{bmatrix}$
-comprime verticalmente la imagen por un factor de 2. Multiplicarla a la izquierda por  
-
-$G = 
-\begin{bmatrix}
--1/2 & 1/2 & 0 & 0 & \cdots & 0 & 0 \\ 
-0 & 0 & -1/2  & 1/2 & \cdots & 0 & 0 \\ 
-\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\ 
-0 & 0 & 0 & 0 & \cdots & -1/2 & 1/2
-\end{bmatrix}$
-resalta los bordes horizontales de la imagen.  
-Multiplicar a la derecha por $H^T$ comprime horizontalmente la imagen, y por $G^T$ resalta los bordes verticales. El efecto combinado de ambas multiplicaciones afecta columnas y filas."""
-
-# ╔═╡ db613b98-f00f-4028-a7df-0b5309243021
-function H(m, n)
-    H = zeros(m, n)
-    for i in 1:m
-        col = 2 * (i - 1) + 1 
-        if col <= n
-            H[i, col] = 1/2
-        end
-        if col + 1 <= n
-            H[i, col + 1] = 1/2
-        end
-    end
-    return H
-end
-
-# ╔═╡ a36bc04e-b611-4244-9e86-81c4dfd01a1d
-function G(m, n)
-    G = zeros(m, n)
-    for i in 1:m
-        col = 2 * (i - 1) + 1
-        if col <= n
-            G[i, col] = -1/2
-        end
-        if col + 1 <= n
-            G[i, col + 1] = 1/2
-        end
-    end
-    return G
-end
-
-# ╔═╡ c0b80aea-e931-4aa0-82cf-1ecc600fc7fe
-md"""Veamos un ejemplo cómo aplicar la matriz H."""
-
-# ╔═╡ fc506b2d-3295-49b4-b81a-04a922242f24
-[imag Gray.(ones(size(imag)[1], 80)) Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag))
-Gray.(ones(80, 2*size(imag)[2]+ 80))
-Gray.(channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2]))) Gray.(ones(size(imag)[1], 80))  Gray.(H(size(imag)[1], size(imag)[1])*channelview(imag)*Transpose(H(size(imag)[2], size(imag)[2])))]
-
-# ╔═╡ 710d89b9-13d8-4501-aed3-2befbdc36c10
-md"""$\texttt{Figura 8. Aplicación de la matriz H al tablero de ajedrez.}$"""
-
-# ╔═╡ 18ae06c3-d765-4b60-ae3c-4d55217b437d
-md"""La Figura 9 muestra el resultado de aplicar la matriz $G$ a la izquierda y $G^T$ a la derecha a la imagen del tablero de ajedrez."""
-
-# ╔═╡ 480d1d73-bd2e-488e-b936-4749956e45b7
-[Gray.(G(size(imag)[1], size(imag)[1])*channelview(imag)) Gray.(ones(size(imag)[1], 80)) Gray.(channelview(imag)*Transpose(G(size(imag)[2], size(imag)[2])))]
-
-# ╔═╡ 3b8543e3-42ef-4bfa-ad34-9dc3a0a072df
-md"""$\texttt{Figura 9. Aplicación de la matriz G al tablero de ajedrez.}$"""
-
-# ╔═╡ 9a431f74-107d-4db1-859e-bb4ca74f07cb
-md"""Este método se aplica también a la segmentación de partes específicas de una imagen, como bandas horizontales, verticales o rectángulos. Por ejemplo, para extraer la mitad horizontal central de una imagen $A$, se multiplica a la izquierda por una matriz con una identidad en el centro y ceros alrededor.
-
-Por ejemplo, para extraer la mitad horizontal central de una imagen $(A)$ de tamaño $m\times n$, se debe multiplicar $A$ a la izquierda por 
-
-$K =
-\begin{bmatrix}
-Z_{m/4} & Z_{m/2} & Z_{m/4} \\ 
-Z_{m/2} & I_{m/2} & Z_{m/2} \\ 
-Z_{m/4} & Z_{m/2} & Z_{m/4}
-\end{bmatrix},$
-
-donde $I_{m/2}$ es la matriz identidad de tamaño $m/2$ y $Z_{m/4}$ es la matriz nula de tamaño $m/4$.
-
-Alternativamente, si se desea mostrar la parte central vertical de la imagen, se debe multiplicar $A$ a la derecha por la matriz:  
-
-$V =
-\begin{bmatrix}
-Z_{n/4} & Z_{n/2} & Z_{n/4} \\ 
-Z_{n/2} & I_{n/2} & Z_{n/2} \\ 
-Z_{n/4} & Z_{n/2} & Z_{n/4}
-\end{bmatrix}.$
-
-Para extraer un rectángulo central en la imagen, se pueden realizar ambas operaciones en sucesión, descritas formalmente como:  
-
-$A \to K \cdot A \cdot V.$"""
-
-# ╔═╡ db4128bc-fffd-4928-a2f5-d26e64582039
-md"""Con la siguiente función podemos crear la matriz $K$ o $V$."""
-
-# ╔═╡ 1f286685-9bd8-4da2-9187-f62416077814
-function Matrix(n)
-	M = Int(4*floor(n/4))
-    M4 = M÷4
-	M2 = M÷2
-    Z_M4 = zeros(M4, M4)
-	ZM2 = [zeros(M4, M4) zeros(M4, M4)]
-    I_M2 = I(M2)
-    matrix = [Z_M4       ZM2       Z_M4;
-        	ZM2'       I_M2      ZM2';
-        	Z_M4       ZM2       Z_M4]
-	# Tamaño de la matriz base
-    k = size(matrix, 1)
-
-    # Crear matriz ampliada con ceros
-    new_matrix = zeros(n, n)
-    new_matrix[1:k, 1:k] .= matrix  # Copiar valores en la nueva matriz
-    return new_matrix
-end
-
-# ╔═╡ 6a0ad91f-5047-4fc4-92f6-24f0ea5ff1f3
-md"""Consideremos nuevamente la Figura 3 y mostremos algunos resultados de la aplicación mencionada. Ver Figura 10."""
-
-# ╔═╡ 834e4649-2624-45f5-b98a-1dda03a914ff
-[imag1 Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1))
-Gray.(ones(80, 2*size(imag1)[2]+ 80))
-Gray.(channelview(imag1)*Matrix(size(imag1)[2])) Gray.(ones(size(imag1)[1], 80)) Gray.(Matrix(size(imag1)[1])*channelview(imag1)*Matrix(size(imag1)[2]))]
-
-# ╔═╡ 77fdb7f1-cef6-437b-a793-3443d1f6ad6f
-md"""$\texttt{Figura 10. Segmentación de la Figura 3.}$"""
-
-# ╔═╡ 2ea0c762-0377-4db9-b891-002f189a3ada
-md"""
-# Transformaciones Lineales
-
-Una función $T: \mathbb{R}^n \to \mathbb{R}^m$ se llama **transformación lineal** si:  
-
-$T(u + v) = T(u) + T(v),$
-y  
-
-$T(\alpha v) = \alpha T(v)$
-para todo $u, v \in \mathbb{R}^n$ y todos los escalares $\alpha$."""
-
-# ╔═╡ ad2006cb-0f8a-400b-b352-3228d7383fc9
-md"""**La matriz estándar de una transformación lineal**  
-
-Cualquier transformación lineal $T : \mathbb{R}^n \to \mathbb{R}^m$ es de la forma:  
-
-$T(x) = Ax,$
-donde $A$ es la matriz estándar de la transformación, la cual se define como:  
-
-$A = \begin{bmatrix} 
-T(e_1) & T(e_2) & \cdots & T(e_n) 
-\end{bmatrix}.$"""
-
-# ╔═╡ d341cf66-93ea-4857-b8f8-3518760259df
-md"""
-## Cambio de coordenadas
-"""
-
-# ╔═╡ c63131b0-fc8a-4fc5-991b-25eff5950aef
-function circulo(n)
-	img = fill(0,n,n)
-	for i in 1:n, j in 1:n
-		if abs(i-n/2)^(1/2) + abs(j-n/2)^(1/2) <= (n/3)^(1/2)
-			img[i,j] = 1
+# ╔═╡ bfacca3f-92ce-447c-99ba-4caccf030687
+kron([0 0 0; 0 1 0; 0 0 0],L_window)
+
+# ╔═╡ 10209b04-b8d5-4408-b85c-81ec9d053abe
+function homog_coord_naive(image)
+    M, N = size(image)
+    cx = N / 2
+    cy = M / 2
+	A = [1 0 30; 
+		0 1 30;
+		0.0022 0.0021 1]
+    new_image = zeros(eltype(image), M, N)
+
+    for m in 1:M, n in 1:N
+        x = n - cx
+        y = cy - m
+        new_coords = A * [x; y ; 1]
+		
+		λ = new_coords[3]
+		if λ==0
+			print("AAA")
 		end
-	end
-	return Gray.(img)
-end
-
-# ╔═╡ 8a9438fc-4754-4ece-8601-d3f075681db1
-function rotate_image_no_interp(image, angle)
-    θ = deg2rad(angle)
-    M, N = size(image)
-    A = [cos(θ) -sin(θ); sin(θ) cos(θ)]
-    rotated_image = zeros(eltype(image), M, N)
-   
-    for m in 1:M, n in 1:N
-        x = n - N / 2
-        y = M / 2 - m
-        new_coords = A * [x; y]
-        x_p = M / 2 - new_coords[2]
-        y_p = new_coords[1] + N / 2
+		
+        x_p = new_coords[1]/λ + cx
+        y_p = cy - new_coords[2]/λ
         
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
+        x_p = Int(floor(x_p))
+        y_p = Int(floor(y_p))
         if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            rotated_image[m, n] = image[x_p, y_p]
+            new_image[m, n] = image[y_p, x_p]
         end
     end
-    return rotated_image
+    return new_image
 end
 
-# ╔═╡ df624514-b98c-4f4d-8348-96577a54167e
-L = Gray.([0 0 0 0 0 0 0 0 0 0; 
-	0 0 0 0 0 0 0 0 0 0;
-	0 0 0 0 0 0 0 0 0 0;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1;
-	0 0 0 1 1 1 1 1 1 1])
+# ╔═╡ 4a1417ee-325d-47f1-9112-c8435108fe99
+homog_coord_naive(kron([0 0 0; 0 1 0; 0 0 0],L_window))
 
-# ╔═╡ 0de7918c-fa71-4523-a314-653e1e190288
-rotate_image_no_interp(L, 90)
+# ╔═╡ 7ce6a9c8-ec65-4deb-a2e5-c29fbbc2aa5f
+md"""
+Si recordamos, la dificultad de combinar los tres primeros pasos del procedimiento de rotación de imágenes en un solo paso radica en el molesto hecho de que la traslación no es una transformación lineal. Entonces, ¿qué dimensión adicional podemos introducir para hacerla lineal?
 
-# ╔═╡ 225bbc0a-205f-4221-b945-ebc0aeaeae63
-rotate_image_no_interp(L, -90)
+Resulta que lo único que debemos hacer es mover el origen del sistema de coordenadas lejos del centro de la imagen y colocarlo donde estamos, a una unidad de distancia de la pantalla de la computadora. De esta manera, cualquier punto con coordenadas $(x, y)$ se asignará a las coordenadas $(x, y, 1)$, conocidas como coordenadas homogéneas.
+"""
 
-# ╔═╡ 0307bca1-6358-4181-92b4-6d7fbeb50bf5
-[circulo(100) rotate_image_no_interp(circulo(100), 20)]
+# ╔═╡ 075f04cc-6ca6-47b6-84e9-26d56f48599f
+md"""
+Por ejemplo, supongamos que la imagen mostrada a continuación proviene de nuestra cámara de seguridad, y nos gustaría obtener una buena vista frontal de la placa delantera en el parachoques del vehículo. ¿Cómo podemos "girar" digitalmente la imagen para obtener una vista desde un punto de vista diferente? ¿Pueden las coordenadas homogéneas ayudarnos en esto?
+"""
 
-# ╔═╡ eb9116f9-2aa8-4f55-9c4f-f27891f46e30
-[imag1 rotate_image_no_interp(imag1, 90) rotate_image_no_interp(imag1, -90)]
+# ╔═╡ 97ea41e1-dcf9-4205-af96-94661a9c43f6
+begin
+	urlp="https://github.com/ytrujillol/Procesamiento-de-imagenes/blob/main/Images/Placa_coordenadas_homo.png?raw=true"
+	fnamep = download(urlp)
+	imagplaca = Gray.(load(fnamep))
+end
 
-# ╔═╡ 809054ff-58bd-46eb-bbe1-65fe353da582
-function rotate_image(image, angle)
-    θ = deg2rad(angle)
+# ╔═╡ d55e7d8c-6066-4317-8f8e-4c2f902c6724
+md"""$\texttt{Figura x.}$"""
+
+# ╔═╡ c2414c29-750a-4384-96f7-263c37b98d6f
+size(imagplaca)
+
+# ╔═╡ 75426f6c-24c6-4973-b272-d977f1bd40d7
+imagplaca[50:200,100:200]
+
+# ╔═╡ 6268b716-dc96-47f1-ab3d-b26e4271f3b5
+imagplaca[50:150,100:200]
+
+# ╔═╡ ab7c32ae-651f-4996-8d00-3feb132da7bc
+md"""
+-  $M = 238$
+-  $N = 330$
+
+
+-  $(m_1,n_1)=(50,100)$
+-  $(m_2,n_2)=(50,200)$
+-  $(m_3,n_3)=(200,100)$
+-  $(m_4,n_4)=(150,200)$
+
+
+-  $(x_1,y_1)=(-65,69)$
+-  $(x_2,y_2)=(35,69)$
+-  $(x_3,y_3)=(-65,35)$
+-  $(x_4,y_4)=(35,-31)$
+
+
+-  $(m'_1,n'_1)=(1,1)$
+-  $(m'_2,n'_2)=(1,330)$
+-  $(m'_3,n'_3)=(238,1)$
+-  $(m'_4,n'_4)=(238,330)$
+
+
+-  $(x'_1,y'_1)=(-164,118)$
+-  $(x'_2,y'_2)=(165,118)$
+-  $(x'_3,y'_3)=(-164,-119)$
+-  $(x'_4,y'_4)=(165,-119)$
+"""
+
+# ╔═╡ 00886f58-7508-490c-bb92-40fe9e29eb09
+[0 1; -1 0]*[1 1 238 238; 1 330 1 330].+[-165; 119]
+
+# ╔═╡ a07cdb2b-9c56-4b36-9209-c0df92606254
+md"""
+Geométricamente, el problema se reduce a diseñar la transformación $T$ que mapea las cuatro esquinas (en $(x_1, y_1)$, $(x_2, y_2)$, $(x_3, y_3)$ y $(x_4, y_4)$) de la placa a las cuatro esquinas $(x'_1, y'_1)$, $(x'_2, y'_2)$, $(x'_3, y'_3)$ y $(x'_4, y'_4)$ del rectángulo deseado. Algebraicamente, necesitamos diseñar la matriz:
+
+$A =
+\begin{bmatrix}
+a_{11} & a_{12} & a_{13} \\
+a_{21} & a_{22} & a_{23} \\
+a_{31} & a_{32} & a_{33}
+\end{bmatrix}$
+
+para la transformación $T$, de forma que se pueda expresar como:
+
+$\lambda 
+\begin{bmatrix}
+x'_1 & x'_2 & x'_3 & x'_4 \\
+y'_1 & y'_2 & y'_3 & y'_4 \\
+1 & 1 & 1 & 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+a_{11} & a_{12} & a_{13} \\
+a_{21} & a_{22} & a_{23} \\
+a_{31} & a_{32} & a_{33}
+\end{bmatrix}
+\begin{bmatrix}
+x_1 & x_2 & x_3 & x_4 \\
+y_1 & y_2 & y_3 & y_4 \\
+1 & 1 & 1 & 1
+\end{bmatrix}$
+
+Antes de proceder, es necesario explicar la razón para introducir el múltiplo escalar $\lambda$. Es fácil ver que las coordenadas homogéneas $(x, y, 1)$ del punto $(x, y)$ pueden ser identificadas con la recta $L$ que pasa a través del origen y el punto $(x, y, 1)$. Como tanto $(x, y, 1)$ como $(\lambda x, \lambda y, \lambda)$ están en $L$, representan el mismo punto $(x, y)$.
+"""
+
+# ╔═╡ ed19ae62-b88f-4256-a6d3-57355c8556da
+md"""
+¿Cómo determinamos las entradas desconocidas de la matriz de transformación $A$? No es fácil, pero perseveraremos. Para cada par $(x_k, y_k)$ y $(x'_k, y'_k)$ de puntos correspondientes, la ecuación anterior implica:
+
+$\lambda x'_k = a_{11} x_k + a_{12} y_k + a_{13}$
+
+$\lambda y'_k = a_{21} x_k + a_{22} y_k + a_{23}$
+
+$\lambda = a_{31} x_k + a_{32} y_k + a_{33}.$
+
+
+Sustituyendo el valor del factor de escala $\lambda$ en las primeras dos ecuaciones, obtenemos el sistema:
+
+$(a_{31}x_k + a_{32}y_k + a_{33}) x'_k = a_{11}x_k + a_{12}y_k + a_{13}$
+
+$(a_{31}x_k + a_{32}y_k + a_{33}) y'_k = a_{21}x_k + a_{22}y_k + a_{23}.$
+
+Lo cual, después de reorganizar los términos, se convierte en:
+
+$-a_{11}x_k - a_{12}y_k - a_{13} + a_{31}x_kx'_k + a_{32}y_kx'_k + a_{33}x'_k = 0$
+
+$-a_{21}x_k - a_{22}y_k - a_{23} + a_{31}x_ky'_k + a_{32}y_ky'_k + a_{33}y'_k = 0.$
+
+El problema de determinar las entradas de la matriz de transformación $A$ se reduce, por tanto, al de resolver el sistema lineal homogéneo:
+
+$H a = 0,$
+
+donde
+
+$H =
+\begin{bmatrix}
+-x_1 & -y_1 & -1 & 0 & 0 & 0 & x'_1x_1 & y_1 x'_1 & x'_1 \\
+\vdots &  &  & \vdots &  & \vdots &  &  & \vdots \\
+-x_4 & -y_4 & -1 & 0 & 0 & 0 & x'_4x_4 & y_4 x'_4 & x'_4 \\
+0 & 0 & 0 & -x_1 & -y_1 & -1 & x_1 y'_1 & y_1 y'_1 & y'_1\\
+\vdots &  &  & \vdots &  & \vdots &  &  & \vdots \\
+0 & 0 & 0 & -x_4 & -y_4 & -1 & x_4 y'_4 & y_4 y'_4 & y'_4\\
+\end{bmatrix},$
+
+y
+
+$a =
+\begin{bmatrix}
+a_{11} &
+a_{12} &
+a_{13} &
+a_{21} &
+a_{22} &
+a_{23} &
+a_{31} &
+a_{32} &
+a_{33}
+\end{bmatrix}^{T}.$
+"""
+
+# ╔═╡ 727ad7b2-c898-43f8-804b-0841bdf92095
+pixeles = [50 50 200 150 1 200 1 200; 100 200 100 200 1 1 200 200]
+
+# ╔═╡ ad044773-c0cc-4ed8-b69a-08d4f98181fd
+function SolHa(pxs,M,N)
+	coord = [0 1; -1 0]*pxs .+ [-N/2;M/2]
+	A = [coord[1:2,1:4]' ones(4,1)]
+	Z = zeros(4,3)
+	B = A .* coord[1,5:8]
+	C = A .* coord[2,5:8]
+	H = [-A Z B ; Z -A C]
+	return Array(reshape(nullspace(H),3,3)')
+end
+
+# ╔═╡ c424f0b5-817c-4d4f-8f70-e326240c68f9
+SolHa(pixeles,238,330)
+
+# ╔═╡ 1d545ce3-f1e6-4c67-acd0-3e3e77acfb93
+function homog_coord(image, pxs)
     M, N = size(image)
     cx = N / 2
     cy = M / 2
-    A = [cos(θ) -sin(θ); sin(θ) cos(θ)]
-    rotated_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-		new_coords = A * [x; y]
-		x_p = new_coords[1]
-		y_p = new_coords[2]
-        x = x_p + cx
-        y = cy - y_p
-        if x >= 1 && x <= N && y >= 1 && y <= M
-            interp = interpolate(image, BSpline(Linear()))
-            rotated_image[m, n] = interp(y, x)
-        end
-    end
-    return rotated_image
-end
-
-# ╔═╡ 4756613f-dec2-4145-ab57-de24776ab9e4
-[imag1 rotate_image(imag1, 90)]
-
-# ╔═╡ 225ea01f-243a-49fe-a22f-a85fc5c78a9b
-rotate_image(imag1, 180)
-
-# ╔═╡ 6e02907a-678c-4d4f-a3f7-92eddc878baf
-rotate_image(imag1, 01)
-
-# ╔═╡ 44bac7a6-5e6c-4e8d-a221-90d6c1173f38
-md"""
-A continuación encontramos transformaciones lineales que hacen otros tipos de efectos sobre una imagen.
-"""
-
-# ╔═╡ 80e3c274-0dcc-448d-a380-aa28462ab5e9
-md"""
-**Estiramiento/compresión** por un factor $a$ en la dirección del eje $x$.
-"""
-
-# ╔═╡ ed773753-e3f4-4d70-9718-183ace0f7d5a
-function dilatation_x(image, a)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [1/a 0; 0 1]
+	A = SolHa(pxs,M,N)
     new_image = zeros(eltype(image), M, N)
 
     for m in 1:M, n in 1:N
         x = n - cx
         y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
+        new_coords = A * [x; y ; 1]
+		λ = new_coords[3]
+        x_p = new_coords[1]/λ + cx
+        y_p = cy - new_coords[2]/λ
         
         x_p = round(Int, x_p)
         y_p = round(Int, y_p)
@@ -570,266 +293,48 @@ function dilatation_x(image, a)
     return new_image
 end
 
-# ╔═╡ 4f7059b3-41ce-4e43-a14e-f64de7f6e514
-[imag1 dilatation_x(imag1, 0.5)]
+# ╔═╡ f74a4788-151b-4c83-91b0-c276113c5fb2
+imagplaca
 
-# ╔═╡ 2e45b58f-fcde-4de4-a485-72940d7da6ac
+# ╔═╡ 7333c232-4fa4-44a0-b2c5-f32fff38685f
+homog_coord(imagplaca, pixeles)
+
+# ╔═╡ d11b57f2-718a-470f-9ef1-49121c0c7956
 md"""
-**Estiramiento/compresión** por un factor $b$ en la dirección del eje $y$.
+Este sistema tiene nueve variables pero solo ocho ecuaciones, lo cual es algo muy positivo, ya que nos gustaría que tuviera una variable libre y, por lo tanto, una solución no trivial. Debido al tamaño de la matriz, no intentamos reducirla por filas manualmente y recomendamos usar un sistema de álgebra computacional para completar el cálculo de las entradas $a_{jk}$ de la matriz de transformación $A$. El valor numérico del parámetro de escala $\lambda$ se puede obtener utilizando la fórmula.
+
+Al igual que con la implementación de la transformación de rotación en la sección anterior, la transformación de cambio de perspectiva no es sobreyectiva (es decir, no cubre todo el rango) cuando su dominio y rango consisten en pares de números enteros (en lugar de números reales). Como resultado, es muy probable que algunos de los píxeles en la imagen transformada no reciban ningún valor mediante la transformación. Estos píxeles deben ser interpolados utilizando los píxeles vecinos que sí hayan recibido nuevos valores.
+
+La implementación de la transformación de “cambio de perspectiva” es similar al procedimiento de la transformación de rotación discutido en la sección anterior. La describimos aquí a continuación.
 """
 
-# ╔═╡ 4409e7cb-3cb7-4bfd-a1ec-cc36354f757b
-function dilatation_y(image, b)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [1 0; 0 1/b]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ f72a702d-af26-4876-8d64-77582825fcc9
-[imag1 dilatation_y(imag1, 0.5)]
-
-# ╔═╡ 6c97e63b-9ab5-4966-ae37-d1c5dcb2ab52
+# ╔═╡ 33a10a1f-68c8-4ed6-91e8-39f5517b1ce1
 md"""
-**Cizalladura horizontal** que deja el punto $(1, 0)$ sin cambios y mapea el punto $(0, 1)$ en $(a, 1)$.
+**Un procedimiento paso a paso para la implementación de la transformación de cambio de perspectiva (que se aplicará a cada píxel)**
 """
 
-# ╔═╡ b25c28f0-0f3a-48b5-be7b-af59a68439ea
-function dilatation_ch(image, a)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [1 a; 0 1]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ 29b2fdae-6a13-4057-a75c-412a5a3c17ad
-[imag1 dilatation_ch(imag1, 0.5)]
-
-# ╔═╡ 0356097c-9c73-432c-b94f-d1143fcdfc34
+# ╔═╡ 5df7a9d4-ccef-4fbe-81a6-e0036c3dfb33
 md"""
-**Cizalladura vertical** que deja el punto $(0, 1)$ sin cambios y mapea el punto $(1, 0)$ en $(1, b)$.  
+1. **Calcular las coordenadas cartesianas** $(x, y)$ y definir las coordenadas homogéneas $(x, y, 1)$ para el píxel con los índices $(m, n)$ utilizando las fórmulas de conversión:
+
+$x = n - \frac{N}{2} \quad \text{y} \quad y = \frac{M}{2} - m.$
+
+2. **Aplicar la transformación de cambio de perspectiva** para calcular las "nuevas" coordenadas homogéneas $(x'/\lambda, y'/\lambda, 1)$ a las que el píxel en $(m, n)$ necesita moverse.
+
+3. **Convertir las "nuevas" coordenadas homogéneas** $(x'/\lambda, y'/\lambda, 1)$ en los "nuevos" índices $(m', n')$ utilizando las fórmulas de conversión (si es necesario, deberemos redondear $m'$ y $n'$ al entero más cercano):
+
+$m' = \frac{M}{2} - \frac{y'}{\lambda} \quad \text{y} \quad n' = \frac{x'}{\lambda} + \frac{N}{2}.$
+
+
+
+4. **Asignar el valor del píxel con los "antiguos" índices** $(m, n)$ al píxel con los "nuevos" índices $(m', n')$.
+
+
+
+Dado que todos los cálculos se realizan en coordenadas homogéneas, todas las transformaciones involucradas en el procedimiento pueden realizarse con la ayuda de matrices y productos matriciales. De hecho, los pasos pueden combinarse y multiplicarse por una sola matriz.
 """
 
-# ╔═╡ ae98d703-76ca-44f9-9c98-2c5648d9ce80
-function dilatation_cv(image, b)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [1 0; b 1]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ 8cd9c33b-079e-4984-ac3f-a73fc6fa1178
-[imag1 dilatation_cv(imag1, 0.5)]
-
-# ╔═╡ 304b82b3-cfa1-4c94-a2c8-b4e8e2d3d6e7
-md"""
-**Reflexión** a través del eje $x$. 
-"""
-
-# ╔═╡ 970bf9e2-1466-42da-b202-c6b9f454eacb
-function reflexion_x(image)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [-1 0; 0 1]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ 36cc24eb-c6bb-4fcd-ac9d-befddac22da8
-[imag1 reflexion_x(imag1)]
-
-# ╔═╡ 3ba6dfae-931a-48d6-b90c-8bc612c4076e
-md"""
-**Reflexión** a través del eje $y$.
-"""
-
-# ╔═╡ ac2d9cee-d5b7-4a67-8454-0ca988ac4d6e
-function reflexion_y(image)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [1 0; 0 -1]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ 9f9497d0-f42d-45f6-a250-b5f1f49952d0
-[imag1 reflexion_y(imag1)]
-
-# ╔═╡ fb92541f-4fa9-4329-a8ac-d22d8389ff4b
-md"""
-**Reflexión** a través de la línea $y = x$. 
-"""
-
-# ╔═╡ 94aa56d5-9076-4271-a51d-c21a1524aad5
-function reflexion_y_x(image)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [0 1; 1 0]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ a43d7c96-120b-4894-a454-e517551cf84a
-[imag1 reflexion_y_x(imag1)]
-
-# ╔═╡ a79b0ccd-5b9f-41c3-b277-b554403b5002
-md"""
-**Reflexión** a través de la línea $y = -x$.  
-"""
-
-# ╔═╡ e1d84093-ef75-4e49-a91b-f9b2d8e73deb
-function reflexion_y_minus_x(image)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [0 -1; -1 0]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ f41ea8ef-045d-4a3d-b095-8d9514d09d24
-[imag1 reflexion_y_minus_x(imag1)]
-
-# ╔═╡ 871510fa-dfce-43d4-b063-fb036e907458
-md"""
-**Reflexión** a través del origen. 
-"""
-
-# ╔═╡ c04fc6be-50ab-4f8d-8df0-f043936f5b8f
-function reflexion_origin(image)
-    M, N = size(image)
-    cx = N / 2
-    cy = M / 2
-    A = [0 -1; -1 0]
-    new_image = zeros(eltype(image), M, N)
-
-    for m in 1:M, n in 1:N
-        x = n - cx
-        y = cy - m
-        new_coords = A * [x; y]
-        x_p = new_coords[1] + cx
-        y_p = cy - new_coords[2]
-        
-        x_p = round(Int, x_p)
-        y_p = round(Int, y_p)
-        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
-            new_image[m, n] = image[y_p, x_p]
-        end
-    end
-    return new_image
-end
-
-# ╔═╡ 5218f6e3-51d2-46e8-9afa-e52598e02175
-[imag1 reflexion_origin(imag1)]
-
-# ╔═╡ 4da22b7a-f145-43ef-aad6-2cad844e560b
+# ╔═╡ c78eb532-79d5-4881-9cd5-ec759b4d2340
 md"""# Referencias
 
 [1] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
@@ -853,7 +358,6 @@ HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-Interpolations = "a98d9a8b-a2ab-59e6-89dd-64a1c18fca59"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
@@ -863,17 +367,16 @@ StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
 ColorVectorSpace = "~0.10.0"
-Colors = "~0.12.11"
-Distributions = "~0.25.112"
-FileIO = "~1.16.4"
+Colors = "~0.13.0"
+Distributions = "~0.25.115"
+FileIO = "~1.16.6"
 HypertextLiteral = "~0.9.5"
 ImageIO = "~0.6.9"
 ImageShow = "~0.3.8"
 Images = "~0.26.1"
-Interpolations = "~0.15.1"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.60"
-StatsBase = "~0.34.3"
+StatsBase = "~0.34.4"
 StatsPlots = "~0.15.7"
 """
 
@@ -883,7 +386,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "f84e3b4d7f93706071532fb4f6f300547c03484f"
+project_hash = "036eac9cacea0f41aae7e55044a1ffc6d2455924"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -993,9 +496,9 @@ version = "0.1.6"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "35abeca13bc0425cff9e59e229d971f5231323bf"
+git-tree-sha1 = "8873e196c2eb87962a2048b3b8e08946535864a1"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
-version = "1.0.8+3"
+version = "1.0.8+4"
 
 [[deps.CEnum]]
 git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
@@ -1022,9 +525,9 @@ version = "0.2.2"
 
 [[deps.ChainRulesCore]]
 deps = ["Compat", "LinearAlgebra"]
-git-tree-sha1 = "3e4b134270b372f2ed4d4d0e936aabaefc1802bc"
+git-tree-sha1 = "1713c74e00545bfe14605d2a2be1712de8fbcb58"
 uuid = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
-version = "1.25.0"
+version = "1.25.1"
 weakdeps = ["SparseArrays"]
 
     [deps.ChainRulesCore.extensions]
@@ -1072,9 +575,9 @@ weakdeps = ["SpecialFunctions"]
 
 [[deps.Colors]]
 deps = ["ColorTypes", "FixedPointNumbers", "Reexport"]
-git-tree-sha1 = "362a287c3aa50601b0bc359053d5c2468f0e7ce0"
+git-tree-sha1 = "64e15186f0aa277e174aa81798f7eb8598e0157e"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
-version = "0.12.11"
+version = "0.13.0"
 
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
@@ -1223,9 +726,9 @@ version = "0.1.11"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "f42a5b1e20e009a43c3646635ed81a9fcaccb287"
+git-tree-sha1 = "e51db81749b0777b2147fbe7b783ee79045b8e99"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.6.4+2"
+version = "2.6.4+3"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -1253,9 +756,9 @@ version = "1.8.0"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "5cf2433259aa3985046792e2afc01fcec076b549"
+git-tree-sha1 = "4d81ed14783ec49ce9f2e168208a12ce1815aa25"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
-version = "3.3.10+2"
+version = "3.3.10+3"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
@@ -1347,9 +850,9 @@ version = "9.55.0+4"
 
 [[deps.Giflib_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7141135f9073f135e68c5ee8df44fb0fb80689b8"
+git-tree-sha1 = "6570366d757b50fabae9f4315ad74d2e40c0560a"
 uuid = "59f7168a-df46-5410-90c8-f2779963d0ec"
-version = "5.2.2+1"
+version = "5.2.3+0"
 
 [[deps.Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE2_jll", "Zlib_jll"]
@@ -1641,9 +1144,9 @@ version = "0.1.5"
 
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3447a92280ecaad1bd93d3fce3d408b6cfff8913"
+git-tree-sha1 = "eac1206917768cb54957c65a615460d87b455fc1"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "3.1.0+1"
+version = "3.1.1+0"
 
 [[deps.KernelDensity]]
 deps = ["Distributions", "DocStringExtensions", "FFTW", "Interpolations", "StatsBase"]
@@ -1671,9 +1174,9 @@ version = "18.1.7+0"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "16e6ec700154e8004dba90b4aec376f68905d104"
+git-tree-sha1 = "854a9c268c43b77b0a27f22d7fab8d33cdb3a731"
 uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
-version = "2.10.2+2"
+version = "2.10.2+3"
 
 [[deps.LaTeXStrings]]
 git-tree-sha1 = "dda21b8cbd6a6c40d9d02a73230f9d70fed6918c"
@@ -1753,9 +1256,9 @@ version = "1.7.0+0"
 
 [[deps.Libgpg_error_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "dc4e8d10d4c6c11bf8d52dfd7213c09863c38cd5"
+git-tree-sha1 = "df37206100d39f79b3376afb6b9cee4970041c61"
 uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
-version = "1.51.0+1"
+version = "1.51.1+0"
 
 [[deps.Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1765,9 +1268,9 @@ version = "1.17.0+1"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "d841749621f4dcf0ddc26a27d1f6484dfc37659a"
+git-tree-sha1 = "84eef7acd508ee5b3e956a2ae51b05024181dee0"
 uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
-version = "2.40.2+1"
+version = "2.40.2+2"
 
 [[deps.Libtiff_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
@@ -1777,9 +1280,9 @@ version = "4.4.0+0"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9d630b7fb0be32eeb5e8da515f5e8a26deb457fe"
+git-tree-sha1 = "edbf5309f9ddf1cab25afc344b1e8150b7c832f9"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
-version = "2.40.2+1"
+version = "2.40.2+2"
 
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
@@ -1992,10 +1495,10 @@ uuid = "458c3c95-2e84-50aa-8efc-19380b2a3a95"
 version = "1.1.23+1"
 
 [[deps.OpenSpecFun_jll]]
-deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "418e63d434f5ca12b188bbb287dfbe10a5af1da4"
+deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl"]
+git-tree-sha1 = "1346c9208249809840c91b26703912dff463d335"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
-version = "0.5.5+1"
+version = "0.5.6+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2556,9 +2059,9 @@ version = "0.4.1"
 
 [[deps.Unitful]]
 deps = ["Dates", "LinearAlgebra", "Random"]
-git-tree-sha1 = "01915bfcd62be15329c9a07235447a89d588327c"
+git-tree-sha1 = "c0667a8e676c53d390a09dc6870b3d8d6650e2bf"
 uuid = "1986cc42-f94f-5a68-af5c-568840ba703d"
-version = "1.21.1"
+version = "1.22.0"
 
     [deps.Unitful.extensions]
     ConstructionBaseUnitfulExt = "ConstructionBase"
@@ -2629,15 +2132,15 @@ version = "1.1.42+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
-git-tree-sha1 = "ff1fdd02e71717c7418deb1c42f487529d0b9574"
+git-tree-sha1 = "9dafcee1d24c4f024e7edc92603cedba72118283"
 uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
-version = "1.8.6+2"
+version = "1.8.6+3"
 
 [[deps.Xorg_libXau_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7966eb654d74306e553ce28b9aea17969fc1966c"
+git-tree-sha1 = "2b0e27d52ec9d8d483e2ca0b72b3cb1a8df5c27a"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
-version = "1.0.11+2"
+version = "1.0.11+3"
 
 [[deps.Xorg_libXcursor_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
@@ -2647,15 +2150,15 @@ version = "1.2.3+0"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "6a0d3b4248b01faa44509c5ea363881d3ad3f5eb"
+git-tree-sha1 = "02054ee01980c90297412e4c809c8694d7323af3"
 uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
-version = "1.1.4+2"
+version = "1.1.4+3"
 
 [[deps.Xorg_libXext_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "fb3f116a4efb81aecf8c415e9423869c6ee0f21f"
+git-tree-sha1 = "d7155fea91a4123ef59f42c4afb5ab3b4ca95058"
 uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
-version = "1.3.6+2"
+version = "1.3.6+3"
 
 [[deps.Xorg_libXfixes_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2689,15 +2192,15 @@ version = "0.9.11+1"
 
 [[deps.Xorg_libpthread_stubs_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9c7539767c23ed0db32fd50916d8f5807ee11af8"
+git-tree-sha1 = "fee57a273563e273f0f53275101cd41a8153517a"
 uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
-version = "0.1.1+2"
+version = "0.1.1+3"
 
 [[deps.Xorg_libxcb_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
-git-tree-sha1 = "b4678b3c5ee394ae6422c415b231b8015c85542f"
+git-tree-sha1 = "1a74296303b6524a0472a8cb12d3d87a78eb3612"
 uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
-version = "1.17.0+2"
+version = "1.17.0+3"
 
 [[deps.Xorg_libxkbfile_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2749,9 +2252,9 @@ version = "2.39.0+0"
 
 [[deps.Xorg_xtrans_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "26ded386f85de26df35524639e525c2018f68ddd"
+git-tree-sha1 = "b9ead2d2bdb27330545eb14234a2e300da61232e"
 uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
-version = "1.5.0+2"
+version = "1.5.0+3"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
@@ -2760,9 +2263,9 @@ version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7dc5adc3f9bfb9b091b7952f4f6048b7e37acafc"
+git-tree-sha1 = "622cf78670d067c738667aaa96c553430b65e269"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
-version = "1.5.6+2"
+version = "1.5.7+0"
 
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2772,9 +2275,9 @@ version = "0.56.3+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "1827acba325fdcdf1d2647fc8d5301dd9ba43a9d"
+git-tree-sha1 = "522c1df09d05a71785765d19c9524661234738e9"
 uuid = "a4ae2306-e953-59d6-aa16-d00cac43593b"
-version = "3.9.0+0"
+version = "3.11.0+0"
 
 [[deps.libass_jll]]
 deps = ["Artifacts", "Bzip2_jll", "FreeType2_jll", "FriBidi_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl", "Zlib_jll"]
@@ -2801,15 +2304,15 @@ version = "2.0.3+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "9c42636e3205e555e5785e902387be0061e7efc1"
+git-tree-sha1 = "b7bfd3ab9d2c58c3829684142f5804e4c6499abc"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.44+1"
+version = "1.6.45+0"
 
 [[deps.libsixel_jll]]
-deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Pkg", "libpng_jll"]
-git-tree-sha1 = "80c5ae2c7b5163441018f4666b179f1ffca194c1"
+deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "libpng_jll"]
+git-tree-sha1 = "1e53ffe8941ee486739f3c0cf11208c26637becd"
 uuid = "075b6546-f08a-558a-be8f-8157d0f608a5"
-version = "1.10.3+2"
+version = "1.10.4+0"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -2859,107 +2362,39 @@ version = "1.4.1+2"
 """
 
 # ╔═╡ Cell order:
-# ╟─3885aed6-7596-471c-87e4-b246dadbe898
-# ╟─855fbf64-5944-460c-a0d4-523066030e4e
-# ╟─00fbe8cf-cd1e-451c-9a30-b83223fe3c10
-# ╟─ecbeadd0-14ba-47ae-826a-d97f0695ef1e
-# ╟─3981068a-8063-4f30-bb4b-c954f1780090
-# ╠═87509cb1-de05-41f2-b30e-ad065ccde690
-# ╟─21d43d86-b0cd-43ec-a434-ecb564971d24
-# ╟─8992f9b8-3660-490e-aed3-8be32742183d
-# ╟─7806626e-81e1-4b48-9756-b8277213d268
-# ╟─98b24728-d29c-4d14-ba92-4e51fdbc7b10
-# ╟─dcea8986-c1ed-4dab-976b-b9f4931f051f
-# ╟─c035d077-763e-46e8-9807-08be974ddf61
-# ╠═552aab87-728c-4ec0-b9ee-a41c8a38f51a
-# ╟─8dd43a29-7e88-4b0e-86bc-afd70a5fb04d
-# ╟─bf509d53-b239-4514-bdb2-30d5f52219e8
-# ╟─7ff384fb-e482-4bf9-a70f-34bdd4fa840a
-# ╟─0fdf5d20-9fcc-4404-b364-8bdb16237eea
-# ╟─cb534937-101c-439d-b515-e0d99212894f
-# ╟─5886e131-99cf-4ed6-a06c-2b281d710ef6
-# ╟─6ab9ceda-5fb9-429d-a3f5-e9fd098fe619
-# ╟─065a2edb-82b6-428a-9c33-7af11ec75ae1
-# ╟─214d8d87-347c-47ac-8e0f-139f86c68b85
-# ╠═fc100c97-e447-4a7a-b42f-4adb9729bfda
-# ╟─5ab89eea-6d7b-490f-96f7-8b4d36249722
-# ╟─a5c73baf-5367-470d-8e82-2874d5f90fd6
-# ╟─cd1e19bd-190d-4d29-9223-485318476099
-# ╟─14df04a2-8d3e-4b85-a7a2-e2e455f31e73
-# ╟─0709425c-688d-40c3-9c80-eac32426d1b5
-# ╟─fb3c5fd5-bdd1-4ffb-882b-dffa70c4ab30
-# ╠═80431850-0e2d-4ca8-9589-abd9117382b3
-# ╟─7726e89f-04b1-4664-89d8-bcdba5ec4129
-# ╟─f1af8a95-3d4f-4f7e-bb66-b61b0a19d57d
-# ╟─971750a7-dfef-4c44-a703-1ce02dedbe81
-# ╟─895c92f0-6124-446f-a4dd-5a51316a5ed3
-# ╟─89faf96d-0af9-462d-a84f-6f3505f9a604
-# ╟─005fb905-a248-4bbf-8ceb-0271a1824deb
-# ╟─5e1b7cfc-ff30-4b45-ad99-89a198dcd5d9
-# ╟─c1d4d03b-2694-46a0-9a6d-e4b4d67e1bb2
-# ╟─aeca23b3-8494-4f1d-b4fb-09e523e3f78a
-# ╟─1eb0c378-4b6e-4da8-94ee-3f56c89e3c99
-# ╟─2ffa3e3c-67ad-4ee2-88ad-306a1986e2f0
-# ╟─90b15d0a-748a-4d0b-ad20-800b35fdb9be
-# ╟─23f61001-cc7e-4ebc-9cac-474e217538f7
-# ╟─b955394f-4bac-4e1c-8620-a4403cfd3d35
-# ╠═db613b98-f00f-4028-a7df-0b5309243021
-# ╠═a36bc04e-b611-4244-9e86-81c4dfd01a1d
-# ╟─c0b80aea-e931-4aa0-82cf-1ecc600fc7fe
-# ╟─fc506b2d-3295-49b4-b81a-04a922242f24
-# ╟─710d89b9-13d8-4501-aed3-2befbdc36c10
-# ╟─18ae06c3-d765-4b60-ae3c-4d55217b437d
-# ╟─480d1d73-bd2e-488e-b936-4749956e45b7
-# ╟─3b8543e3-42ef-4bfa-ad34-9dc3a0a072df
-# ╟─9a431f74-107d-4db1-859e-bb4ca74f07cb
-# ╟─db4128bc-fffd-4928-a2f5-d26e64582039
-# ╠═1f286685-9bd8-4da2-9187-f62416077814
-# ╟─6a0ad91f-5047-4fc4-92f6-24f0ea5ff1f3
-# ╟─834e4649-2624-45f5-b98a-1dda03a914ff
-# ╟─77fdb7f1-cef6-437b-a793-3443d1f6ad6f
-# ╟─2ea0c762-0377-4db9-b891-002f189a3ada
-# ╟─ad2006cb-0f8a-400b-b352-3228d7383fc9
-# ╟─d341cf66-93ea-4857-b8f8-3518760259df
-# ╟─c63131b0-fc8a-4fc5-991b-25eff5950aef
-# ╠═8a9438fc-4754-4ece-8601-d3f075681db1
-# ╠═df624514-b98c-4f4d-8348-96577a54167e
-# ╠═0de7918c-fa71-4523-a314-653e1e190288
-# ╠═225bbc0a-205f-4221-b945-ebc0aeaeae63
-# ╠═0307bca1-6358-4181-92b4-6d7fbeb50bf5
-# ╠═eb9116f9-2aa8-4f55-9c4f-f27891f46e30
-# ╠═450ce71e-2fcb-4c32-ae96-bba24b7584b1
-# ╠═809054ff-58bd-46eb-bbe1-65fe353da582
-# ╠═4756613f-dec2-4145-ab57-de24776ab9e4
-# ╠═225ea01f-243a-49fe-a22f-a85fc5c78a9b
-# ╠═6e02907a-678c-4d4f-a3f7-92eddc878baf
-# ╟─44bac7a6-5e6c-4e8d-a221-90d6c1173f38
-# ╟─80e3c274-0dcc-448d-a380-aa28462ab5e9
-# ╟─ed773753-e3f4-4d70-9718-183ace0f7d5a
-# ╟─4f7059b3-41ce-4e43-a14e-f64de7f6e514
-# ╟─2e45b58f-fcde-4de4-a485-72940d7da6ac
-# ╟─4409e7cb-3cb7-4bfd-a1ec-cc36354f757b
-# ╠═f72a702d-af26-4876-8d64-77582825fcc9
-# ╟─6c97e63b-9ab5-4966-ae37-d1c5dcb2ab52
-# ╟─b25c28f0-0f3a-48b5-be7b-af59a68439ea
-# ╟─29b2fdae-6a13-4057-a75c-412a5a3c17ad
-# ╟─0356097c-9c73-432c-b94f-d1143fcdfc34
-# ╟─ae98d703-76ca-44f9-9c98-2c5648d9ce80
-# ╟─8cd9c33b-079e-4984-ac3f-a73fc6fa1178
-# ╟─304b82b3-cfa1-4c94-a2c8-b4e8e2d3d6e7
-# ╟─970bf9e2-1466-42da-b202-c6b9f454eacb
-# ╟─36cc24eb-c6bb-4fcd-ac9d-befddac22da8
-# ╟─3ba6dfae-931a-48d6-b90c-8bc612c4076e
-# ╟─ac2d9cee-d5b7-4a67-8454-0ca988ac4d6e
-# ╟─9f9497d0-f42d-45f6-a250-b5f1f49952d0
-# ╟─fb92541f-4fa9-4329-a8ac-d22d8389ff4b
-# ╟─94aa56d5-9076-4271-a51d-c21a1524aad5
-# ╟─a43d7c96-120b-4894-a454-e517551cf84a
-# ╟─a79b0ccd-5b9f-41c3-b277-b554403b5002
-# ╟─e1d84093-ef75-4e49-a91b-f9b2d8e73deb
-# ╟─f41ea8ef-045d-4a3d-b095-8d9514d09d24
-# ╟─871510fa-dfce-43d4-b063-fb036e907458
-# ╟─c04fc6be-50ab-4f8d-8df0-f043936f5b8f
-# ╟─5218f6e3-51d2-46e8-9afa-e52598e02175
-# ╟─4da22b7a-f145-43ef-aad6-2cad844e560b
+# ╟─a403c522-cc82-11ef-1553-8de0ed8d5f4a
+# ╟─18913108-9c4d-4d1b-85df-3298328b68db
+# ╟─119aeece-8f6f-4065-a3de-949dea08e546
+# ╟─87914b3e-cab8-4ee1-af34-59db742949c0
+# ╟─da74b942-d331-404e-87d0-8665211a01a0
+# ╠═adb6a5e0-5865-4aec-8e3d-df58d59775f3
+# ╟─909579b1-c4ce-4b74-8493-f31e0b70116d
+# ╟─5b293f7e-323b-4e87-a61b-d84449640128
+# ╟─4a9860ae-38af-4626-8b19-6015291c5c95
+# ╠═37916b3b-b6b8-40df-936f-4cc5e42fb33b
+# ╠═bfacca3f-92ce-447c-99ba-4caccf030687
+# ╠═10209b04-b8d5-4408-b85c-81ec9d053abe
+# ╠═4a1417ee-325d-47f1-9112-c8435108fe99
+# ╠═7ce6a9c8-ec65-4deb-a2e5-c29fbbc2aa5f
+# ╠═075f04cc-6ca6-47b6-84e9-26d56f48599f
+# ╠═97ea41e1-dcf9-4205-af96-94661a9c43f6
+# ╠═d55e7d8c-6066-4317-8f8e-4c2f902c6724
+# ╠═c2414c29-750a-4384-96f7-263c37b98d6f
+# ╠═75426f6c-24c6-4973-b272-d977f1bd40d7
+# ╠═6268b716-dc96-47f1-ab3d-b26e4271f3b5
+# ╠═ab7c32ae-651f-4996-8d00-3feb132da7bc
+# ╠═00886f58-7508-490c-bb92-40fe9e29eb09
+# ╟─a07cdb2b-9c56-4b36-9209-c0df92606254
+# ╠═ed19ae62-b88f-4256-a6d3-57355c8556da
+# ╠═727ad7b2-c898-43f8-804b-0841bdf92095
+# ╠═ad044773-c0cc-4ed8-b69a-08d4f98181fd
+# ╠═c424f0b5-817c-4d4f-8f70-e326240c68f9
+# ╠═1d545ce3-f1e6-4c67-acd0-3e3e77acfb93
+# ╠═f74a4788-151b-4c83-91b0-c276113c5fb2
+# ╠═7333c232-4fa4-44a0-b2c5-f32fff38685f
+# ╟─d11b57f2-718a-470f-9ef1-49121c0c7956
+# ╟─33a10a1f-68c8-4ed6-91e8-39f5517b1ce1
+# ╟─5df7a9d4-ccef-4fbe-81a6-e0036c3dfb33
+# ╟─c78eb532-79d5-4881-9cd5-ec759b4d2340
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
