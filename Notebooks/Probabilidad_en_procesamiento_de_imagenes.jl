@@ -269,8 +269,48 @@ plot(Hist(Gray.(load(fname1))), Hist(equalize(Gray.(load(fname1)))),size=(700,32
 # ╔═╡ 4ecf9241-ddf8-40f9-b031-071388adec2c
 New1 = equalize(Gray.(load(fname1)))
 
-# ╔═╡ 8fface77-0e30-4577-9e1b-ced3b014f9d5
-histogram(vec(Float64.(channelview(New1)) ), bins= 12)
+# ╔═╡ edbb75c8-4c0e-4af1-9de0-40ffa48236ea
+md"""
+Para tener una medida cuantitativa del resultado de la ecualización de la imagen creamos una función que mide el error cuadrático medio entre la función de probabilidad de una distribución uniforme y la función de probabilidad de la imagen.
+"""
+
+# ╔═╡ 51e265a6-8a04-45d9-85ae-ddf2264e6edf
+function distancetouniformdistribution(image)
+	## Error cuadrático medio de la distribución de image y de la distribución uniforme
+	M = Float64(prod(size(image)))
+	a = countmap(vec(Float64.(channelview(image))))
+	key = collect(keys(a))
+	val = collect(values(a))/M
+	Distance = ones(256)/256
+	for i in 0:1/255:1
+		v,ind = findmin(abs.(key .- i))
+		if v<1/255
+			Distance[Int(255*i+1)] = abs(1/256 - val[ind])^2
+		end
+	end
+	return mean(Distance)
+end
+
+# ╔═╡ 6c34707c-bf60-4435-96fe-0c850442f6e4
+md"""
+Probamos para la imagen original y para la imagen ecualizada:
+"""
+
+# ╔═╡ a6804333-671b-46f9-87fb-34717064246e
+#Distancia de la imagen original
+dₒ = distancetouniformdistribution(Image1)
+
+# ╔═╡ 7070debf-f47c-40bf-bbc9-26c92bd871c2
+#Distancia de la imagen ecualizada
+dₑ = distancetouniformdistribution(New1)
+
+# ╔═╡ d511d1fc-5a22-46b1-ac85-d0cf79240008
+md"""
+Se evidencia que en efecto la ecualización acerca la distribución de la imagen a la distribución uniforme un 6.2893% a pesar de que no corresponde completamente a la distribución uniforme.
+"""
+
+# ╔═╡ 3e653916-73d1-4a29-bba6-836474f621d3
+100*(dₑ-dₒ)/dₒ
 
 # ╔═╡ 9afd39ee-e60f-4398-9db7-a215ff803186
 md"""La ecualización de imágenes es solo un caso especial de la técnica más general llamada correspondencia de histogramas, que consiste en transformar una imagen para que su histograma adquiera una forma especificada.
@@ -337,16 +377,6 @@ begin
 	p22 = Hist(HistMatching(Gray.(load(fname1)), "U"))
 	plot(p11,p12,p21,p22, layout=(2,2))
 end
-
-# ╔═╡ 1286c5d0-ecf7-4e74-a4df-40817b2e7546
-md"""
-**Falta explorar bins**
-
-**Revisar eje horizontal**
-"""
-
-# ╔═╡ bf8c48c3-e222-4ce6-b788-e68a86ace3c4
-histogram(vec(Float64.(255*channelview(HistMatching(Gray.(load(fname1)), "V"))) ), bins= 20)
 
 # ╔═╡ 3d2ab92f-78db-4432-adb1-6d3c7ac42e8a
 md"""
@@ -2417,7 +2447,7 @@ version = "1.4.1+2"
 # ╟─0c9081fa-9097-4872-9558-f068440acea4
 # ╟─ed45ee1e-061d-4890-82da-0016b8af93ac
 # ╟─5e3776f7-381b-4df4-aab8-f3f3cdad4125
-# ╟─4181a8b6-e2f4-48a4-89fe-a537834fc989
+# ╠═4181a8b6-e2f4-48a4-89fe-a537834fc989
 # ╟─b2f480a6-6e29-42ae-bd13-2a1e8cb6c838
 # ╟─d3298c66-0cbe-4019-a26b-f37d9e0a1489
 # ╟─2f2d01ca-8042-42e6-b56b-9988d76b604e
@@ -2425,10 +2455,16 @@ version = "1.4.1+2"
 # ╟─a06d57e8-ff68-4d0e-ab9d-68b268b34fd0
 # ╠═338945a3-98ce-42b0-b3ec-46eb8496948a
 # ╟─63bfb0d6-b277-41c0-917e-f81d23456602
-# ╠═0a5bee54-ca49-48a5-ad6c-9fcccb233835
+# ╟─0a5bee54-ca49-48a5-ad6c-9fcccb233835
 # ╟─00829973-7604-4194-b60c-541ed1297d26
-# ╠═4ecf9241-ddf8-40f9-b031-071388adec2c
-# ╠═8fface77-0e30-4577-9e1b-ced3b014f9d5
+# ╟─4ecf9241-ddf8-40f9-b031-071388adec2c
+# ╟─edbb75c8-4c0e-4af1-9de0-40ffa48236ea
+# ╠═51e265a6-8a04-45d9-85ae-ddf2264e6edf
+# ╟─6c34707c-bf60-4435-96fe-0c850442f6e4
+# ╠═a6804333-671b-46f9-87fb-34717064246e
+# ╠═7070debf-f47c-40bf-bbc9-26c92bd871c2
+# ╟─d511d1fc-5a22-46b1-ac85-d0cf79240008
+# ╠═3e653916-73d1-4a29-bba6-836474f621d3
 # ╟─9afd39ee-e60f-4398-9db7-a215ff803186
 # ╟─ad053067-ea82-46e1-8b7f-6279b0bb9b1f
 # ╟─e92907c8-d25f-41d6-ac19-c731db96df8f
@@ -2439,8 +2475,6 @@ version = "1.4.1+2"
 # ╟─0ba59fb3-59ad-4e90-a4df-a0ac00cfc0a0
 # ╟─63b25ba7-3229-4fc0-8c8a-53fa5b2676f0
 # ╟─8d80a910-833b-468d-b35d-4836e19d8b20
-# ╟─1286c5d0-ecf7-4e74-a4df-40817b2e7546
-# ╟─bf8c48c3-e222-4ce6-b788-e68a86ace3c4
 # ╟─3d2ab92f-78db-4432-adb1-6d3c7ac42e8a
 # ╟─2de78726-1230-4a10-b302-5a2ca568b9d8
 # ╟─97a852ae-ef08-40b9-a3f2-4dcdbaadb628
