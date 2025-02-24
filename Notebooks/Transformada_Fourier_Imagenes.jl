@@ -17,6 +17,9 @@ begin
 	using StatsBase, StatsPlots
 end
 
+# ╔═╡ 0108e854-2215-42ce-b522-7455e1c694ad
+using FFTW
+
 # ╔═╡ a11c6ad2-f459-4d17-9135-1c272a1f85eb
 PlutoUI.TableOfContents(title="Transformada de Fourier en Imágenes", aside=true)
 
@@ -28,7 +31,7 @@ Tu participación es fundamental para hacer de este curso una experiencia aún m
 # ╔═╡ 88e077fc-1e7c-4876-9075-f6d673988a11
 md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
 
-Elaborado por Juan Galvis, Jorge Mauricio Ruíz."""
+Elaborado por Juan Galvis, Jorge Mauricio Ruíz, Yessica Trujillo y Carlos Nosa."""
 
 # ╔═╡ 0d3693d4-ff96-4876-93bb-e6566ce14aa0
 md"""Vamos a usar las siguientes librerías:"""
@@ -39,13 +42,783 @@ md"""
 """
 
 # ╔═╡ 9bb3294c-79d3-495b-a75c-4a855e5113c3
+md"""
+La Transformada Discreta de Fourier (DFT) es una herramienta fundamental en procesamiento de señales e imágenes, ya que permite analizar el contenido en frecuencia de una señal discreta. Su aplicación en imágenes posibilita el filtrado, la compresión y la mejora de calidad, entre otros usos.
 
+La DFT transforma una secuencia de valores en el dominio del tiempo o espacio a una representación en el dominio de la frecuencia. Esta transformación es especialmente útil para entender la composición de una señal y para realizar operaciones en dicho dominio, como la eliminación de ruido o la detección de características específicas.
+
+"""
+
+# ╔═╡ 678f6525-9cb9-414a-9d55-248956911512
+md"""
+En análisis de frecuencias en señales, las secuencias trigonométricas como el coseno y el seno juegan un papel fundamental. Estas secuencias se pueden definir como:
+
+$c(k) = A \cos(2\pi f k)$
+$s(k) = A \sin(2\pi f k)$
+
+donde $A$ es la amplitud y $f$ es la frecuencia medida en revoluciones por muestra. Para simplificar el análisis, combinamos estas secuencias en una única secuencia exponencial compleja:
+
+$w(k) = A e^{2\pi i f k} = A \cos(2\pi f k) + i A \sin(2\pi f k)$
+
+Esta representación nos proporciona varias propiedades importantes:
+
+1. **Periodicidad**: Mientras que una señal seno o coseno continua es siempre periódica, sus contrapartes discretas solo son $N$-periódicas si la frecuencia satisface $f = \frac{n}{N}$, donde $n$ es un entero. Esto implica que las secuencias trigonométricas discretas solo son periódicas si tienen frecuencias racionales.
+2. **Simetría**:
+   - El coseno discreto es una función par: $c(-k) = c(k)$ y, si es $N$-periódico, también satisface $c(N-k) = c(k)$.
+   - El seno discreto es impar: $s(N-k) = -s(k)$.
+   - La exponencial compleja cumple $w(N-k) = w(-k)$.
+3. **Identidad de señales con frecuencias desplazadas**: En señales continuas, dos sinusoides de diferentes frecuencias son distintas. Sin embargo, en señales discretas, dos secuencias exponenciales con frecuencias $f_1$ y $f_2$ son idénticas si difieren en un número entero: $w(k) = e^{2\pi i (f+m) k}$ para cualquier entero $m$. Además, dos secuencias coseno de frecuencias $n_1$ y $n_2$ cumplen $c_1(k) = c_2(k)$ si $n_1 + n_2 = N$, y dos secuencias seno cumplen $s_1(k) = -s_2(k)$ en la misma condición.
+
+Estas propiedades son clave para el desarrollo de la DFT, que utiliza una base de $N$ secuencias exponenciales complejas de la forma:
+
+$w(k) = A e^{2\pi i n k / N}, \quad n = 0, \dots, N - 1$
+
+para descomponer señales discretas en sus componentes espectrales. A partir de esta base, se establecen técnicas de análisis de frecuencia de señales periódicas y finitas.
+
+"""
 
 # ╔═╡ 3aa09adf-7454-4938-ba6b-2021093797f7
-
+md"""
+# Transformada discreta de Fourier en una dimensión
+"""
 
 # ╔═╡ 6240e543-bba8-4e7c-affe-d7323d181d2e
+md"""
+Dada una secuencia discreta de $N$ muestras $x[n]$, su Transformada Discreta de Fourier (DFT) se define como:
 
+$X[k] = \sum_{n=0}^{N-1} x[n] e^{-i 2\pi k n / N}, \quad k = 0, 1, \dots, N-1$
+
+donde:
+-  $X[k]$ representa los coeficientes espectrales en el dominio de la frecuencia.
+-  $x[n]$ es la señal en el dominio del tiempo.
+-  $N$ es el número total de muestras de la señal.
+-  $i$ es la unidad imaginaria $( i^2 = -1 )$.
+-  La frecuencia discreta está dada por $f_k = \frac{k}{N} f_s$, donde $f_s$ es la frecuencia de muestreo que es la cantidad de muestras que se toman por segundo para digitalizar una señal analógica. Se mide en Hertz (Hz) y determina la resolución en el dominio del tiempo de la señal muestreada.
+
+**Ejemplo.** Se considera una señal discreta construida como una onda senoidal con frecuencias de $10$ Hz , muestreadas a $f_s$ Hz durante $N$ muestras. Para estudiar su contenido espectral, se aplica la Transformada Discreta de Fourier (DFT) usando la función `fft` de Julia, que devuelve coeficientes complejos cuyos módulos representan la magnitud de las componentes en frecuencia. La frecuencia de cada componente en el espectro se obtiene como $f_k = k f_s / N$, permitiendo identificar picos en $10$ Hz y $f_s-10$ Hz, lo que confirma la presencia de dicha frecuencia en la señal original. Este análisis muestra cómo la DFT descompone la señal en sus componentes fundamentales.
+"""
+
+
+# ╔═╡ e0b31a67-f9a5-4273-85df-ca059936d4ee
+begin
+	# Parámetros de la señal
+	N = 20  # Número de muestras
+	fs = 60 # Frecuencia de muestreo en Hz
+	t = (0:N-1) / fs  # Vector de tiempo
+	
+	# Generar una señal como combinación de dos senoidales
+	f1 = 10  # Frecuencia (Hz)
+	x = sin.(2π * f1 * t)   # Señal discreta
+	
+	# Calcular la DFT usando FFT
+	X = fft(x)
+	
+	# Obtener la frecuencia correspondiente a cada coeficiente de la FFT
+	freqs = (0:N-1) * (fs / N)
+	
+	# Graficar la señal original
+	plot(t, x, xlabel="Tiempo (s)", ylabel="Amplitud", title="Señal Discreta", label="x(t)", lw=2,marker=:o)
+end
+
+# ╔═╡ a6421d28-fc4e-41b7-8317-e3fa337bd8b4
+# Graficar la magnitud de la DFT
+plot(freqs[1:N], abs.(X[1:N]), seriestype=:stem, markershape=:circle, xlabel="Frecuencia (Hz)", ylabel="Magnitud", title="DFT de la Señal", label="|X(f)|", lw=2)
+
+# ╔═╡ 9d06ba70-61f6-4199-835c-68f89d4b2b1f
+md"""
+La gráfica muestra la magnitud de la Transformada Discreta de Fourier (DFT) en función de la frecuencia. En el eje horizontal, se representan las frecuencias correspondientes a cada coeficiente $X[k]$, mientras que en el eje vertical, se muestra su magnitud $|X[k]|$. Los picos en la gráfica indican la presencia de componentes frecuenciales dominantes en la señal original, permitiendo identificar qué frecuencias están presentes y con qué intensidad. La visualización con marcadores mejora la interpretación al destacar los valores discretos de la DFT.
+"""
+
+# ╔═╡ 533c3579-7a43-4c89-a2d5-a881536723cf
+begin
+	X_shifted = fftshift(X)  # Centrar la transformada
+
+	# Obtener magnitudes y fases de los coeficientes
+	magnitudes = abs.(X_shifted)  # Módulo de X[k]
+	fases = angle.(X_shifted)  # Fase de X[k]
+	
+	# Gráfica en coordenadas polares con vectores
+	plot(proj=:polar, title="Coeficientes de la DFT en Coordenadas Polares")
+	quiver!(zeros(N), zeros(N), quiver=(fases, magnitudes), color=:black, label="X[k]")  # Vectores
+	scatter!(fases, magnitudes, color=:red, markersize=5, label="Puntos X[k]")  # Puntos en los extremos
+end
+
+# ╔═╡ 756e320f-019a-4004-9db0-0005ad23dd90
+md"""
+La representación en coordenadas polares muestra los coeficientes de la Transformada Discreta de Fourier (DFT) como vectores radiales. Cada coeficiente $X[k]$ se visualiza con un ángulo correspondiente a su fase $\angle X[k]$ y una magnitud $|X[k]|$ que indica su contribución en la señal original. Los vectores, trazados en negro, parten del origen y terminan en la ubicación compleja de cada coeficiente, mientras que los puntos resaltan sus posiciones finales.
+"""
+
+# ╔═╡ 77ab6c80-5ed1-43f7-a68e-5a8e4fb5680a
+md"""
+Considere la siguiente representación
+
+$\boldsymbol{x} =
+\begin{bmatrix}
+x(0) \\
+x(1) \\
+\vdots \\
+x(N - 1)
+\end{bmatrix}\quad\text{ y }\quad\boldsymbol{X}=
+\begin{bmatrix}
+X(0) \\
+X(1) \\
+\vdots \\
+X(N - 1)
+\end{bmatrix}.$
+
+Recordando que 
+
+$X[k] = \sum_{n=0}^{N-1} x[n] e^{-i 2\pi k n / N}, \quad k = 0, 1, \dots, N-1,$
+
+se puede hallar una relación matricial entre los vectores $\boldsymbol{x}$ y $\boldsymbol{X}$, en efecto, defina
+
+$\omega_N =  e^{i\frac{2\pi}{N}}$
+
+y para $1\leq i,j,\leq N$ sea $A_{ij} = \omega_{N}^{-(i-1)(j-1)}$ de esta manera se tiene la relación
+
+$\boldsymbol{X} = A \cdot \boldsymbol{x}.$
+"""
+
+# ╔═╡ 574cfed5-ae2a-4362-82af-eda31021f8c4
+md"""
+**Teorema 1.** Para la matriz $A$ definida anteriormente se cumple que $\frac{1}{N}A^{\ast}A = \frac{1}{N}A A^{\ast} =  I$.
+
+*Demostración.* Considere $1\leq j_1,j_2\leq N$, de esta manera, el producto interno entre la columna $j_1$ y la columna $j_2$ es igual a 
+
+$\begin{align*}
+col_{j_1}^\top \overline{col_{j_2}} &= \sum_{i=1}^{N} A_{ij_1}\overline{A_{ij_2}}\\
+&= \sum_{i=1}^{N} \omega_{N}^{-(i-1)(j_1-1)}\overline{\omega_{N}^{-(i-1)(j_2-1)}}\\
+&= \sum_{i=1}^{N} [\omega_{N}^{j_2-j_1}]^{i-1}\\
+&= \sum_{i=0}^{N-1} [\omega_{N}^{j_2-j_1}]^{i}\\
+&= \begin{cases}
+N, & j_1 = j_2,\\
+0, & j_1\not=j_2.
+\end{cases}
+\end{align*}$
+"""
+
+# ╔═╡ f100c697-d4a8-4a51-9d01-381b2b3412cf
+md"""
+De esta manera se tiene que $\frac{1}{N}A^\ast \boldsymbol{X} = \boldsymbol{x}$ y esto da paso a la definición de la inversa de la inversa de la transformada discreta de Fourier:
+
+
+
+
+**Definción.** La inversa de la transformada discreta de Fourier se define como:
+
+
+$x[n] = \frac{1}{N}\sum_{k=0}^{N-1} X[k] e^{i 2\pi k n / N}, \quad n = 0, 1, \dots, N-1.$
+
+
+**Ejemplo.** Como primer y más sencillo ejemplo, calculamos la Transformada Discreta de Fourier (DFT) del impulso unitario periódico $\delta$, que, recordemos, está definido por  
+
+$\delta(k) =
+\begin{cases}
+1, & k = 0 \mod N \\
+0, & k \neq 0 \mod N.
+\end{cases}$
+
+Es evidente que  
+
+$\Delta(n) = \delta(0) e^{-2\pi i n \cdot 0 / N} = 1$
+
+para todo $n$ y, por lo tanto, el impulso unitario está compuesto por todas las frecuencias en el espectro. Como una variación de este ejemplo, también podemos considerar el impulso unitario desplazado $\delta_a$, definido por  
+
+$\delta_a(k) =
+\begin{cases}
+1, & k = a \mod N \\
+0, & k \neq a \mod N.
+\end{cases}$
+
+y observar que su DFT es  
+
+$\Delta_a(n) = \delta(a)e^{-2\pi i n a / N} = e^{-2\pi i n \cdot a / N}$
+
+para todo $n$, lo que equivale a la DFT del impulso unitario multiplicada por una exponencial compleja.  Este ejemplo es la motivación del siguiente teorema.
+
+"""
+
+# ╔═╡ c1996ac2-f26d-4201-8239-aa36fd93aa21
+md"""
+**Teorema 2.** El desplazamiento de un número $a$ de posiciones en una señal discreta finita o $N$-periódica es equivalente a la multiplicación de su Transformada Discreta de Fourier (DFT) por el factor $e^{-2\pi i a n / N}$. Más formalmente, si  $y(k) = x(k - a)$ entonces $Y(n) =e^{-2\pi i a n / N} X(n).$
+
+"""
+
+# ╔═╡ 74e1d603-f640-458b-bae7-710016ea7208
+md"""
+**Ejemplo.** Es intuitivamente evidente (a partir del significado y la definición de la transformada discreta de Fourier) que la DFT de la secuencia exponencial compleja  
+
+$w_m(k) = e^{2\pi i k m / N}$
+
+de longitud $N$ y frecuencia $m$ es $N\delta_m(n)$, lo que también puede confirmarse con el cálculo  
+
+$W_m(n) = \sum_{k=0}^{N-1} e^{2\pi i k m / N} \cdot e^{-2\pi i k n / N}$
+$= \sum_{k=0}^{N-1} e^{-2\pi i k (n - m) / N} = N\delta_m(n),$
+
+como se puede verificar fácilmente.  
+
+Se sigue que la DFT de la onda coseno discreta de frecuencia $m$, dada por  
+
+$c_m(k) = A \cos\left(m \cdot \frac{2\pi k}{N}\right) = \frac{A}{2} \left(e^{m \cdot 2\pi i k / N} + e^{-m \cdot 2\pi i k / N}\right),$
+
+es  
+
+$C_m(n) = \frac{A N}{2} \left(\delta_m(n) + \delta_m(-n)\right),$
+
+y que la DFT de la onda seno discreta análoga, dada por  
+
+$s_m(k) = A \sin\left(m \cdot \frac{2\pi k}{N}\right) = \frac{A}{2i} \left(e^{m \cdot 2\pi i k / N} - e^{-m \cdot 2\pi i k / N}\right),$
+
+es  
+
+$S_m(n) = \frac{A N}{2i} \left(\delta_m(n) - \delta_m(-n)\right).$
+
+"""
+
+# ╔═╡ 249ca1f0-403a-464a-997e-c57c27fdde36
+md"""
+**Teorema 3.** Una modulación en frecuencia (es decir, la multiplicación por $e^{2\pi i k m / N}$) de una señal discreta $N$-periódica resulta en un desplazamiento de su DFT en \( m \) posiciones.  
+Más formalmente, si  
+
+$y(k) = x(k) e^{2\pi i k m / N}$
+
+entonces  
+
+$Y(n) = X(n - m).$
+"""
+
+# ╔═╡ 35660aee-510e-49d3-bfd3-8269aabf6b84
+md"""
+**Teorema 4.** Multiplicar una secuencia $N$-periódica $x(k)$ por la secuencia coseno discreta $N$-periódica de frecuencia $m$ es equivalente a tomar el promedio de los  
+desplazamientos de su DFT en $m$ y $-m$ posiciones. Más formalmente, si  
+
+$y(k) = x(k) \cos\left(\frac{2\pi k m}{N}\right)$
+
+entonces  
+
+$Y(n) = \frac{1}{2} \left[ X(n - m) + X(n + m) \right].$
+"""
+
+# ╔═╡ 3a1237cb-7acd-4672-802e-93918eaf3a8e
+md"""
+**Teorema 5.** La multiplicación componente a componente de secuencias finitas o $N$-periódicas es equivalente (hasta el factor constante $\frac{1}{N}$) a la convolución circular de sus transformadas de Fourier discretas. Formalmente, si  
+
+$g(k) = x(k) \cdot y(k)$
+
+entonces  
+
+$G(n) = \frac{1}{N} (X * Y)(n).$
+"""
+
+# ╔═╡ 580b238c-c6d0-4bcd-9bcb-d8914d854661
+md"""
+**Teorema 6.** La convolución circular de secuencias finitas o $N$-periódicas es equivalente al producto punto a punto de sus transformadas de Fourier discretas. Formalmente, si  
+
+$g(k) = (x * y)(k)$
+
+entonces  
+
+$G(n) = X(n) \cdot Y(n).$
+
+"""
+
+# ╔═╡ ae9ba491-f21e-4c2d-b6d7-a907eb324a9f
+md"""
+**Ejemplo.** Este ejemplo genera una señal discreta como la superposición de tres secuencias cosenoidales con diferentes frecuencias y amplitudes. La señal se construye con un número total de 60 muestras y se representa gráficamente mediante un gráfico de stem. Luego, se calcula la Transformada Discreta de Fourier (DFT) de la señal utilizando la función `fft` y se visualiza su magnitud, lo que permite analizar la distribución de las frecuencias presentes en la señal.
+"""
+
+# ╔═╡ 08a441f0-5e09-479f-af93-03449dc6ce28
+begin
+	N0 = 60  # Longitud de la señal
+	k0 = 0:N-1  # Índices de la secuencia
+	
+	# Amplitudes de los componentes de la señal
+	A10, A20, A30 = 9, 7, 5  
+	
+	# Frecuencias de los componentes de la señal
+	f10, f20, f30 = 2, 6, 15  
+	
+	# Construcción de la señal como una superposición de cosenos
+	x0 = A10 * cos.(2π * f10 * k0 / N0) .+ A20 * cos.(2π * f20 * k0 / N0) .+ A30 * cos.(2π * f30 * k0 / N0)
+	
+	# Cálculo de la DFT de x0
+	X0 = fft(x0)
+	
+	# Gráficos
+	plot(plot(k0, x0, seriestype=:stem, markershape=:circle, label="", xlabel="k", ylabel="x(k)", title="Superposición de tres secuencias coseno"),
+	plot(k0, abs.(X0), seriestype=:stem, markershape=:circle, label="", xlabel="n", ylabel="|X(n)|", title="DFT X(n) de x(k)"),
+	layout=(2,1))
+	
+end
+
+# ╔═╡ 90b53c6c-e005-4ac1-a79f-c2d7604507da
+md"""
+## Transformaciones de Señales
+"""
+
+# ╔═╡ d54d6f0e-c5ed-4dd2-8017-98f681689b40
+md"""
+En el procesamiento de señales e imágenes, es fundamental enfocarse en transformaciones lineales, ya que son más fáciles de manejar. Estas cumplen la propiedad de linealidad:  
+
+$T(ax + by) = aT(x) + bT(y)$
+
+para cualquier par de vectores $x$ y $y$ y escalares $a$ y $b$.  
+
+Además, una suposición clave es la **invariancia en el tiempo**, lo que implica que un retraso en la entrada genera el mismo retraso en la salida sin alteraciones adicionales. Formalmente, si $x(k)$ es la señal original y $y(k)$ su transformación, la transformación $T$ es invariante en el tiempo si se cumple:  
+
+$T(x_{\tau}) = y_{\tau}$
+
+para cualquier desplazamiento $\tau$ con $x_{\tau}(k) = x(k-\tau)$ y $y_{\tau}(k) = y(k-\tau)$.  
+
+Esta propiedad es crucial, ya que cualquier transformación definida mediante convolución $T(x) = x \ast h$ es automáticamente lineal e invariante en el tiempo.
+
+
+$\begin{align*}
+T(x_{\tau})(k) &= (x_\tau \ast h)(k)\\
+&= \sum_{m}x_{\tau}(k-m)h(m)\\
+&= \sum_{m}x(k-m-\tau)h(m)\\
+& = (x \ast h)(k - \tau) \\
+& = (x \ast h)_\tau(k) \\
+\end{align*}$
+
+
+Además, toda transformación lineal e invariante en el tiempo puede expresarse como una convolución.
+"""
+
+# ╔═╡ 73a26fa3-02b0-4876-ac2d-403c8e7ed83a
+md"""
+**Teorema 7.** Sea $x$ una señal y $T$ una transformación lineal y con invarianza en el tiempo, de esta manera $T(x) = x\ast h$ con $h= T(\delta)$ y $\delta$ el impulso unitario.
+
+*Demostración.* Dado que la secuencia $x$ puede expresarse como la convolución con un delta de Dirac $\delta$, se tiene:  
+
+$x(k) = \sum_{m} x(m) \delta(k - m)$
+
+Por lo tanto, aplicando la transformación $T$ a ambos lados:  
+
+$T(x)(k) = T \left( \sum_{m} x(m) \delta(k - m) \right)$
+
+Por la linealidad de $T$:  
+
+$T(x)(k) = \sum_{m} x(m) T(\delta_m)(k)$
+
+Por la invariancia en el tiempo de $T$:  
+
+$T(x)(k) = \sum_{m} x(m) T(\delta)(k - m)$
+
+Dado que $h(k) = T(\delta)(k)$, se obtiene la expresión de convolución:  
+
+$T(x)(k) = (x \ast h)(k).$
+
+
+**Definición.** La imagen $h$ de la secuencia impulso unitario $\delta$ bajo la transformación $T$ se denomina **respuesta al impulso** de $T$. La transformada de Fourier discreta $H$ de la respuesta al impulso $h$ se denomina **función de transferencia** de la transformación $T$, y está dada por:
+
+$H(n) = \sum_{k=0}^{N-1} h(k)e^{-2\pi i n k / N}.$
+
+"""
+
+# ╔═╡ 5a91f2fd-5b3e-40a2-ab0f-b7519ff2d179
+md"""
+Los resultados anteriores sugieren una estrategia efectiva para transformar señales manipulando su contenido de frecuencia. La clave es diseñar una secuencia $h$ cuya transformada de Fourier discreta $H$ enfatice las frecuencias deseadas y suprima las no deseadas. Luego, se aplica la transformación lineal e invariante en el tiempo con respuesta al impulso $h$ a la señal de entrada.  
+
+El proceso de mejora de una señal $x$ mediante análisis de frecuencia se desarrolla en los siguientes pasos:  
+
+1. Se calcula la transformada de Fourier discreta $X$ de la señal $x$, lo que representa el espectro de frecuencia de la señal a mejorar.  
+2. Se computa el producto punto a punto $Y = X \odot H$, donde $Y$ es el espectro de frecuencia de la versión mejorada $y$ de $x$.  
+3. Se utiliza la fórmula de inversión de la DFT para obtener $y$, que idealmente estará libre de la mayoría de las deficiencias y artefactos no deseados de $x$.  
+
+
+
+Cuando una señal original $x$ es distorsionada por un sistema con una respuesta al impulso $h$ conocida o aproximada, se recibe una versión distorsionada $y$, que es la convolución de $x$ con $h$. En este caso, el procedimiento para restaurar la señal original es:  
+
+1. Se calcula la transformada de Fourier discreta $Y$ de la señal distorsionada $y$ con el objetivo de eliminar las distorsiones.  
+2. Se divide $Y$ componente a componente por la función de transferencia del sistema $H$, siempre que $H(n) \neq 0$. Esto permite recuperar la DFT $X$ de la señal original. Si $H(n) = 0$ para algún $n$, la señal original no puede reconstruirse completamente, solo aproximarse.  
+3. Finalmente, se usa la fórmula de inversión de la DFT para reconstruir $x$.  
+"""
+
+# ╔═╡ ef94cde7-1783-424e-8ff6-ccfb1894e084
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ c88b7a67-5d04-4f0f-9b0d-b68a831b26b0
+md"""
+# Transformada discreta de Fourier en dos dimensiones
+"""
+
+# ╔═╡ 18e29310-82fe-41b6-99cc-7b7088df7b6c
+md"""
+Para extender la Transformada de Fourier Discreta (DFT) a matrices de tamaño \( M \times N \), se puede aplicar la DFT primero a las columnas y luego a las filas de la matriz dada. Esto da lugar a la **transformada de Fourier discreta en dos dimensiones (2-D DFT)**, formalmente definida como:  
+
+**Definición.** La 2-D DFT de una matriz $A$ de tamaño $M \times N$ está dada por:  
+
+$\hat{A}(m, n) =
+\sum_{k=0}^{M-1} \sum_{l=0}^{N-1} A(k, l) e^{-2\pi i mk/M - 2\pi i nl/N}$
+
+Gracias a los desarrollos previos, se puede prever un método para reconstruir una matriz a partir de su 2-D DFT utilizando la **fórmula de inversión en dos dimensiones**:  
+
+$A(k, l) = \frac{1}{MN} \sum_{m=0}^{M-1} \sum_{n=0}^{N-1} \hat{A}(m, n) e^{2\pi i mk/M + 2\pi i nl/N}$
+
+Esta fórmula puede verificarse reconstruyendo la matriz $A$ separadamente en cada dimensión (filas y columnas).  
+
+
+Las propiedades de la 2-D DFT son análogas a las de la DFT en una dimensión. Por ejemplo, la 2-D DFT del **impulso unitario en dos dimensiones** $\delta(k, l)$ definido como:  
+
+$\delta(k, l) =
+\begin{cases} 
+1, & \text{si } (k, l) = (0,0) \\
+0, & \text{si } (k, l) \neq (0,0)
+\end{cases}$
+
+es la **secuencia constante unitaria en dos dimensiones**:  
+
+$\hat{\delta}(m, n) = 1, \quad \text{para todo } \; 0 \leq m < M, \; 0 \leq n < N$
+
+Recíprocamente, la 2-D DFT de la **secuencia constante unitaria en dos dimensiones** es el **impulso unitario en dos dimensiones**, multiplicado por $M \times N$.
+
+"""
+
+# ╔═╡ 475d326b-b21e-4508-b386-f2cd2c68926c
+md"""
+**Teorema 8.** La **multiplicación elemento a elemento** de dos matrices $M \times N$ es equivalente (hasta un factor constante) a la **convolución cíclica** de sus transformadas de Fourier discreta en dos dimensiones (2-D DFT).  
+
+Formalmente, si:  
+
+$C(k, l) = A(k, l) \cdot B(k, l)$
+
+entonces su 2-D DFT está dada por:  
+
+$\hat{C}(m, n) = \frac{1}{MN} \left( \hat{A} * \hat{B} \right)(m, n)$
+
+donde $*$ denota la convolución cíclica en dos dimensiones. 
+
+
+
+**Teorema 9.** La **convolución cíclica** de dos matrices $M \times N$ es equivalente a la **multiplicación elemento a elemento** de sus transformadas de Fourier discreta en dos dimensiones (2-D DFT).  
+
+Formalmente, si:  
+
+$C(k, l) = (A * B)(k, l)$
+
+entonces su 2-D DFT está dada por:  
+
+$\hat{C}(m, n) = \hat{A}(m, n) \cdot \hat{B}(m, n)$
+
+donde $*$ denota la convolución cíclica en dos dimensiones.  
+"""
+
+# ╔═╡ 750a01bf-b4e9-412a-bce7-9bb72e2b3a55
+md"""
+Como análogo a las transformaciones invariantes en el tiempo para secuencias, se pueden definir **transformaciones invariantes en el espacio** que operan sobre matrices. Sea $T$ una transformación lineal que actúa sobre matrices de tamaño $M \times N$, y sea $B = T(A)$. Se definen las matrices desplazadas $A_{(u,v)}$ y $B_{(u,v)}$ como:  
+
+$A_{(u,v)}(k, l) = A(k - u, l - v)$
+
+$B_{(u,v)}(k, l) = B(k - u, l - v)$
+
+donde la resta se realiza módulo $M$ y $N$ respectivamente, o se combina con **zero-padding**, dependiendo de las circunstancias.  
+
+Una transformación **invariante en el espacio** $T$ cumple la propiedad:
+
+$T(A_{(u,v)}) = B_{(u,v)}$
+
+
+para todos los valores de $u$ y $v$.  
+
+
+Así como cualquier secuencia finita o infinita se puede escribir como la convolución consigo misma con el **impulso unitario** $\delta(k)$, cualquier matriz $A$ se puede escribir como la convolución consigo misma con el **impulso unitario 2-D** $\delta(k, l)$.  
+
+Por lo tanto, la imagen de la matriz $A$ bajo la transformación lineal e invariante en el espacio $T$ se expresa como:
+
+$B = T(A) = A \ast H$
+
+donde $H = T(\delta)$ es la **respuesta al impulso** de la transformación $T$. En el contexto bidimensional, particularmente en imágenes digitales, esta respuesta se denomina **función de dispersión de punto (PSF, Point Spread Function)** de la transformación $T$.  
+
+Se sigue que:
+
+$\hat{B}(m, n) = \hat{A}(m, n) \odot \hat{H}(m, n)$
+
+donde $\hat{H}$ es la transformada de Fourier discreta de la PSF $H$, conocida en el contexto de imágenes digitales como la **función de transferencia óptica (OTF, Optical Transfer Function)**.  
+"""
+
+# ╔═╡ 51b22df4-9388-4111-809d-24d3ea383f3c
+md"""
+**Ejemplo.** El código en Julia genera una matriz $A_1$ de tamaño $20 \times 20$, donde los valores varían según una función coseno en las columnas. La expresión $1/2 + \cos(2\pi \cdot 4 \cdot j / 20)/2$ crea un patrón oscilatorio con una frecuencia de 4 ciclos en 20 columnas. Luego, se calcula la transformada discreta de Fourier (DFT) de la matriz usando `fft(A1)`, y se toma su magnitud con `abs.` para obtener la intensidad de las frecuencias. Se aplica `log.(...)` para mejorar la visualización de las amplitudes y evitar que los valores más altos dominen la imagen. Finalmente, se generan dos gráficos en una disposición de $1 \times 2$: uno muestra la señal original como un mapa de calor y el otro muestra la magnitud logarítmica de su DFT, permitiendo analizar el contenido frecuencial de la matriz.
+
+"""
+
+# ╔═╡ 80bfafec-7dc1-4d03-8cdf-ecdb087544f9
+begin	
+	# Crear la matriz
+	A1 = [1/2 + cos(2π * 4 * j / 20)/2 for i in 1:20, j in 1:20]
+	log_DFT_A1 = log.(abs.(fft(A1)) .+ 1 )
+	
+	# Visualización
+	plot(heatmap(A1, color=:grays, title="Señal"),
+	heatmap(log_DFT_A1, color=:grays, title="log-DFT de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ b372a69e-edb1-4956-9ccb-fa939fb21287
+md"""
+La señal está dada por:
+
+$A1(i, j) = \frac{1}{2} + \frac{1}{2} \cos\left( 2\pi \cdot 4 \cdot \frac{j}{20} \right)$
+
+donde $j$ representa la coordenada horizontal.
+
+Esta ecuación describe una onda cosenoidal con una frecuencia espacial de 4 ciclos en 20 unidades. Es decir, la señal tiene 4 repeticiones completas a lo largo de la dirección horizontal (cada 5 unidades se repite el patrón).
+
+La Transformada Discreta de Fourier (DFT) descompone la señal en sus componentes de frecuencia. En este caso, la señal es esencialmente una suma de una constante $\frac{1}{2}$ y una función coseno con frecuencia espacial 4 en la dirección horizontal.
+
+- La DFT de un coseno puro genera dos picos simétricos en la frecuencia correspondiente (positiva y negativa).
+- Como la señal tiene una frecuencia de 4 ciclos en un dominio de 20 puntos, la DFT muestra picos en la posición correspondiente a $k = 4$ y su simétrica en $k = -4$. En una DFT discreta, esta última se ve reflejada en el final del eje de frecuencias.
+
+En la imagen de la log-DFT, los puntos brillantes aparecen en la cuarta posición en la dirección horizontal. Esto ocurre porque:
+
+- La frecuencia fundamental de la transformada discreta de Fourier está indexada de $0$ a $N-1$ (en este caso, de 0 a 19).
+- La frecuencia 4 y su simétrica $N - 4 = 16$ aparecen como los valores dominantes, reflejando la periodicidad observada en la señal.
+
+Los picos brillantes en la DFT se deben a la naturaleza periódica de la señal en la dirección horizontal. Como la señal tiene 4 ciclos a lo largo de 20 píxeles, la DFT identifica estas frecuencias y genera picos en las posiciones esperadas.
+
+"""
+
+# ╔═╡ f324ed85-8a3a-43bf-abe7-3171b1c38a13
+md"""
+# DFT en procesamiento de imágenes
+"""
+
+# ╔═╡ ebb95a43-c333-48b7-bdb0-a760945560cf
+md"""
+Antes de aplicar el análisis de frecuencia en el procesamiento de imágenes digitales, es importante familiarizarse con ciertas técnicas para visualizar la Transformada Discreta de Fourier (DFT) en dos dimensiones. Existen tres puntos clave a considerar:
+
+1. Representación de la DFT en imágenes  
+
+La forma más común de visualizar la DFT de una imagen digital es interpretando sus valores como niveles de brillo en una escala de grises. Sin embargo, los valores de la DFT pueden ser negativos o complejos. Para solucionar esto, se muestra el **valor absoluto** de la DFT.
+
+2. Coeficiente DC y transformación logarítmica  
+
+El coeficiente **DC**, definido como:
+
+$\hat{A}(0,0) = \sum_{k=0}^{M-1} \sum_{l=0}^{N-1} A(k,l)$
+
+es generalmente mucho mayor que los demás valores de la DFT, lo que hace que la imagen bruta de la DFT parezca un cielo nocturno con pocos puntos brillantes. Para mejorar la visualización, se aplica una **transformación logarítmica**:
+
+$x \to \log(1 + |x|)$
+
+seguida de un reescalado a un rango entre 0 y 255.
+
+3. Posición del origen en la DFT 
+
+En matemáticas, el origen suele esperarse en el centro de una imagen. Sin embargo, en una imagen digital representada como matriz, los índices de fila y columna comienzan en la esquina superior izquierda. Para ajustar la visualización al esquema matemático, se utiliza una reorganización de los cuadrantes, como la función `fftshift` en Julia.
+
+Este conocimiento es fundamental para interpretar correctamente la DFT en imágenes digitales y aprovechar su potencial en análisis de frecuencia.  
+
+"""
+
+# ╔═╡ 931a4907-e078-414b-85bf-cd989017babf
+md"""
+**Ejemplo.** Continuando con el ejemplo en que la señal está definida por:
+
+$A1(i, j) = \frac{1}{2} + \frac{1}{2} \cos\left( 2\pi \cdot 4 \cdot \frac{j}{20} \right)$
+
+donde $j$ representa la coordenada horizontal, se hace la traslación para que las coordenadas del centro de la imágen coincidan con el origen de coordenadas
+"""
+
+# ╔═╡ 7c611333-4c51-49e9-b3cf-ef19788323c2
+begin	
+	# Crear la matriz
+	# A1 = [1/2 + cos(2π * 4 * j / 20)/2 for i in 1:20, j in 1:20]
+	# log_DFT_A1 = log.(abs.(fft(A1)) .+ 1 )
+	log_DFT_A1_shift = log.(abs.(fftshift(fft(A1)) .+ 1 ))
+	
+	# Visualización
+	plot(heatmap(log_DFT_A1, color=:grays, title="log-DFT de la señal"),
+	heatmap(log_DFT_A1_shift, color=:grays, title="log-DFT movida de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ 1beb1b74-6fc1-4109-aad9-f6ef40a523c8
+function imageDFT(img)
+	A = channelview(img)
+	l = abs.(fftshift(fft(A))) 
+	logDFTshift = log.(l .+ minimum(l) .+ 1 )
+	logDFTshift = logDFTshift / maximum(logDFTshift)
+	return logDFTshift
+end
+
+# ╔═╡ 2d642832-3619-4996-ab6d-0596232763ec
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ 4b29af6c-673e-4a2b-9a17-f5bf105eadb9
+begin
+	A2 = zeros(500,500)
+	for i in 1:500, j in 1:500
+		if (i-250)^2+(j-250)^2 <= 25^2
+			A2[i,j] = 1.0
+		end
+	end
+
+	plot(heatmap(A2, color=:grays, title="Señal"),
+	heatmap(imageDFT(A2), color=:RdBu, title="log-DFT de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ b845dbc0-2bd1-4217-8682-af74adbf1ab7
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ 7f6a0ba5-52d5-4674-bf32-8c9064c2cac2
+begin
+	A3 = zeros(300,300)
+	for i in 1:300, j in 1:300
+		if abs(i-125)+abs(j-125) <= 25
+			A3[i,j] = 1.0
+		end
+		if abs(i-150)+abs(j-150) <= 25
+			A3[i,j] = 1.0
+		end
+		if abs(i-175)+abs(j-175) <= 25
+			A3[i,j] = 1.0
+		end
+	end
+
+	plot(heatmap(A3, color=:grays, title="Señal"),
+	heatmap(imageDFT(Gray.(A3)), color=:RdBu, title="log-DFT de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ c74972ed-6af4-4e28-973e-0c3869edfbe8
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ fac50950-66dc-48ad-b079-c148bac9fad2
+begin
+	url = "https://image.jimcdn.com/app/cms/image/transf/none/path/s6b62474d6def2639/image/i2284a58ede66cadc/version/1420667431/image.gif"  
+	cuborubik = Gray.(1 .- Float64.(Gray.( load(download(url)) )))
+	Acuborubik = channelview(cuborubik)
+
+	plot(heatmap(Acuborubik, color=:grays, title="Señal"),
+	heatmap(imageDFT(cuborubik), color=:RdBu, title="log-DFT de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ a4043c54-b713-4490-a8e0-8cdfe606ec50
+md"""
+
+"""
+
+# ╔═╡ 42048529-4531-4061-a70f-02a3b9e52593
+begin
+	Center = zeros(500,500)
+	for i in 1:500, j in 1:500
+		if (i-250)^2+(j-250)^2 <= 20^2
+			Center[i,j] = 1.0
+		end
+	end
+	DFT_rubik_centerin = fftshift(fft(Acuborubik)) .* Center
+	DFT_rubik_centerout = fftshift(fft(Acuborubik)) .* (1 .-Center)
+	IDFT_rubik_centerin = ifft(DFT_rubik_centerin)
+	IDFT_rubik_centerout = ifft(DFT_rubik_centerout)
+	
+	rubik1 = heatmap(log.(abs.(DFT_rubik_centerin) .+ 1), color=:RdBu, title="")
+	rubik2 = heatmap(log.(abs.(IDFT_rubik_centerin) .+ 1), color=:grays, title="")
+	rubik3 = heatmap(log.(abs.(DFT_rubik_centerout) .+ 1), color=:RdBu, title="")
+	rubik4 = heatmap(log.(abs.(IDFT_rubik_centerout) .+ 1), color=:grays, title="")
+
+	plot(rubik1,rubik2,rubik3,rubik4,layout=(2,2),size=(900,900))
+end
+
+# ╔═╡ c7c4d069-9de0-4bbe-a562-76ed10eef97a
+md"""
+
+"""
+
+# ╔═╡ 32d159c4-e667-4020-84b5-ca1417538b41
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ a8f6926d-8780-4efd-801a-d39a96240f95
+begin
+	function sierpinski!(img, x, y, size, depth)
+	    if depth == 0
+	        return
+	    end
+	    step = div(size, 3)
+	
+	    for i in 0:2, j in 0:2
+	        if i == 1 && j == 1
+	            img[x+step*(i):x+step*(i+1)-1, y+step*(j):y+step*(j+1)-1] .= 255
+	        else
+	            sierpinski!(img, x + step*i, y + step*j, step, depth - 1)
+	        end
+	    end
+	end
+	A4 = fill(0, 3^3, 3^3)
+	sierpinski!(A4, 1, 1, 3^3, 3)
+
+	A4 = A4 /255
+
+	plot(heatmap(A4, color=:grays, title="Señal"),
+	heatmap(imageDFT(Gray.(A4)), color=:RdBu, title="log-DFT de la señal"),
+	layout=(1,2), size=(800,400))
+end
+
+# ╔═╡ 54d6dac8-d075-4df0-bb22-65b3670098b2
+md"""
+**Ejemplo.**
+"""
+
+# ╔═╡ e30fa056-7cae-41c4-89a7-03bebe3ecf25
+begin
+	#Kernel
+	u = zeros(512)
+	#u[253:259] = [1;2;4;6;4;2;1]
+	u[246:266] = [1;2;4;6;8;10;12;14;16;18;20;18;16;14;12;10;8;6;4;2;1]
+	K =  (1/sum(u*u'))*u*u'
+	
+
+	#Imagen
+	camoriginal = testimage("cameraman.tif")
+	camfilter = imfilter(camoriginal, K)
+
+	[camoriginal camfilter]
+end
+
+# ╔═╡ c0b64207-d114-470b-92c8-b6e873f2a9d1
+plot(heatmap(K, color=:grays, title="Kernel"),
+	heatmap(imageDFT(Gray.(K)), color=:RdBu, title="log-DFT del kernel"),
+	layout=(1,2), size=(800,400))
+
+# ╔═╡ 14cbb5f4-fd16-43ec-95e1-84cde643e5dc
+plot(heatmap(imageDFT(camoriginal), color=:RdBu, title="log-DFT de la imagen original"),
+	heatmap(imageDFT(camfilter), color=:RdBu, title="log-DFT de la imagen filtrada"),
+	layout=(1,2), size=(800,400))
+
+# ╔═╡ 309a9b68-a2c3-43fc-b59f-4a69e99a129b
+begin
+	DFT_K = fftshift(fft(K))
+	
+	DFT_camfilter = fftshift(fft(channelview(camfilter)))
+
+	DFT_restoredcam = DFT_camfilter ./ DFT_K 
+
+	heatmap(log.(abs.(DFT_restoredcam) .+ 1), color=:RdBu, title="log-DFT de la imagen filtrada")
+end
+
+# ╔═╡ 29c015e6-826f-4fd0-84fe-bbeba1d39a2c
+begin
+	IDFT_restoredcam = fftshift(ifft(DFT_restoredcam))
+	
+	visual_IDFT_restoredcam = abs.(IDFT_restoredcam)
+	visual_IDFT_restoredcam = log.(visual_IDFT_restoredcam .+ minimum(visual_IDFT_restoredcam) .+ 1.0)
+	visual_IDFT_restoredcam = visual_IDFT_restoredcam / maximum(visual_IDFT_restoredcam )
+
+	heatmap(visual_IDFT_restoredcam, color=:viridis, title="")
+end
 
 # ╔═╡ 78403afb-106c-4922-9fc8-b377f6b8b0e6
 md"""
@@ -57,6 +830,8 @@ md"""
 [1]
 
 [2]
+
+[3] First Principles of Computer Vision, Image Filtering in Frequency Domain | Image Processing II (2 de marzo de 2021), YouTube. Recuperado 24 de febrero de 2025, de https://www.youtube.com/watch?si=l5PBkKI-MUQKlKYE&v=OOu5KP3Gvx0&feature=youtu.be
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -65,6 +840,7 @@ PLUTO_PROJECT_TOML_CONTENTS = """
 ColorVectorSpace = "c3611d14-8923-5661-9e6a-0046d554d3a4"
 Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
+FFTW = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
 ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
@@ -83,6 +859,7 @@ TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 ColorVectorSpace = "~0.11.0"
 Colors = "~0.13.0"
 Distributions = "~0.25.115"
+FFTW = "~1.8.1"
 FileIO = "~1.16.6"
 HypertextLiteral = "~0.9.5"
 ImageFiltering = "~0.7.9"
@@ -102,7 +879,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "56101f64b7aa6ed601d5e64fa61865988c7917a1"
+project_hash = "f89d155b83ceff1c6092f27fc05ef069cfc3978b"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -472,9 +1249,9 @@ version = "0.3.2"
 
 [[deps.FFTW]]
 deps = ["AbstractFFTs", "FFTW_jll", "LinearAlgebra", "MKL_jll", "Preferences", "Reexport"]
-git-tree-sha1 = "4820348781ae578893311153d69049a93d05f39d"
+git-tree-sha1 = "7de7c78d681078f027389e067864a8d53bd7c3c9"
 uuid = "7a1cc6ca-52ef-59f5-83cd-3a7055c09341"
-version = "1.8.0"
+version = "1.8.1"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2097,11 +2874,63 @@ version = "1.4.1+2"
 # ╟─88e077fc-1e7c-4876-9075-f6d673988a11
 # ╟─0d3693d4-ff96-4876-93bb-e6566ce14aa0
 # ╠═3241856d-b2b9-4236-9759-49cd6e52e974
+# ╠═0108e854-2215-42ce-b522-7455e1c694ad
 # ╟─ea8f127b-729c-410d-be47-e15eb13a0e44
-# ╠═9bb3294c-79d3-495b-a75c-4a855e5113c3
-# ╠═3aa09adf-7454-4938-ba6b-2021093797f7
-# ╠═6240e543-bba8-4e7c-affe-d7323d181d2e
+# ╟─9bb3294c-79d3-495b-a75c-4a855e5113c3
+# ╟─678f6525-9cb9-414a-9d55-248956911512
+# ╟─3aa09adf-7454-4938-ba6b-2021093797f7
+# ╟─6240e543-bba8-4e7c-affe-d7323d181d2e
+# ╠═e0b31a67-f9a5-4273-85df-ca059936d4ee
+# ╠═a6421d28-fc4e-41b7-8317-e3fa337bd8b4
+# ╟─9d06ba70-61f6-4199-835c-68f89d4b2b1f
+# ╠═533c3579-7a43-4c89-a2d5-a881536723cf
+# ╟─756e320f-019a-4004-9db0-0005ad23dd90
+# ╟─77ab6c80-5ed1-43f7-a68e-5a8e4fb5680a
+# ╟─574cfed5-ae2a-4362-82af-eda31021f8c4
+# ╟─f100c697-d4a8-4a51-9d01-381b2b3412cf
+# ╟─c1996ac2-f26d-4201-8239-aa36fd93aa21
+# ╟─74e1d603-f640-458b-bae7-710016ea7208
+# ╟─249ca1f0-403a-464a-997e-c57c27fdde36
+# ╟─35660aee-510e-49d3-bfd3-8269aabf6b84
+# ╟─3a1237cb-7acd-4672-802e-93918eaf3a8e
+# ╟─580b238c-c6d0-4bcd-9bcb-d8914d854661
+# ╟─ae9ba491-f21e-4c2d-b6d7-a907eb324a9f
+# ╠═08a441f0-5e09-479f-af93-03449dc6ce28
+# ╟─90b53c6c-e005-4ac1-a79f-c2d7604507da
+# ╟─d54d6f0e-c5ed-4dd2-8017-98f681689b40
+# ╟─73a26fa3-02b0-4876-ac2d-403c8e7ed83a
+# ╟─5a91f2fd-5b3e-40a2-ab0f-b7519ff2d179
+# ╠═ef94cde7-1783-424e-8ff6-ccfb1894e084
+# ╟─c88b7a67-5d04-4f0f-9b0d-b68a831b26b0
+# ╟─18e29310-82fe-41b6-99cc-7b7088df7b6c
+# ╟─475d326b-b21e-4508-b386-f2cd2c68926c
+# ╟─750a01bf-b4e9-412a-bce7-9bb72e2b3a55
+# ╟─51b22df4-9388-4111-809d-24d3ea383f3c
+# ╠═80bfafec-7dc1-4d03-8cdf-ecdb087544f9
+# ╟─b372a69e-edb1-4956-9ccb-fa939fb21287
+# ╟─f324ed85-8a3a-43bf-abe7-3171b1c38a13
+# ╟─ebb95a43-c333-48b7-bdb0-a760945560cf
+# ╟─931a4907-e078-414b-85bf-cd989017babf
+# ╠═7c611333-4c51-49e9-b3cf-ef19788323c2
+# ╠═1beb1b74-6fc1-4109-aad9-f6ef40a523c8
+# ╠═2d642832-3619-4996-ab6d-0596232763ec
+# ╠═4b29af6c-673e-4a2b-9a17-f5bf105eadb9
+# ╠═b845dbc0-2bd1-4217-8682-af74adbf1ab7
+# ╠═7f6a0ba5-52d5-4674-bf32-8c9064c2cac2
+# ╠═c74972ed-6af4-4e28-973e-0c3869edfbe8
+# ╠═fac50950-66dc-48ad-b079-c148bac9fad2
+# ╠═a4043c54-b713-4490-a8e0-8cdfe606ec50
+# ╠═42048529-4531-4061-a70f-02a3b9e52593
+# ╠═c7c4d069-9de0-4bbe-a562-76ed10eef97a
+# ╠═32d159c4-e667-4020-84b5-ca1417538b41
+# ╠═a8f6926d-8780-4efd-801a-d39a96240f95
+# ╠═54d6dac8-d075-4df0-bb22-65b3670098b2
+# ╠═e30fa056-7cae-41c4-89a7-03bebe3ecf25
+# ╠═c0b64207-d114-470b-92c8-b6e873f2a9d1
+# ╠═14cbb5f4-fd16-43ec-95e1-84cde643e5dc
+# ╠═309a9b68-a2c3-43fc-b59f-4a69e99a129b
+# ╠═29c015e6-826f-4fd0-84fe-bbeba1d39a2c
 # ╟─78403afb-106c-4922-9fc8-b377f6b8b0e6
-# ╟─fc8bb555-4e29-4064-bdb3-312d05988d03
+# ╠═fc8bb555-4e29-4064-bdb3-312d05988d03
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

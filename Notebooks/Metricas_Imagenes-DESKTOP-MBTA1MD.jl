@@ -4,801 +4,349 @@
 using Markdown
 using InteractiveUtils
 
-# ╔═╡ 20737ad0-c3e9-11ef-3c60-8951d72fb0dd
+# ╔═╡ 44a476c0-c3e9-11ef-2e85-278c304ad5d6
 using PlutoUI
 
-# ╔═╡ 7f0d9d18-2286-4a0c-8f3b-14eec26a1a31
+# ╔═╡ 9d423fa4-c492-4cb1-a282-9ad2b3946376
 begin
-	using Plots,LaTeXStrings,Colors,ColorVectorSpace,ImageShow,FileIO,ImageIO
+	using Plots,Colors,ColorVectorSpace,ImageShow,FileIO,ImageIO
 	using HypertextLiteral
 	using Images, ImageShow 
 	using Statistics,  Distributions, LinearAlgebra
 	using StatsBase, StatsPlots
 end
 
-# ╔═╡ dd989a69-1961-4fe0-98e5-2698a852d8e2
-using TestImages, ImageFiltering
+# ╔═╡ 7bf7af2c-61fd-4a28-9000-d347d41adaa8
+PlutoUI.TableOfContents(title="Métricas en imágenes", aside=true)
 
-# ╔═╡ 7a337404-eb3a-4639-93f5-cd2c907b6422
-PlutoUI.TableOfContents(title="Deconvolución", aside=true)
-
-# ╔═╡ ff935e28-0b09-44c9-b80e-5f45fee7b400
+# ╔═╡ a36c9b9e-c7ef-427b-8554-1b353528edff
 md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
 
 Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
 
-# ╔═╡ 471bba4a-305a-4123-a824-bb1f91e32348
+# ╔═╡ afbdb718-75cf-4d70-9f09-50e70c9805d3
 md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
 
-Elaborado por Juan Galvis, Jorge Mauricio Ruíz."""
+Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
 
-# ╔═╡ 3838a8ee-63f9-4f41-85f3-502603433098
+# ╔═╡ 5ecd8671-9166-4c83-8422-32c006e5a2d1
 md"""Vamos a usar las siguientes librerías:"""
 
-# ╔═╡ 993aff42-0eb3-4cd1-9d99-333d5a2d2669
+# ╔═╡ 71961e63-0c78-4221-9d5f-126a54513d57
 md"""
 # Introducción
 """
 
-# ╔═╡ 6ef479c7-e440-4e1f-8425-263288d152e8
+# ╔═╡ 1d9501b7-3d36-4a2e-9836-fd5e54a6b605
 md"""
-La deconvolución es una técnica clave en el procesamiento de imágenes que busca restaurar imágenes afectadas por desenfoque, ruido y distorsiones introducidas durante su captura. Este proceso es crucial en campos como astronomía, microscopía e imágenes médicas, donde la calidad de la imagen impacta directamente el análisis. En este notebook, exploraremos los fundamentos y la implementación de métodos de deconvolución aplicándolos para mejorar imágenes degradadas y evaluando los resultados obtenidos.
+La calidad de una imagen puede verse degradada debido a diversas distorsiones durante su adquisición y procesamiento. Ejemplos comunes de estas distorsiones incluyen el ruido, el desenfoque, y los artefactos de anillo y de compresión. Para evaluar de manera objetiva el impacto de estas distorsiones, se han desarrollado métricas de calidad que permiten medir la fidelidad de una imagen procesada en comparación con su versión ideal o de referencia.
+
+Estas métricas no solo sirven para evaluar la calidad de las imágenes, sino también para correlacionarse con la percepción subjetiva de un observador humano. En muchas aplicaciones, una métrica de calidad efectiva refleja bien la calidad percibida por las personas, lo que la convierte en una herramienta crucial tanto para la evaluación de resultados como para la comparación entre diferentes algoritmos de procesamiento de imágenes.
+
+Cuando se dispone de una imagen sin distorsión, esta puede utilizarse como referencia para evaluar otras imágenes. Por ejemplo, en el caso de imágenes comprimidas, la versión sin comprimir de la imagen actúa como una referencia útil. En estos casos, las métricas de calidad con referencia completa permiten comparar directamente la imagen de destino con la imagen de referencia.
+
+Sin embargo, cuando no se tiene una imagen de referencia sin distorsión, se pueden utilizar métricas de calidad sin referencia. Estas métricas calculan las puntuaciones de calidad basándose en estadísticas de la imagen que se espera, proporcionando una manera eficaz de medir la calidad incluso en ausencia de una imagen ideal de comparación.
 """
 
-# ╔═╡ 2fffc9c6-1585-4a0b-b99e-353611d01551
+# ╔═╡ 4e5e8a6f-ede5-47a7-abee-f73e9cb034f3
 md"""
-A lo largo de este cuaderno se manejará la deconvolución como un problema inverso lineal construido a continuación: Suponga que tenemos las siguiente imagen de un camarógrafo.
+# Métricas de calidad con referencia completa
 """
 
-# ╔═╡ 4235ee49-5e71-476b-b32b-c790f029720d
-camoriginal = testimage("cameraman.tif")
-
-# ╔═╡ e0c13e70-41b5-439b-91ed-620adda4587d
-md"""$\texttt{Figura 1. Camarógrafo}$"""
-
-# ╔═╡ 7405c1ba-0dad-437e-a907-60b44e47bf80
+# ╔═╡ 571379b1-f9b9-4bcd-b4de-2dc71e4a2da7
 md"""
-Vamos a modificar esta imagen para que tenga una distorsión que simula el movimiento en el momento de la captura de la fotografía y además que se encuentre contaminada por ruido aditivo.
+Los algoritmos con referencia completa comparan la imagen de entrada con una imagen de referencia ideal, sin distorsión.
 
-Para la distorsión usamos el kernel $K = u\cdot v^{\top} \in\mathbb{R}^{3\times 7}$ donde 
-
-$u = \begin{pmatrix}
-1\\
-1\\
-1\end{pmatrix}\in\mathbb{R}^{3\times 1} \quad \text{ y }\quad
-v^{\top} = \frac{1}{21}\begin{pmatrix}
-1 & 1 & \ldots & 1\end{pmatrix}\in\mathbb{R}^{1\times 7}.$
+Para esta sección, considere $I$ y $R$ dos matrices que representan dos imágenes en sus arreglos de píxeles, donde se busca medir qué tanto se asemeja la imagen $I$ a la imagen de referencia $R$.
 """
 
-# ╔═╡ ed6953b4-744c-4dbb-8ac3-69c506972554
+# ╔═╡ e232d1ad-8a02-4dd8-904b-4f4f38ac1653
 begin
-	u = (1/3)*ones(3)
-	v = (1/7)*ones(7)
-	K = u * v'
+	I = [50 105 110; 120 125 130; 135 140 145]/255
+	R = [52 103 108; 121 126 129; 134 139 250]/255
 end
 
-# ╔═╡ f32ad76c-7222-4ea5-b14d-c26978b60ab3
-md"""
-El resultado de la convolución se muestra en la figura 2. Se puede notar que la distorsión de este kernel genera un movimiento horizontal.
-"""
-
-# ╔═╡ 9955f70c-6636-4b95-b774-feaa57a6a8f5
-camfilter0 = imfilter(imresize(camoriginal, (512, 512)), K)
-
-# ╔═╡ 716cbf70-eee8-41ee-a735-06068498dd7a
-md"""$\texttt{Figura 2.}$"""
-
-# ╔═╡ e60ab5d6-f40e-4250-9b15-4f521c652472
-md"""
-Ahora agregamos un ruido aditivo gaussiano con media $\mu=0$ y desviación estándar $\sigma=0.1$ obteniendo la siguiente imagen.
-"""
-
-# ╔═╡ 22257c37-d113-4ebb-b392-8d4886dea5ca
-camfilternoise0 = Gray.(channelview(camfilter0) + 0.1*randn(512,512))
-
-# ╔═╡ 68650463-6f3b-4193-a2db-b85bf5532482
-md"""$\texttt{Figura 3.}$"""
-
-# ╔═╡ c05726ab-0ef1-40d7-96a9-64372f964b11
-md"""
-Ahora para reducir el tamaño de la imagen y no cometer un *crimen inverso* [1] regresamos a la dimensión original la imagen distorsionada sin y con ruido, sobre estas dos imágenes vamos a trabajar de ahora en adelante.
-"""
-
-# ╔═╡ da908f22-4f24-4768-bd58-1c07baf48506
+# ╔═╡ d5f6b1fc-caa7-45d5-a2ad-3f6aa5148bf7
 begin
-	camfilter = imresize(camfilter0, (512, 512))
-	camfilternoise = imresize(camfilternoise0, (512, 512))
-	p1 = plot(camfilter,axis=false, grid=false, title="Distorsión sin ruido")
-	p2 = plot(camfilternoise,axis=false, grid=false, title="Distorsión con ruido")
-	plot(p1,p2,layout=(1,2), size=(800,400))
+	p1 = plot(heatmap(Gray.(I)), title = "Imagen de prueba I", color = :grays, grid=false, axis=false)
+	p2 = plot(heatmap(Gray.(R)), title = "Imagen de prueba R", color = :grays, grid=false, axis=false)
+	plot(p1,p2,layout=(1,2))
 end
 
-# ╔═╡ 498b73ea-757e-4d5c-852f-20d0e8f4e105
-md"""$\texttt{Figura 4.}$"""
-
-# ╔═╡ c217bbc0-03e2-41d2-b382-77df0a3d9108
+# ╔═╡ a42e6025-827b-48d4-8703-61e360357c7b
 md"""
-Nuestro objetivo de ahora en adelante será recuperar la imagen original del camarógrafo teniendo la imagen distorsionada con o sin ruido.
+## Error cuadrático medio (ECM)
 """
 
-# ╔═╡ 9468060a-3f5a-42ef-b5dc-8acecb6d0934
+# ╔═╡ 04cfa99d-97a0-4310-84f6-beca8e2aa278
 md"""
-# Modelo lineal
+El **Error Cuadrático Medio** (ECM) es una métrica fundamental utilizada para evaluar la calidad de una imagen al medir la diferencia cuadrática promedio entre los valores de píxeles reales e ideales. Esta métrica se calcula de la siguiente manera:
+
+$ECM = \frac{1}{nm} \sum_{i=1}^{n} \sum_{j=1}^{m} (I_{ij} - R_{ij})^2$
+
+Donde:
+-  $I_{ij}$ es el valor del píxel $(i, j)$ de la imagen procesada o restaurada.
+-  $R_{ij}$ es el valor del píxel $(i, j)$ de la imagen de referencia o ideal.
+-  $n$ y $m$ son las dimensiones de la imagen en términos de filas y columnas de píxeles.
+
+El ECM calcula la diferencia cuadrada entre los píxeles correspondientes de las dos imágenes (la procesada y la de referencia), y luego promedia estas diferencias a lo largo de toda la imagen. Cuanto menor sea el valor del ECM, mayor será la similitud entre las dos imágenes.
+
+Aunque el ECM es fácil de calcular y proporciona una medida objetiva de la diferencia entre las imágenes, tiene limitaciones importantes. No necesariamente se correlaciona con la percepción humana de la calidad de la imagen. Esto se debe a que el ECM no tiene en cuenta aspectos perceptuales importantes como el contraste, la estructura o los detalles visuales que son fundamentales para los humanos al evaluar la calidad de una imagen. Por lo tanto, una imagen con un bajo ECM puede no siempre ser percibida como de alta calidad, especialmente si tiene distorsiones que afectan la percepción visual, como el desenfoque o el ruido.
 """
 
-# ╔═╡ 8beb041e-60a1-4f42-bbbd-3db56c36dc6e
-md"""
-En la introducción se planteó el siguiente modelo:
-
-$Y = K \ast X + \Theta,$
-
-donde $K$ es el kernel de convolución, $\Theta$ es una matriz de ruido (que puede ser nulo cuando solo se considera la imagen distorsionada sin ruido o puede venir de una distribución normal cuando se tiene una imagen distorisionada con ruido), $X$ corresponde a la imagen original y $Y$ es la imagen procesada.
-
-El problema de construir $Y$ a partir del conocimiento de $K$, $X$ y $\Theta$ es un problema directo y que no generó dificultades, no obstante, el problema de recuperar $X$ dado que conocemos $Y$, $K$ y $\theta$ es un problema inverso que posee dificultades que resaltaremos más adelante.
-
-Por la linealidad de la convolución, el objetivo principal de esta sección será construir el modelo lineal que representa el comportamiento del modelo anteriormente mencionado.
-"""
-
-# ╔═╡ 81f38acc-4944-4b40-9f8a-83bb47ae63b5
-md"""
-## Convolución como una transformación lineal
-"""
-
-# ╔═╡ 9255bd4e-c2ed-4d31-b6be-d74c452e1d69
-md"""
-Dada una sucesión finita $h = (h_0, h_1, \dots, h_m)$, se puede representar esta sucesión en forma de vector columna:
-
-$h = \begin{pmatrix} h_0 \\ h_1 \\ \vdots \\ h_m \end{pmatrix}$
-
-Definimos la transformación $T_h : \mathbb{R}^n \to \mathbb{R}^{n+m-1}$ mediante la convolución de una señal $x$ con $h$:
-
-$T_h(x) = x \ast h$
-
-donde $\ast$ denota la operación de convolución. Esta transformación puede ser tanto **lineal** como **circular**, dependiendo de cómo tratemos los bordes de las matrices involucradas.
-
-La propiedad distributiva de la convolución se expresa como:
-
-$(x + y) \ast h = x \ast h + y \ast h$
-
-Esta propiedad asegura que la operación es lineal, lo que implica que $T_h$ es una transformación lineal. Gracias a la propiedad lineal, podemos escribir la transformación $T_h$ como una multiplicación matricial:
-
-$T_h(x) = Hx$
-
-donde $H$ es la **matriz de convolución** asociada a la transformación $T_h$. La matriz $H$ se construye aplicando $T_h$ sobre los vectores básicos $e_1, e_2, \dots, e_n$, donde cada $e_i$ es un vector columna con un 1 en la $i$-ésima posición y 0 en las demás:
-
-$e_1 = \begin{pmatrix} 1 \\ 0 \\ \vdots \\ 0 \end{pmatrix}, \quad e_2 = \begin{pmatrix} 0 \\ 1 \\ \vdots \\ 0 \end{pmatrix}, \quad \dots, \quad e_n = \begin{pmatrix} 0 \\ 0 \\ \vdots \\ 1 \end{pmatrix}$
-
-**Ejemplo.** Consideremos el caso en el que $h = (1, -1)$ y la transformación lineal $T_h : \mathbb{R}^4 \to \mathbb{R}^5$ se define mediante la convolución lineal. La matriz de convolución $H$ para este caso específico se obtiene aplicando la convolución lineal sobre los vectores básicos $e_1, e_2, e_3, e_4$, y se tiene:
-
-$H = \begin{pmatrix}
-1 & 0 & 0 & 0 \\
--1 & 1 & 0 & 0 \\
-0 & -1 & 1 & 0 \\
-0 & 0 & -1 & 1 \\
-0 & 0 & 0 & -1
-\end{pmatrix}$
-
-Esta matriz $H$ es el resultado de aplicar la transformación $T_h$ sobre los vectores base, y refleja la estructura de la convolución de la sucesión $h = (1, -1)$.
-"""
-
-# ╔═╡ f6c7c4d9-f096-435d-a8bd-f275700d0bc2
+# ╔═╡ d11a9dc3-b4b5-4cf5-b716-4d182550eef0
 begin
-	function matriz_convolucion(h, n)
-	    m = length(h)
-	    H = zeros(Float64, m + n - 1, n)  
-	    for i in 1:(m + n - 1)
-	        for j in 1:n
-	            if 1 <= i + 1 - j <= m
-	                H[i, j] = h[i - j + 1] 
-	            end
+	# Función para calcular el Error Cuadrático Medio (ECM) entre dos matrices de imagen
+	function calcular_ecm(I, R)
+	    if size(I) != size(R)
+	        throw(ErrorException("Las imágenes deben tener el mismo tamaño"))
+	    end
+	    
+	    n, m = size(I)
+	    ecm = 0.0
+	    for i in 1:n
+	        for j in 1:m
+	            ecm += (I[i, j] - R[i, j])^2
 	        end
 	    end
-	    return H
+	    ecm /= (n * m)
+	    return ecm
 	end
 	
-	# Ejemplo de uso con h = (1, -1) y n = 4
-	h = [1, -1]
-	H = matriz_convolucion(h, 4)	
+	ecm_value = calcular_ecm(I, R)
+	println("El Error Cuadrático Medio (ECM) es: $ecm_value")
 end
 
-# ╔═╡ d6e429b4-5b3a-4642-ad7c-74acc57cb016
-function matriz_convolucion_trunc(h, n)
-	m = length(h)
-	H = zeros(Float64, n, n)  
-	for i in 1:n
-		for j in 1:n
-			if 1 <= i + 1 - j <= m
-				H[i, j] = h[i - j + 1] 
-			end
-		end
+# ╔═╡ 7256f297-0781-4772-a45a-57ff3faf9ca8
+md"""
+## Proporción Máxima de Señal a Ruido (PSNR)
+"""
+
+# ╔═╡ 37193883-0f10-48bb-8279-30191ba264c3
+md"""
+La **Relación Señal-Ruido Máxima** (PSNR, por sus siglas en inglés) es una métrica utilizada para evaluar la calidad de una imagen. Se deriva del **Error Cuadrático Medio** (ECM) y mide la relación entre la intensidad máxima de los píxeles y la potencia de la distorsión presente en la imagen. 
+
+El **PSNR** se calcula con la siguiente fórmula:
+
+$PSNR(I, R) = 10 \log_{10} \left( \frac{Max^2}{ECM} \right)$
+
+Donde:
+-  $Max$ es el valor máximo de intensidad de píxel que puede tomar la imagen. Para una imagen con $b$ bits por píxel, $Max = 2^b - 1$.
+-  $ECM$ es el **Error Cuadrático Medio**, que mide la diferencia cuadrática promedio entre los valores de píxeles de la imagen $I$ (procesada) y la imagen de referencia $R$ (ideal).
+
+El PSNR se expresa en **decibelios (dB)**. Cuanto mayor sea el valor de PSNR, mejor será la calidad de la imagen procesada en comparación con la imagen de referencia, lo que indica que la distorsión es menor.
+
+Al igual que el ECM, la métrica **PSNR** es fácil de calcular y proporciona una medida objetiva de la diferencia entre las imágenes. Sin embargo, al igual que el ECM, el PSNR no siempre se corresponde con la calidad percibida por los humanos. Aunque un valor alto de PSNR indica una menor distorsión, esto no significa necesariamente que la imagen sea visualmente perfecta, ya que el PSNR no tiene en cuenta factores perceptuales importantes como el contraste, la estructura o los detalles visuales.
+
+"""
+
+# ╔═╡ 319d8ff4-75d2-4dd1-b7b9-b8503d94b30a
+begin
+	# Función para calcular la Relación Señal-Ruido Máxima (PSNR)
+	function calcular_psnr(I, R, max_val)
+	    # Calcula el ECM entre las imágenes
+	    ecm = calcular_ecm(I, R)
+	    
+	    # Calcula el PSNR utilizando la fórmula
+	    psnr = 10 * log10((max_val^2) / ecm)
+	    return psnr
 	end
-	return H
+	
+	# Ejemplo de uso
+	max_val = 1.0  # Valor máximo de píxel, por ejemplo, para imágenes de 8 bits
+	
+	psnr_value = calcular_psnr(I, R, max_val)
+	println("La Relación Señal-Ruido Máxima (PSNR) es: $psnr_value dB")
 end
 
-# ╔═╡ 0a9ac857-92ab-4d99-b600-2c9f100444c1
-matriz_convolucion_trunc(h, 4)
-
-# ╔═╡ 0ebba0e0-dd44-4e5c-9293-d9620e9c192f
+# ╔═╡ d2ca5d55-91e4-474a-871d-8c6ca2dcbcc5
 md"""
-**Extensión a matrices.** La transformación lineal mediante convolución también puede extenderse al caso de matrices, donde se aplica un kernel de convolución $K$ sobre una matriz de entrada $X$. Si el kernel de convolución $K$ es **separable**, esta operación puede representarse como una serie de transformaciones lineales unidimensionales en las filas y columnas de $X$.
+## Índice de similitud estructural (SSIM)
+"""
 
-Un **kernel separable** es un kernel que puede expresarse como el producto externo de dos vectores:
+# ╔═╡ 44f5a8dc-12fd-426f-a508-1f1715495f8e
+md"""
+El **Índice de Similitud Estructural** (SSIM, por sus siglas en inglés) es una métrica que evalúa la similitud entre dos imágenes al considerar tres componentes fundamentales: la luminancia, el contraste y la estructura. Esta métrica es más acorde con la percepción humana de la calidad de la imagen, ya que refleja cómo el sistema visual humano percibe las estructuras, especialmente las relaciones locales entre píxeles vecinos.
 
-$K = v \cdot w^T$
+El **SSIM** se calcula utilizando la siguiente fórmula:
 
-donde $v \in \mathbb{R}^p$ y $w \in \mathbb{R}^q$. Esto implica que la convolución de $X$ con $K$ puede descomponerse en dos pasos: primero aplicar la convolución unidimensional con $v$ a las filas de $X$, y luego aplicar la convolución unidimensional con $w$ a las columnas del resultado.
+$SSIM(I, R) = \frac{(2 \mu_I \mu_R + c_1)(2 \sigma_{IR} + c_2)}{(\mu_I^2 + \mu_R^2 + c_1)(\sigma_I^2 + \sigma_R^2 + c_2)}$
 
-Esta propiedad reduce significativamente el costo computacional de la convolución en matrices y permite representar la transformación como una combinación de dos transformaciones lineales, una para las filas y otra para las columnas.
+Donde:
+-  $\mu_I$ y $\mu_R$ son los promedios de intensidad de las imágenes $I$ (procesada) y $R$ (referencia), respectivamente.
+-  $\sigma_I^2$ y $\sigma_R^2$ son las varianzas de las intensidades de las imágenes $I$ y $R$, respectivamente.
+-  $\sigma_{IR}$ es la covarianza de las imágenes $I$ y $R$.
+-  $c_1 = (k_1 L)^2$ y $c_2 = (k_2 L)^2$ son constantes pequeñas para evitar divisiones por cero, donde $L$ es el valor máximo posible de intensidad de píxel y $k_1$ y $k_2$ son constantes empíricas.
 
+
+El **SSIM** se utiliza para medir la similitud estructural entre dos imágenes, y su valor varía entre 0 y 1:
+- Un valor de $SSIM = 1$ indica que las imágenes son idénticas en cuanto a estructura, luminancia y contraste.
+- Un valor de $SSIM = 0$ indica que no hay similitud estructural entre las imágenes.
+
+A diferencia de otras métricas como el ECM o el PSNR, que se centran en las diferencias de píxeles, el SSIM tiene en cuenta los patrones de intensidad de píxeles en un contexto local, lo que lo hace más alineado con la percepción humana. Dado que el sistema visual humano es especialmente sensible a la estructura en las imágenes, el SSIM ofrece una evaluación de calidad que suele correlacionarse mejor con las puntuaciones subjetivas de calidad.
 
 """
 
-# ╔═╡ f2c4ee61-2d0a-4612-93d1-0cfd3b176e72
-md"""
-Para demostrar lo anteriormente dicho, en primer lugar es fácil ver que si el kernel de convolución es una matriz fila, su efecto se limita a las filas de la matriz de entrada. De manera similar, si el kernel es una matriz columna, únicamente afectará las columnas de la matriz de entrada.
-
-Por ejemplo, supongamos que tenemos la siguiente matriz de entrada $X$ y un kernel $K$ como matriz fila:
-
-$X = \begin{pmatrix}
-x_{11} & x_{12} \\
-x_{21} & x_{22}\\
-\end{pmatrix}$
-
-$K = \begin{pmatrix}
-k_{11} & k_{12}
-\end{pmatrix}$
-
-En este caso, la convolución de $X$ con $K$ afectará únicamente las filas de $X$. La operación de convolución se aplica deslizando $K$ sobre cada fila de $X$, operando de forma similar a una multiplicación punto por punto.
-
-El resultado de la convolución de $X$ con $K$ sobre las filas de la matriz sería:
-
-$K\ast X = \begin{pmatrix}
-k_{11}x_{11} & k_{12}x_{11} + k_{11}x_{12} & k_{12}x_{12}\\
-k_{11}x_{21} & k_{12}x_{21} + k_{11}x_{22} & k_{12}x_{22}
-\end{pmatrix}$
-
-$K\ast X = \begin{pmatrix}
-x_{11} & x_{12} \\
-x_{21} & x_{22}\\
-\end{pmatrix}\begin{pmatrix}
-k_{11} & 0\\
-k_{12} & k_{11}\\
-0 & k_{12}\\
-\end{pmatrix}^{\top}$
-
-En este ejemplo, el kernel fila $K$ solo afecta las filas de la matriz $X$, realizando la operación de convolución en cada una de ellas, como se evidenció en la última ecuación esta convolución con el kernel fila se puede reescribir como:
-
-$K\ast X = X \cdot T_{K}^{\top},$
-
-haciendo más visible la transformación lineal que solo afecta a las filas y también redescubriendo la matriz asociada a la transformación lineal de la convolución unidimensional con kernel $K$.
-
-
-Se puede de la misma manera que si el kernel $K$ es una columna entonces únicamente afectará a la matriz $X$ en sus columnas y además las convolución puede ser escrita como:
-
-$K\ast X = T_{K} \cdot X.$
-
-"""
-
-# ╔═╡ 58624620-c6ae-4235-b3fb-5ce90610308f
-md"""
-En segundo lugar, tenemos el siguiente teorema: 
-
-**Teorema.** Sea $A$ una matriz y $K=u\cdot v^{\top}$ un kernel separable. Entonces 
-
-$K\ast A = u \ast v^{\top} \ast A = T_{u} \cdot A \cdot T_{v}^{\top}$
-
-*Demostración*. Nótese que:
-
-$\begin{align*}
-(K\ast A)_{i,j} &= \sum_{s}\sum_{t}K_{s,t} A_{i-s,j-t}\\
-&= \sum_{s}\sum_{t}(u\cdot v^{\top})_{s,t} A_{i-s,j-t}\\
-&= \sum_{s}\sum_{t}u_{s} v^{\top}_{t} A_{i-s,j-t}\\
-&= \sum_{s}u_{s}\sum_{t} v^{\top}_{t} A_{i-s,j-t}\\
-&= \sum_{s}u_{s} (v^{\top}\ast A)_{i-s,j}\\
-&= (u \ast v^{\top} \ast A)_{i,j},
-\end{align*}$
-como las expresiones son iguales componente a componente y sus dimensiones son las mismas entonces $K\ast A = u \ast v^{\top} \ast A$. La igualdad $u \ast v^{\top} \ast A = T_{u} \cdot A \cdot T_{v}^{\top}$ se sigue de lo discutido previamente.
-"""
-
-# ╔═╡ 4c7b7434-edb0-4925-a07f-a7e68ab205e0
-md"""
-Para finalizar y crear el modelo lineal es importante vectorizar la imagen y notar que la expresión $T_{u} \cdot A \cdot T_{v}^{\top}$ se encuentra directamente relacionada con $vec(A)$ y con el producto de Kronecker $T_{u} \otimes T_{v}$. 
-
-
-**Definición** *(Vectorización)*. Si $A$ es una matriz de tamaño $m \times n$, la vectorización de $A$, denotada generalmente como ${vec}(A)$, es el proceso de convertir la matriz en un vector de tamaño $mn$, donde los elementos de la matriz se colocan columna por columna o fila por fila en el vector.
-
-Por ejemplo, supongamos que tenemos la siguiente matriz $A$ de $2 \times 3$:
-
-$A = \begin{pmatrix}
-1 & 2 & 3 \\
-4 & 5 & 6
-\end{pmatrix}$
-
-La **vectorización** de $A$, denotada como ${vec}(A)$, será:
-
-${vec}(A) = \begin{pmatrix}
-1 \\
-4 \\
-2 \\
-5 \\
-3 \\
-6
-\end{pmatrix}.$
-"""
-
-# ╔═╡ c6664ddb-8a11-4129-87b7-6e40a18fedd0
-A = [1 2 3; 4 5 6]
-
-# ╔═╡ 526c3a2f-a985-4933-ac19-58b11488fde0
-vec(A)
-
-# ╔═╡ f54f2815-23d2-4967-a78b-adef2e0a578d
-md"""
-**Definición** *(Producto de Kronecker)*. Si $A = \begin{pmatrix} a_{ij} \end{pmatrix}$ es una matriz $m \times n$ y $B = \begin{pmatrix} b_{kl} \end{pmatrix}$ es una matriz $p \times q$, entonces el producto de Kronecker $A \otimes B$ es una matriz $mp \times nq$ dada por:
-
-$A \otimes B = \begin{pmatrix}
-a_{11} B & a_{12} B & \dots & a_{1n} B \\
-a_{21} B & a_{22} B & \dots & a_{2n} B \\
-\vdots & \vdots & \ddots & \vdots \\
-a_{m1} B & a_{m2} B & \dots & a_{mn} B
-\end{pmatrix}$
-"""
-
-# ╔═╡ 632f0ec5-e149-4965-9d1c-0d4cd48b7574
-B = [1 0 0; 0 1 0; 0 0 0]
-
-# ╔═╡ d2dc41fb-7211-4d62-b138-847412b951b4
-kron(A,B)
-
-# ╔═╡ 27cf6249-d18f-422f-bede-569cb22d101c
-md"""
-**Teorema.**  Sean $A\in\mathbb{R}^{m\times n}$, $B\in\mathbb{R}^{s\times t}$ y $X\in\mathbb{R}^{t\times n}$ entonces 
-
-$(A\otimes B){vec}(X) = vec(B\cdot X \cdot A^{\top})\in\mathbb{R}^{ms}$
-"""
-
-# ╔═╡ b43e75ab-4b11-4add-bb80-4c053086e07b
-md"""
-*Demostración.* Escribamos $X$ haciendo explícitas sus columnas:
-
-$X = \begin{pmatrix}
-| & | &  & | \\
-X_1 & X_{2} & \ldots & X_{n}\\
-| & | &  & | \\
-\end{pmatrix}$
-
-con $X_{i}\in\mathbb{R}^{t}$ para $i=1,\ldots, n$, de esta manera 
-
-$vec(X) = \begin{pmatrix}
-X_1 \\
-X_2 \\
-\vdots \\
-X_n\\
-\end{pmatrix}.$
-Empecemos la demostración desde el lado izquierdo:
-
-$\begin{align*}
-(A\otimes B){vec}(X) &= \begin{pmatrix}
-a_{11} B & a_{12} B & \dots & a_{1n} B \\
-a_{21} B & a_{22} B & \dots & a_{2n} B \\
-\vdots & \vdots & \ddots & \vdots \\
-a_{m1} B & a_{m2} B & \dots & a_{mn} B
-\end{pmatrix}\begin{pmatrix}
-X_1 \\
-X_2 \\
-\vdots \\
-X_n\\
-\end{pmatrix}\\
-&= \begin{pmatrix}
-\sum_{k=1}^{t}a_{1k}BX_k \\
-\sum_{k=1}^{t}a_{2k}BX_k  \\
-\vdots \\
-\sum_{k=1}^{t}a_{nk}BX_k \\
-\end{pmatrix}\\
-&= vec\begin{pmatrix}
-| & | &  & | \\
-\sum_{k=1}^{t}a_{1k}BX_k & \sum_{k=1}^{t}a_{2k}BX_k & \ldots & \sum_{k=1}^{t}a_{nk}BX_k\\
-| & | &  & | \\
-\end{pmatrix}\\
-&= vec\left(B\begin{pmatrix}
-| & | &  & | \\
-\sum_{k=1}^{t}a_{1k}X_k & \sum_{k=1}^{t}a_{2k}X_k & \ldots & \sum_{k=1}^{t}a_{nk}X_k\\
-| & | &  & | \\
-\end{pmatrix}\right)\\
-&= vec\left(B\begin{pmatrix}
-| & | &  & | \\
-X_1 & X_{2} & \ldots & X_{n}\\
-| & | &  & | \\
-\end{pmatrix} \begin{pmatrix}
-a_{11}  & a_{21}  & \dots & a_{m1}  \\
-a_{12}  & a_{22}  & \dots & a_{m2}  \\
-\vdots & \vdots & \ddots & \vdots \\
-a_{1n}  & a_{2n}  & \dots & a_{mn} 
-\end{pmatrix}\right)\\
-&=vec\left(B\cdot X \cdot A^{\top}\right)
-\end{align*}$
-"""
-
-# ╔═╡ 0fbbc63b-1cae-4200-b0a6-ef00ec8e5169
-md"""
-De esta manera, si tenemos una imagen $X$ y le hacemos convolución con un kernel separable $K = u \cdot v^{\top}$ entonces tenemos que:
-
-$vec(K\ast X) = vec(T_{u} \cdot X \cdot T_{v}^{\top})  = (T_{v}\otimes T_{u}) vec(X).$
-
-Identificamos la matriz $T_{v}\otimes T_{u}$ por $M_{K} = M_{u\cdot v^{\top}}$.
-"""
-
-# ╔═╡ b844e8b4-df96-422d-9466-7903082e5498
-md"""
-En el ejemplo del camarógrafo como la imagen tiene un tamaño de $512\times 512$ entonces, según la notación de teorema anterior $m = n = s = t = 512$. 
-
-Con el anterior teorema nos es posible expresar el modelo de manera lineal 
-
-$vec(Y) = M_{K} \cdot vec(X) + \theta$
-
-donde $Y$ es la imagen procesada, $X$ es la imagen original y $\theta$ es el vector de ruido.
-
-La matriz $T_{u}$ es:
-"""
-
-# ╔═╡ 9609181b-e749-4e65-9e6f-5bff49231527
-Tᵤ = matriz_convolucion_trunc(u, 512)
-
-# ╔═╡ 28532792-37df-40d5-81a8-0b61694171ae
-md"""
-La matriz $T_{v}$ es:
-"""
-
-# ╔═╡ d25c9f96-c97c-49d1-a657-f7746bd58e61
-Tᵥ = matriz_convolucion_trunc(v, 512)
-
-# ╔═╡ 22445287-af01-4a2a-99b4-9a46c510ad8b
-md"""
-Con el fin de conocer algunas propiedades de la matriz $M_{u\cdot v^{\top}} = T_{v}\otimes T_{u}$ es necesario hacer uso del siguiente teorema:
-"""
-
-# ╔═╡ f84b8b24-251a-4f33-a724-0481b257a1a4
-md"""
-**Teorema.** *(Producto mixto)* Sean ${A}\in\mathbb{R}^{m \times p}$, ${B}\in\mathbb{R}^{q \times r}$, ${C}\in\mathbb{R}^{p \times n}$, y ${D}\in\mathbb{R}^{r \times s}$ matrices. Entonces, el siguiente producto de Kronecker se puede expandir como:
-
-$({A}\cdot {C}) \otimes ({B}\cdot {D}) = ({A} \otimes {B})\cdot({C} \otimes {D}).$
-
-*Demostración.* Esto es fácil de demostrar si usamos la multiplicación de matrices para matrices bloque. Podemos escribir el lado derecho (RHS) como
-
-$(A\cdot C) \otimes (B\cdot D) = \begin{pmatrix} (A\cdot C)_{11} (B\cdot D) & \dots & (A\cdot C)_{1n} (B\cdot D) \\ \vdots & \ddots & \vdots \\ (A\cdot C)_{m1} (B\cdot D) & \dots & (A\cdot C)_{mn} (B\cdot D) \end{pmatrix}.$
-
-El lado izquierdo (LHS) se puede expandir como
-
-$(A \otimes B)\cdot(C \otimes D) = \begin{pmatrix} a_{11} B & \dots & a_{1p} B \\ \vdots & \ddots & \vdots \\ a_{m1} B & \dots & a_{mp} B \end{pmatrix} \cdot\begin{pmatrix} c_{11} D & \dots & c_{1n} D \\ \vdots & \ddots & \vdots \\ c_{p1} D & \dots & c_{pn} D \end{pmatrix}.$
-
-Usando la multiplicación de matrices bloque, el bloque $(i,j)$-ésimo de la LHS es
-
-$(\text{LHS})_{ij} = \sum_{k=1}^p (a_{ik} B) \cdot(c_{kj} D).$
-
-Esto se puede reescribir como
-
-$(\text{LHS})_{ij} = \sum_{k=1}^p (a_{ik} c_{kj}) (B \cdot D).$
-
-Finalmente, podemos reconocer que la expresión $\sum_{k=1}^p (a_{ik} c_{kj})$ es precisamente el $(i,j)$-ésimo elemento de la matriz $A C$, por lo que obtenemos
-
-$(\text{LHS})_{ij} = (A \cdot C)_{ij} (B\cdot D).$
-
-Por lo tanto, concluimos que
-
-$(A\cdot C) \otimes (B\cdot D) = (A \otimes B)\cdot(C \otimes D).$
-
-**Corolario.** El producto de Kronecker preserva la descomposición en valores singulares.
-
-"""
-
-# ╔═╡ 2cb6f484-a392-405c-8a17-1c75f56b96fa
-md"""
-El producto mixto entre el producto de Kronecker y el producto común de matrices nos permite hacer lo siguiente: Si tenemos la descomposición en valores singulares de $T_{u}$ y $T_{v}$
--  $T_{u}  = U_{u}\Sigma_{u}V_{u}^{\top}$
--  $T_{v}  = U_{v}\Sigma_{v}V_{v}^{\top}$
-entonces la descomposición en valores singulares de $M_{u\cdot v^{\top}}$ es 
-
-$M_{u\cdot v^{\top}} = U \Sigma V^{\top}$ 
-
-donde
-
--  $U = U_{v}\otimes U_{u}$
--  $\Sigma = \Sigma_{v}\otimes \Sigma_{u}$
--  $V = V_{v}\otimes V_{u}$
-"""
-
-# ╔═╡ a7724f6d-5b36-4993-9982-627a73d41243
-Uᵤ, Σᵤ, Vᵤ = svd(Tᵤ)
-
-# ╔═╡ 6afed8e7-49e9-4a73-8aee-795e15deaba0
-Uᵥ, Σᵥ, Vᵥ = svd(Tᵥ)
-
-# ╔═╡ 0770dd5d-f843-4b3a-bf46-847b467ef9ff
-md"""
-Graficamos los valores singulares de las matrices $T_u$ y $T_v$.
-"""
-
-# ╔═╡ 5690a382-23ef-4b13-9daa-d8ab45870ad7
+# ╔═╡ 9a4aaa0e-7e85-4b22-8063-0919d29b08ed
 begin
-	plot(Σᵤ,label="Tᵤ",xlabel="Índice",ylabel="Valor singular",lw=2)
-	plot!(Σᵥ,label="Tᵥ",xlabel="Índice",lw=2)
+	# Función para calcular el índice SSIM entre dos imágenes
+	function calcular_ssim(I, R)
+	    # Asegúrate de que las imágenes tengan el mismo tamaño
+	    if size(I) != size(R)
+	        throw(ErrorException("Las imágenes deben tener el mismo tamaño"))
+	    end
+	
+	    # Convertir las imágenes a formato flotante para asegurar la precisión en los cálculos
+	    I = float(I)
+	    R = float(R)
+	
+	    # Cálculos de las medias (μ) de las imágenes
+	    μI = mean(I)
+	    μR = mean(R)
+	
+	    # Cálculos de las varianzas (σ²) y la covarianza (σ)
+	    σI2 = var(I)
+	    σR2 = var(R)
+	    σIR = cov(vec(I), vec(R))
+	
+	    # Parámetros de estabilización
+	    c1 = 6.5025
+	    c2 = 58.5225
+	
+	    # Fórmula SSIM con corrección de difusión
+	    numerator = (2 * μI * μR + c1) * (2 * σIR .+ c2)
+	    denominator = (μI^2 + μR^2 + c1) * (σI2 + σR2 + c2)
+	
+	    ssim = numerator / denominator
+	    return ssim
+	end
+	ssim_value = calcular_ssim(I, R)
+	println("El índice de similitud estructural (SSIM) es: $ssim_value")
 end
 
-# ╔═╡ 991edf6d-e61a-4a10-a1f4-d98e9014e756
-md"""$\texttt{Figura 5.}$"""
-
-# ╔═╡ c4ac11fd-99fd-4315-8698-1c6216af4eb1
+# ╔═╡ 1df9d895-07ff-45e2-b558-4097271b62be
 md"""
-Calculamos los valores singulares de la matriz $M_{u\cdot v^{\top}}$ y luego los graficamos.
+## Error relativo
 """
 
-# ╔═╡ f9d0918b-78aa-4836-87fe-ced9d9e91239
-Σ = kron(Σᵥ,Σᵤ)
-
-# ╔═╡ 50a9c393-6fb5-447c-add6-08bd622e950c
-Σᵤ
-
-# ╔═╡ 37266eb1-d5dc-4bef-b31d-7f967c88df66
-plot(Σ,label=false, xlabel="Índice", ylabel="Valor singular", title="Valores singulares de la matriz del problema inverso")
-
-# ╔═╡ c1db2105-49ab-4768-86d2-cf10ac1abf97
-md"""$\texttt{Figura 6.}$"""
-
-# ╔═╡ 1333f1d1-0516-470e-bda6-3e11b8f76e8a
+# ╔═╡ 653336fa-c30b-4041-a324-8ef38f2cbc70
 md"""
-Puede observarse que de los $512^2$ valores singulares de la matriz $M_{u\cdot v^{\top}}$ los valores con más masa corresponden a los primeros $50000$ valores, después de estos, los valores singulares no aportan mucha información al problema inverso puesto que se encuentran muy cerca a cero.
+El **Error Relativo** es una métrica que compara las diferencias entre dos matrices, en este caso entre las matrices $I$ (imagen procesada) y $R$ (imagen de referencia), y proporciona una medida de la magnitud del error en relación con la magnitud de la imagen de referencia. Este tipo de métrica es útil para evaluar la precisión de una restauración o procesamiento de imagen.
+
+El **Error Relativo** se calcula utilizando la siguiente fórmula:
+
+$Err(I, R) = 100 \cdot \frac{\| I - R \|_F}{\| R \|_F} \%$
+
+Donde:
+-  $\| A \|_F$ es la norma de Frobenius de una matriz $A$, que se calcula como la raíz cuadrada de la suma de los cuadrados de todos sus elementos:
+  
+  $\| A \|_F = \sqrt{\sum_{i=1}^{n} \sum_{j=1}^{m} |a_{ij}|^2}$
+
+ En este caso, $A$ es una matriz de tamaño $n \times m$, y sus entradas están dadas por los números $a_{ij}$, con $i = 1, \ldots, n$ y $j = 1, \ldots, m$.
+
+El **Error Relativo** proporciona una medida del error en relación con la magnitud de la imagen original. Un valor bajo de **Error Relativo** indica que la imagen procesada es similar a la imagen de referencia, mientras que un valor alto sugiere una mayor diferencia entre las imágenes.
+
+Esta métrica es particularmente útil cuando se desea evaluar el rendimiento de un algoritmo de procesamiento de imágenes sin tener en cuenta el rango absoluto de las intensidades de píxeles, sino su relación con la imagen original.
+
 """
 
-# ╔═╡ 264f4e99-4173-4ce1-80db-0e6eef38695f
-md"""
-Se debe tener cuidado dado que, a pesar de que el producto de Kronecker conserva la de descomposición en valores singulares, la matriz $\Sigma$ **no** tiene los valores ordenados de manera descendente en su diagonal. Para probar esto graficamos los primeros $512\cdot 5 = 2560$ valores en la diagonal de $\Sigma$ y evidenciamos que no hay un comportamiento descendente.
-"""
-
-# ╔═╡ 5014f95d-4222-411c-a481-0fcd8755c220
-plot(Σ[1:2560],label=false, xlabel="Índice", ylabel="Valor singular", title=L"Valores singulares de la matriz $\Sigma$")
-
-# ╔═╡ b62391fc-feaf-477d-9243-9af33610b60e
-md"""$\texttt{Figura 7.}$"""
-
-# ╔═╡ 6791a7c5-fef6-4f93-848c-dfb4ac441092
-md"""
-Considerando el modelo $vec(Y) = M_{K}\cdot {vec}(X)$ sin ruido, invertimos el operador $M_K$ para recuperar $vec(X)$ de la siguiente manera:
-
-$\begin{align*}
-vec(Y) &= M_{K}\cdot vec(X)\\
-vec(Y) &= U\cdot\Sigma\cdot V^{\top}\cdot vec(X)\\
-V\cdot\Sigma^{\dagger}\cdot U^{\top}\cdot vec(Y) &=  vec(X)\\
-((V_{v}\cdot\Sigma_{v}^{\dagger}\cdot U_{v}^{\top})\otimes(V_{u}\cdot\Sigma_{u}^{\dagger}\cdot U_{u}^{\top}))\cdot vec(Y) &=  vec(X),\\
-\end{align*}$
-
-por tanto,
-
-
-$vec(X) = vec\left((V_{u}\cdot\Sigma_{u}^{\dagger}\cdot U_{u}^{\top}) \cdot Y\cdot (V_{v}\cdot\Sigma_{v}^{\dagger}\cdot U_{v}^{\top})^{\top}\right)$
-
-$vec(X) = vec\left((V_{u}\cdot\Sigma_{u}^{\dagger}\cdot U_{u}^{\top}) \cdot Y\cdot (U_{v}\cdot\Sigma_{v}^{\dagger}\cdot V_{v}^{\top})\right)$
-
-$X = (V_{u}\cdot\Sigma_{u}^{\dagger}\cdot U_{u}^{\top}) \cdot Y\cdot (U_{v}\cdot\Sigma_{v}^{\dagger}\cdot V_{v}^{\top})$
-"""
-
-# ╔═╡ daf569d1-f5e0-4422-aa08-d1b06d8e8073
-md"""
-En la siguiente función hacemos la recuperación de $X$ por medio de la última ecuación.
-"""
-
-# ╔═╡ 45594130-a939-4673-b69c-cf82a816799e
-function inverse(img)
-	Y = channelview(img)
-	left = Vᵤ * diagm(1 ./ Σᵤ) * Uᵤ'
-	right = Uᵥ * diagm(1 ./ Σᵥ) * Vᵥ'
-	X = left * Y * right
-	return X
-end
-
-# ╔═╡ 4d79fbd1-47b6-47f5-8814-c60b722dbbbb
-md"""
-Los resultados para la recuperación partiendo de la imagen procesada sin ruido y con ruido se muestran a continuación.
-"""
-
-# ╔═╡ e4bba822-23bf-4fef-b1e5-2178c6e6821b
+# ╔═╡ 731c1a25-0428-4975-ad27-ba0d1735cd1c
 begin
-	p3 = plot(Gray.(inverse(camfilter)),axis=false, grid=false, title="Recuperación sin ruido")
-	p4 = plot(Gray.(inverse(camfilternoise)),axis=false, grid=false, title="Recuperación con ruido")
-	plot(p3,p4,layout=(1,2), size=(800,400))
+	function calcular_error_relativo(I, R)
+	    # Calculamos la norma Frobenius de las matrices I - R y R
+	    error_frobenius = norm(vec(I-R))
+	    norma_frobenius_ref = norm(vec(R))
+	    
+	    # Calculamos el error relativo
+	    error_relativo = (error_frobenius / norma_frobenius_ref) * 100
+	    return error_relativo
+	end
+	error_relativo_value = calcular_error_relativo(I, R)
+	println("El error relativo es: $error_relativo_value%")
 end
 
-# ╔═╡ b7e279ad-4400-4013-a363-2bbc104913b7
-md"""$\texttt{Figura 8.}$"""
-
-# ╔═╡ f68d17e2-719d-4d58-807c-041bc2c44602
+# ╔═╡ 300bd6a4-9cda-42ac-ae11-2bafed69ed80
 md"""
-Cualitativamente la solución directa por medio de la matriz del modelo lineal no asegura buenos resultados para recuperar la imágen original. Esto ocurre dado que la matriz presenta valores singulares muy cercanos a cero, por ende en la inversión, estos valores casi nulos dañan la solución dado que añaden ruido en la recuperación de la imagen original. A continuación se muestran los primeros 2560 valores singulares de la matriz $\Sigma$.
+# Métricas de calidad sin referencia
 """
 
-# ╔═╡ b1070518-aacc-44f5-ad26-52fa4c1c6107
-scatter( 1 ./Σ[1:2560],label=false, xlabel="Índice", ylabel="Valor singular", title=L"Valores singulares de la matriz $\Sigma^{-1}$")
-
-# ╔═╡ b5839619-5456-4215-a682-9d87c6095e86
-md"""$\texttt{Figura 9.}$"""
-
-# ╔═╡ 85f4c493-63e1-42ce-b6b5-eaa0cdc52bce
+# ╔═╡ 935df1e6-431c-4206-ae7e-1fd1653d3b95
 md"""
-# Modelo lineal con regularización
+Los algoritmos sin referencia usan características estadísticas de la imagen de entrada para evaluar la calidad de la imagen.
 """
 
-# ╔═╡ 05489b85-4612-4498-b57d-7f6ab3d5e960
+# ╔═╡ d4c41a1e-cc43-4d12-bb71-ba4d083565b8
 md"""
-Como se pudo evidenciar en la sección anterior no se obtuvieron buenos resultados al intentar recuperar la imagen original $X$, en esta sección se presentan algunos métodos para afrontar esta dificultad.
-
-Para simplicar la notación denominaremos $x= vec(X)$ y $y=vec(Y)$.
+## BRISQUE
 """
 
-# ╔═╡ 2a5beb83-1635-4ed3-8a8c-1e27e157b0f0
+# ╔═╡ d7dd657e-e5ba-417c-b9c6-0d44a109e397
 md"""
-## Regularización de Tikhonov
+**Puntuación de la Calidad de la Imagen sin Referencia con el Evaluador de la Calidad Espacial de la Imagen sin Referencia/a Ciegas (BRISQUE)**
+
+El **BRISQUE** (Blind/Referenceless Image Spatial Quality Evaluator) es una métrica que evalúa la calidad de una imagen sin necesidad de una imagen de referencia. A diferencia de las métricas que requieren una imagen original para comparar, **BRISQUE** estima la calidad de la imagen basándose en características estadísticas extraídas de la imagen misma, lo que lo hace útil para evaluar la calidad perceptual en situaciones donde no se tiene acceso a una referencia.
+
+**Método de cálculo**
+
+El método **BRISQUE** se basa en una evaluación de la estructura espacial local y utiliza un conjunto de características estadísticas relacionadas con la percepción humana de la calidad visual. Estas características incluyen la medida de la distorsión de la imagen a nivel de textura y otras propiedades relacionadas con la percepción de la calidad.
+
+El proceso de cálculo de la puntuación **BRISQUE** involucra los siguientes pasos:
+
+1. **Extracción de características**: Se extraen características estadísticas de la imagen que incluyen la variabilidad de la luminancia, el contraste y la estructura de la imagen a nivel local.
+   
+2. **Modelado de la calidad**: Estas características se analizan para determinar la calidad global de la imagen utilizando un modelo entrenado previamente. Este modelo fue entrenado utilizando una base de imágenes y sus respectivas puntuaciones de calidad obtenidas de evaluaciones humanas.
+
+3. **Puntuación final**: La puntuación final se obtiene como una medida de la calidad perceptual de la imagen, donde un valor bajo indica una imagen de alta calidad y un valor alto indica una imagen de baja calidad.
+
+**Consideraciones**
+
+El **BRISQUE** es una métrica ciega, lo que significa que no requiere una imagen de referencia para hacer su evaluación. Esto lo convierte en una herramienta útil para medir la calidad de imágenes en situaciones donde no se dispone de una imagen original de referencia.
+
+La puntuación **BRISQUE** tiene una correlación significativa con la percepción humana de la calidad de la imagen, lo que lo convierte en una de las métricas más efectivas para evaluar imágenes en condiciones reales de procesamiento, como la compresión o el filtrado, donde las distorsiones son comunes.
+
+Al no necesitar una referencia, **BRISQUE** es muy útil en aplicaciones prácticas donde la imagen de referencia no está disponible, como en la evaluación de sistemas de visión por computadora o en la mejora de la calidad de imágenes en sistemas en tiempo real.
+
 """
 
-# ╔═╡ 88357769-7764-4354-bf1a-86980b345c7a
+# ╔═╡ 2335c2e3-a721-4594-926f-3863c1be52b4
+
+
+# ╔═╡ 8a5ab2ec-c931-4946-990a-f07ad8463114
 md"""
-Considere un número real $\alpha$ positivo. Una manera de regularizar el problema inverso para encontrar $X$ es hallando el vector $x$ que es minimizador del siguiente problema de optimización:
-
-$\underset{x}{min}\ \frac{1}{2}\|y - M_{k}x\|_{2}^{2} + \frac{\alpha}{2}\|x\|_{2}^{2}$
-
-usando la descomposición en valores singulares de $M_{K}$ se puede transformar el anterior problema:
-
-$\underset{\hat{x}}{min}\ \frac{1}{2}\|\hat{y} - \Sigma \hat{x}\|_{2}^{2} + \frac{\alpha}{2}\|\hat{x}\|_{2}^{2}$
-
-en donde $\hat{x}= V^{\top}x$ y $\hat{y}= U^{\top}y$. Este problema tiene una solución explícita y se puede ver que es igual a 
-
-$\hat{x}_{minimizador} = \left(\Sigma^{\top}\Sigma + \alpha I\right)^{-1}\Sigma^{\top}\hat{y},$
-
-así, $x_{minimizador} = V \hat{x}_{minimizador}$.
+## NIQE
 """
 
-# ╔═╡ c81938a2-7720-4b2c-a620-9d82189b8e0f
+# ╔═╡ 584814b8-bd47-4cc4-ae68-2e6ae8a6e18e
 md"""
-Seleccionamos el valor de $\alpha$:
+
 """
 
-# ╔═╡ 578af934-0c6e-424c-88c1-7f8c69c5b881
-α = 0.01
+# ╔═╡ 40b04914-1921-4828-84ad-a99f20d78fc0
 
-# ╔═╡ d61b8630-83ef-4743-981a-bed47ed5bd79
+
+# ╔═╡ a1031f8d-b356-4fcc-8d5e-ca3acd3189fa
 md"""
-Graficamos los valores en la diagonal de la matriz diagonal $(\Sigma^\top \Sigma + \alpha I)^{-1}\Sigma^\top$:
+## PIQE
 """
 
-# ╔═╡ 3acdef8b-ea7f-4e0e-bea4-86e951450788
-begin
-	Sigmaaux = 1 ./(Σ .^2 .+ α) .* Σ
-	plot(Sigmaaux[1:2560], label=false, xlabel="Índices", ylabel="Valor singular", title=L"Valores singulares de la matriz $(\Sigma^\top \Sigma + \alpha I)^{-1}\Sigma^\top$")
-end
-
-# ╔═╡ d6c2bc4e-c624-4475-ae16-7105703f25b8
-md"""$\texttt{Figura 10.}$"""
-
-# ╔═╡ 5b1ff33a-4754-4a5b-8123-5aceb4b52cca
+# ╔═╡ ce7dabf9-59c8-469c-be3c-980c5b06a18e
 md"""
-A continuación creamos la función que toma la imagen procesada y devuelve una aproximación a la imagen original por medio de la regularización de Tikhonov.
+
 """
 
-# ╔═╡ dee9b6f8-43d1-4ee8-8c67-c423ee6263bd
-function inverseTikhonov(img,α)
-	Y = channelview(img)
-	yhat = vec(Uᵤ' * Y * Uᵥ)
-	Matrix = (1 ./(Σ .^2 .+ α)) .* Σ
-	xhat = Matrix .* yhat
-	Xhat = reshape(xhat, (512,512))
-	X = Vᵤ * Xhat * Vᵥ'
-	return X
-end
+# ╔═╡ 3a3ae995-1b9f-4d35-9833-5a9389288b5e
 
-# ╔═╡ d92230f4-7922-4e0b-9cf1-b9bc808bc4f1
-begin
-	p5 = plot(Gray.(inverseTikhonov(camfilter, α)),axis=false, grid=false, title="Recuperación sin ruido")
-	p6 = plot(Gray.(inverseTikhonov(camfilternoise, α)),axis=false, grid=false, title="Recuperación con ruido")
-	plot(p5,p6,layout=(1,2), size=(800,400))
-end
 
-# ╔═╡ d627e42e-20f1-428c-a9a7-f8ddb4d3395d
-md"""$\texttt{Figura 11.}$"""
-
-# ╔═╡ fcd1857a-22c2-498c-9842-db4b87405c4d
-md"""
-## Regularización con descomposición en valores singulares truncada
-"""
-
-# ╔═╡ 526bdc20-e0c8-4b05-a5d1-6f409f338c38
-md"""
-Recordemos que cuando no se tenía en cuenta la regularización para resolver el problema inverso se tenía que:
-
-$V\cdot\Sigma^{\dagger}\cdot U^{\top}\cdot y =  x,$
-
-esto puede ser reescrito como
-
-$\sum_{i=1}^{512^2}\frac{v_i\cdot u_{i}^{\top}}{\sigma_i} y = x,$
-
-donde $v_i$ y $u_i$ son las $i$-ésimas columnas de $V$ y $U$, respectivamente. De esta manera
-
-$\begin{align*}
-\sum_{i=1}^{512^2}\frac{v_i\cdot u_{i}^{\top}}{\sigma_i} y &=  \sum_{i=1}^{512^2}\frac{V\cdot e_i\cdot e_{i}^{\top}\cdot U^{\top}}{\sigma_i} y\\
-&= V \sum_{i=1}^{512^2}\frac{e_i\cdot e_{i}^{\top}}{\sigma_i} \hat{y}\\
-&= V \sum_{i=1}^{512^2}\frac{e_i^{\top}\cdot \hat{y}}{\sigma_i} e_{i}\\
-&= V \sum_{i=1}^{512^2}\frac{\hat{y}_{i}}{\sigma_i} e_{i}\\
-&= V \begin{pmatrix}\hat{y}_{1}/\sigma_1 \\
-\hat{y}_{2}/\sigma_2\\
-\vdots\\
-\hat{y}_{512^2}/\sigma_{512^2}
-\end{pmatrix}
-\end{align*}$
-"""
-
-# ╔═╡ 960aa457-7913-46d9-913d-cabe186ed71d
-md"""
-Para realizar el truncamiento se elige un valor $p$ de tal manera que $1\leq p \leq 512^2$ para truncar la anterior representación y obtener:
-
-$\sum_{i=1}^{p}\frac{v_i\cdot u_{i}^{\top}}{\sigma_i} y = V \begin{pmatrix}\hat{y}_{1}/\sigma_1 \\
-\vdots\\
-\hat{y}_{p}/\sigma_p\\
-0\\
-\vdots\\
-0
-\end{pmatrix}$
-"""
-
-# ╔═╡ 5d7aabf3-927d-4540-9611-4dd8c6deb194
-md"""
-No obstante, el método de truncamiento asume que los valores singulares se encuentran ordenados de manera descendiente y dado que nuestra matriz del problema lineal viene de un producto de Kronecker entonces este ordenamiento no se tiene, como se evidenció anteriormente.
-
-Recordemos que la inversión sin ningún método de regularización es la siguiente:
-
-$X = (V_{u}\cdot\Sigma_{u}^{\dagger}\cdot U_{u}^{\top}) \cdot Y\cdot (U_{v}\cdot\Sigma_{v}^{\dagger}\cdot V_{v}^{\top});$
-
-para aplicar la regularización TSVD en este contexto se propone tomar $p_1$ valores singulares de $T_u$ y $p_2$ valores singulares de la matriz $T_v$, para de esta manera asegurar que se seleccionan valores que no se encuentran cerca a cero y corregir el problema de la inversión sin ninguna regularización.
-"""
-
-# ╔═╡ 8407e0e7-2722-4371-b4c2-1b25f6284d60
-function inverseTSVD(img,p)
-	Y = channelview(img)
-	yhat = vec(Uᵤ' * Y * Uᵥ)
-	Σᵤ_tr = [Σᵤ[1:p[1]]; zeros(512-p[1])]
-	Σᵥ_tr = [Σᵥ[1:p[2]]; zeros(512-p[2])]
-	Σ_tr = kron(Σᵥ_tr,Σᵤ_tr)
-	InvΣ_tr = [x == 0 ? 0 : 1 / x for x in Σ_tr]
-	Yhat_S = reshape(yhat .* InvΣ_tr, (512,512))
-	X = Vᵤ * Yhat_S * Vᵥ' 
-	return X	
-end
-
-# ╔═╡ 0da5c31e-b334-4eb4-a911-fdddc2fe32a5
-begin
-	p₁ = 250
-	p₂ = 50
-end
-
-# ╔═╡ e675a394-02d4-49af-aff8-56636d2d2d79
-md"""
-A continuación se muestra el resultado del método de inversión regularizado por truncamiento.
-"""
-
-# ╔═╡ ec368cbb-49ea-45db-838c-56b461396dee
-begin
-	p9 = plot(Gray.(inverseTSVD(camfilter,[p₁,p₂])),axis=false, grid=false, title="Recuperación sin ruido")
-	p10 = plot(Gray.(inverseTSVD(camfilternoise,[p₁,p₂])),axis=false, grid=false, title="Recuperación con ruido")
-	plot(p9,p10,layout=(1,2), size=(800,400))
-end
-
-# ╔═╡ 05b8fb8d-2d94-416f-98ff-808145fac041
-md"""$\texttt{Figura 12.}$"""
-
-# ╔═╡ cecd20e5-5b7e-4061-92d0-dff450931a96
+# ╔═╡ 534ecf5b-9050-499e-b6f4-a2df527c6d5a
 md"""
 # Referencias
 """
 
-# ╔═╡ 3d19f24e-2990-4da6-b5a2-58ea8c6e717c
+# ╔═╡ 78a07ba9-5811-40c0-9201-103ba6a5953f
 md"""
-[1] Kaipio, J., & Somersalo, E. (2006). Statistical and computational inverse problems. Springer Science & Business Media.
+[1] Exequiel Fuentes, J., & Ruiz Vera, J. M. (2021). Restauración de imágenes borrosas usando un modelo regularizado de programación lineal. Ingeniería, 26(2), 254-272. https://doi.org/10.14483/23448393.17240
+
+[2] Métricas de calidad de imagen . (2024). Centro de Ayuda; MathWorks. https://la.mathworks.com/help/images/image-quality-metrics.html
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -809,18 +357,15 @@ Colors = "5ae59095-9a9b-59fe-a467-6f913c188581"
 Distributions = "31c24e10-a181-5473-b8eb-7969acd0382f"
 FileIO = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
 HypertextLiteral = "ac1192a8-f4b3-4bfe-ba22-af5b92cd3ab2"
-ImageFiltering = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
 ImageIO = "82e4d734-157c-48bb-816b-45c225c6df19"
 ImageShow = "4e3cecfd-b093-5904-9786-8bbb286a6a31"
 Images = "916415d5-f1e6-5110-898d-aaa5f9f070e0"
-LaTeXStrings = "b964fa9f-0449-5b57-a5c2-d3ea65f4040f"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
 Plots = "91a5bcdd-55d7-5caf-9e0b-520d859cae80"
 PlutoUI = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
-TestImages = "5e47fb64-e119-507b-a336-dd2b206d9990"
 
 [compat]
 ColorVectorSpace = "~0.11.0"
@@ -828,26 +373,22 @@ Colors = "~0.13.0"
 Distributions = "~0.25.113"
 FileIO = "~1.16.6"
 HypertextLiteral = "~0.9.5"
-ImageFiltering = "~0.7.9"
 ImageIO = "~0.6.9"
 ImageShow = "~0.3.8"
 Images = "~0.26.1"
-LaTeXStrings = "~1.4.0"
 Plots = "~1.40.7"
 PlutoUI = "~0.7.23"
-Statistics = "~1.11.1"
 StatsBase = "~0.34.3"
 StatsPlots = "~0.15.7"
-TestImages = "~1.9.0"
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000002
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.1"
+julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "8b40a704aa821c7ab7038216dcbe57169de54d18"
+project_hash = "ca923e95a2cf1dd08c2a15370782eef1d85f53fd"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -884,7 +425,7 @@ version = "1.1.3"
 
 [[deps.ArgTools]]
 uuid = "0dad84c5-d112-42e6-8d28-ef12dabb789f"
-version = "1.1.2"
+version = "1.1.1"
 
 [[deps.ArnoldiMethod]]
 deps = ["LinearAlgebra", "Random", "StaticArrays"]
@@ -905,21 +446,16 @@ uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
-deps = ["Adapt", "LinearAlgebra"]
-git-tree-sha1 = "017fcb757f8e921fb44ee063a7aafe5f89b86dd1"
+deps = ["Adapt", "LinearAlgebra", "Requires", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "c5aeb516a84459e0318a02507d2261edad97eb75"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.18.0"
+version = "7.7.1"
 
     [deps.ArrayInterface.extensions]
     ArrayInterfaceBandedMatricesExt = "BandedMatrices"
     ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
     ArrayInterfaceCUDAExt = "CUDA"
-    ArrayInterfaceCUDSSExt = "CUDSS"
-    ArrayInterfaceChainRulesCoreExt = "ChainRulesCore"
-    ArrayInterfaceChainRulesExt = "ChainRules"
     ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
-    ArrayInterfaceReverseDiffExt = "ReverseDiff"
-    ArrayInterfaceSparseArraysExt = "SparseArrays"
     ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
     ArrayInterfaceTrackerExt = "Tracker"
 
@@ -927,18 +463,12 @@ version = "7.18.0"
     BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
     BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-    CUDSS = "45b445bb-4962-46a0-9369-b4df9d0f772e"
-    ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
-    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
     Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 
 [[deps.Artifacts]]
 uuid = "56f22d72-fd6d-98f1-02f0-08ddc0907c33"
-version = "1.11.0"
 
 [[deps.AxisAlgorithms]]
 deps = ["LinearAlgebra", "Random", "SparseArrays", "WoodburyMatrices"]
@@ -954,7 +484,6 @@ version = "0.4.7"
 
 [[deps.Base64]]
 uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
-version = "1.11.0"
 
 [[deps.BitFlags]]
 git-tree-sha1 = "0691e34b3bb8be9307330f88d1a3c3f25466c24d"
@@ -969,9 +498,9 @@ version = "0.1.6"
 
 [[deps.Bzip2_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "35abeca13bc0425cff9e59e229d971f5231323bf"
+git-tree-sha1 = "8873e196c2eb87962a2048b3b8e08946535864a1"
 uuid = "6e34b625-4abd-537c-b88f-471c36dfa7a0"
-version = "1.0.8+3"
+version = "1.0.8+2"
 
 [[deps.CEnum]]
 git-tree-sha1 = "389ad5c84de1ae7cf0e28e381131c98ea87d54fc"
@@ -1035,10 +564,12 @@ deps = ["FixedPointNumbers", "Random"]
 git-tree-sha1 = "c7acce7a7e1078a20a285211dd73cd3941a871d6"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
 version = "0.12.0"
-weakdeps = ["StyledStrings"]
 
     [deps.ColorTypes.extensions]
     StyledStringsExt = "StyledStrings"
+
+    [deps.ColorTypes.weakdeps]
+    StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
 
 [[deps.ColorVectorSpace]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "Requires", "Statistics", "TensorCore"]
@@ -1056,11 +587,6 @@ git-tree-sha1 = "64e15186f0aa277e174aa81798f7eb8598e0157e"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.13.0"
 
-[[deps.CommonWorldInvalidations]]
-git-tree-sha1 = "ae52d1c52048455e85a387fbee9be553ec2b68d0"
-uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
-version = "1.0.0"
-
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
 git-tree-sha1 = "8ae8d32e09f0dcf42a36b90d4e17f5dd2e4c4215"
@@ -1074,7 +600,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.1+0"
+version = "1.0.5+0"
 
 [[deps.ComputationalResources]]
 git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
@@ -1139,7 +665,6 @@ version = "1.0.0"
 [[deps.Dates]]
 deps = ["Printf"]
 uuid = "ade2ca70-3891-5945-98fb-dc099432e06a"
-version = "1.11.0"
 
 [[deps.Dbus_jll]]
 deps = ["Artifacts", "Expat_jll", "JLLWrappers", "Libdl"]
@@ -1167,7 +692,6 @@ weakdeps = ["ChainRulesCore", "SparseArrays"]
 [[deps.Distributed]]
 deps = ["Random", "Serialization", "Sockets"]
 uuid = "8ba89e20-285c-5b6f-9357-94700520ee1b"
-version = "1.11.0"
 
 [[deps.Distributions]]
 deps = ["AliasTables", "FillArrays", "LinearAlgebra", "PDMats", "Printf", "QuadGK", "Random", "SpecialFunctions", "Statistics", "StatsAPI", "StatsBase", "StatsFuns"]
@@ -1210,9 +734,9 @@ version = "0.1.11"
 
 [[deps.Expat_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "f42a5b1e20e009a43c3646635ed81a9fcaccb287"
+git-tree-sha1 = "e51db81749b0777b2147fbe7b783ee79045b8e99"
 uuid = "2e619515-83b5-522b-bb60-26c02a35a201"
-version = "2.6.4+2"
+version = "2.6.4+1"
 
 [[deps.FFMPEG]]
 deps = ["FFMPEG_jll"]
@@ -1240,9 +764,9 @@ version = "1.8.0"
 
 [[deps.FFTW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "5cf2433259aa3985046792e2afc01fcec076b549"
+git-tree-sha1 = "4d81ed14783ec49ce9f2e168208a12ce1815aa25"
 uuid = "f5851436-0d7a-5f13-b9de-f02708fd171a"
-version = "3.3.10+2"
+version = "3.3.10+1"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
@@ -1256,7 +780,6 @@ weakdeps = ["HTTP"]
 
 [[deps.FileWatching]]
 uuid = "7b1f6079-737a-58dc-b8bc-7a2ca5c1b5ee"
-version = "1.11.0"
 
 [[deps.FillArrays]]
 deps = ["LinearAlgebra"]
@@ -1302,13 +825,12 @@ version = "1.0.16+0"
 [[deps.Future]]
 deps = ["Random"]
 uuid = "9fa8497b-333b-5362-9e8d-4d0656e87820"
-version = "1.11.0"
 
 [[deps.GLFW_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Libglvnd_jll", "Xorg_libXcursor_jll", "Xorg_libXi_jll", "Xorg_libXinerama_jll", "Xorg_libXrandr_jll", "libdecor_jll", "xkbcommon_jll"]
-git-tree-sha1 = "fcb0584ff34e25155876418979d4c8971243bb89"
+git-tree-sha1 = "532f9126ad901533af1d4f5c198867227a7bb077"
 uuid = "0656b61e-2033-5cc2-a64a-77c0f6c09b89"
-version = "3.4.0+2"
+version = "3.4.0+1"
 
 [[deps.GR]]
 deps = ["Artifacts", "Base64", "DelimitedFiles", "Downloads", "GR_jll", "HTTP", "JSON", "Libdl", "LinearAlgebra", "Pkg", "Preferences", "Printf", "Random", "Serialization", "Sockets", "TOML", "Tar", "Test", "UUIDs", "p7zip_jll"]
@@ -1336,15 +858,15 @@ version = "9.55.0+4"
 
 [[deps.Giflib_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7141135f9073f135e68c5ee8df44fb0fb80689b8"
+git-tree-sha1 = "0224cce99284d997f6880a42ef715a37c99338d1"
 uuid = "59f7168a-df46-5410-90c8-f2779963d0ec"
-version = "5.2.2+1"
+version = "5.2.2+0"
 
 [[deps.Glib_jll]]
 deps = ["Artifacts", "Gettext_jll", "JLLWrappers", "Libdl", "Libffi_jll", "Libiconv_jll", "Libmount_jll", "PCRE2_jll", "Zlib_jll"]
-git-tree-sha1 = "b0036b392358c80d2d2124746c2bf3d48d457938"
+git-tree-sha1 = "48b5d4c75b2c9078ead62e345966fa51a25c05ad"
 uuid = "7746bdde-850d-59dc-9ae8-88ece973131d"
-version = "2.82.4+0"
+version = "2.82.2+1"
 
 [[deps.Graphics]]
 deps = ["Colors", "LinearAlgebra", "NaNMath"]
@@ -1371,9 +893,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "PrecompileTools", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "c67b33b085f6e2faf8bf79a61962e7339a81129c"
+git-tree-sha1 = "627fcacdb7cb51dc67f557e1598cdffe4dda386d"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.15"
+version = "1.10.14"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
@@ -1561,7 +1083,6 @@ version = "2024.2.1+0"
 [[deps.InteractiveUtils]]
 deps = ["Markdown"]
 uuid = "b77e0a4c-d291-57a0-90e8-8db25a27a240"
-version = "1.11.0"
 
 [[deps.Interpolations]]
 deps = ["Adapt", "AxisAlgorithms", "ChainRulesCore", "LinearAlgebra", "OffsetArrays", "Random", "Ratios", "Requires", "SharedArrays", "SparseArrays", "StaticArrays", "WoodburyMatrices"]
@@ -1613,9 +1134,9 @@ version = "0.1.9"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
-git-tree-sha1 = "a007feb38b422fbdab534406aeca1b86823cb4d6"
+git-tree-sha1 = "be3dc50a92e5a386872a493a10050136d4703f9b"
 uuid = "692b3bcd-3c85-4b1f-b108-f13ce0eb3210"
-version = "1.7.0"
+version = "1.6.1"
 
 [[deps.JSON]]
 deps = ["Dates", "Mmap", "Parsers", "Unicode"]
@@ -1631,9 +1152,9 @@ version = "0.1.5"
 
 [[deps.JpegTurbo_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "3447a92280ecaad1bd93d3fce3d408b6cfff8913"
+git-tree-sha1 = "25ee0be4d43d0269027024d75a24c24d6c6e590c"
 uuid = "aacddb02-875f-59d6-b918-886e6ef4fbf8"
-version = "3.1.0+1"
+version = "3.0.4+0"
 
 [[deps.KernelDensity]]
 deps = ["Distributions", "DocStringExtensions", "FFTW", "Interpolations", "StatsBase"]
@@ -1661,9 +1182,9 @@ version = "18.1.7+0"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "16e6ec700154e8004dba90b4aec376f68905d104"
+git-tree-sha1 = "854a9c268c43b77b0a27f22d7fab8d33cdb3a731"
 uuid = "dd4b983a-f0e5-5f8d-a1b7-129d4a5fb1ac"
-version = "2.10.2+2"
+version = "2.10.2+1"
 
 [[deps.LaTeXStrings]]
 git-tree-sha1 = "dda21b8cbd6a6c40d9d02a73230f9d70fed6918c"
@@ -1695,7 +1216,6 @@ version = "0.1.17"
 [[deps.LazyArtifacts]]
 deps = ["Artifacts", "Pkg"]
 uuid = "4af54fe1-eca0-43a8-85a7-787d91b784e3"
-version = "1.11.0"
 
 [[deps.LazyModules]]
 git-tree-sha1 = "a560dd966b386ac9ae60bdd3a3d3a326062d3c3e"
@@ -1705,31 +1225,24 @@ version = "0.3.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.6.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-version = "1.11.0"
-
-[[deps.LibGit2_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
-uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
-version = "1.7.2+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
-version = "1.11.0"
 
 [[deps.Libffi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -1751,9 +1264,9 @@ version = "1.7.0+0"
 
 [[deps.Libgpg_error_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "dc4e8d10d4c6c11bf8d52dfd7213c09863c38cd5"
+git-tree-sha1 = "c6ce1e19f3aec9b59186bdf06cdf3c4fc5f5f3e6"
 uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
-version = "1.51.0+1"
+version = "1.50.0+0"
 
 [[deps.Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1763,9 +1276,9 @@ version = "1.17.0+1"
 
 [[deps.Libmount_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "d841749621f4dcf0ddc26a27d1f6484dfc37659a"
+git-tree-sha1 = "84eef7acd508ee5b3e956a2ae51b05024181dee0"
 uuid = "4b2f31a3-9ecc-558c-b454-b3730dcb73e9"
-version = "2.40.2+1"
+version = "2.40.2+0"
 
 [[deps.Libtiff_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "LERC_jll", "Libdl", "Pkg", "Zlib_jll", "Zstd_jll"]
@@ -1775,14 +1288,13 @@ version = "4.4.0+0"
 
 [[deps.Libuuid_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9d630b7fb0be32eeb5e8da515f5e8a26deb457fe"
+git-tree-sha1 = "edbf5309f9ddf1cab25afc344b1e8150b7c832f9"
 uuid = "38a345b3-de98-5d2b-a5d3-14cd9215e700"
-version = "2.40.2+1"
+version = "2.40.2+0"
 
 [[deps.LinearAlgebra]]
 deps = ["Libdl", "OpenBLAS_jll", "libblastrampoline_jll"]
 uuid = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
-version = "1.11.0"
 
 [[deps.LittleCMS_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Libtiff_jll", "Pkg"]
@@ -1792,9 +1304,9 @@ version = "2.12.0+0"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "13ca9e2586b89836fd20cccf56e57e2b9ae7f38f"
+git-tree-sha1 = "a2d09619db4e765091ee5c6ffe8872849de0feea"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.29"
+version = "0.3.28"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -1808,7 +1320,6 @@ version = "0.3.29"
 
 [[deps.Logging]]
 uuid = "56ddb016-857b-54e1-b83d-db4d58db5568"
-version = "1.11.0"
 
 [[deps.LoggingExtras]]
 deps = ["Dates", "Logging"]
@@ -1856,7 +1367,6 @@ version = "0.4.2"
 [[deps.Markdown]]
 deps = ["Base64"]
 uuid = "d6f4376e-aef5-505a-96c1-9c027394607a"
-version = "1.11.0"
 
 [[deps.MbedTLS]]
 deps = ["Dates", "MbedTLS_jll", "MozillaCACerts_jll", "NetworkOptions", "Random", "Sockets"]
@@ -1867,7 +1377,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.6+0"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1888,7 +1398,6 @@ version = "1.2.0"
 
 [[deps.Mmap]]
 uuid = "a63ad114-7e13-5084-954f-fe012c677804"
-version = "1.11.0"
 
 [[deps.MosaicViews]]
 deps = ["MappedArrays", "OffsetArrays", "PaddedViews", "StackViews"]
@@ -1898,7 +1407,7 @@ version = "0.3.4"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2023.12.12"
+version = "2022.10.11"
 
 [[deps.MultivariateStats]]
 deps = ["Arpack", "Distributions", "LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI", "StatsBase"]
@@ -1951,7 +1460,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.27+1"
+version = "0.3.21+4"
 
 [[deps.OpenEXR]]
 deps = ["Colors", "FileIO", "OpenEXR_jll"]
@@ -1974,7 +1483,7 @@ version = "2.4.0+0"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1990,9 +1499,9 @@ version = "1.1.23+1"
 
 [[deps.OpenSpecFun_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "418e63d434f5ca12b188bbb287dfbe10a5af1da4"
+git-tree-sha1 = "13652491f6856acfd2db29360e1bbcd4565d04f1"
 uuid = "efe28fd5-8261-553b-a9e1-b2916fc3738e"
-version = "0.5.5+1"
+version = "0.5.5+0"
 
 [[deps.Opus_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2008,7 +1517,7 @@ version = "1.7.0"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+1"
+version = "10.42.0+0"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
@@ -2030,9 +1539,9 @@ version = "0.5.12"
 
 [[deps.Pango_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "FriBidi_jll", "Glib_jll", "HarfBuzz_jll", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "ed6834e95bd326c52d5675b4181386dfbe885afb"
+git-tree-sha1 = "e127b609fb9ecba6f201ba7ab753d5a605d53801"
 uuid = "36c8627f-9965-5494-a995-c6b170f724f3"
-version = "1.55.5+0"
+version = "1.54.1+0"
 
 [[deps.Parameters]]
 deps = ["OrderedCollections", "UnPack"]
@@ -2058,13 +1567,9 @@ uuid = "30392449-352a-5448-841d-b1acce4e97dc"
 version = "0.43.4+0"
 
 [[deps.Pkg]]
-deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "Random", "SHA", "TOML", "Tar", "UUIDs", "p7zip_jll"]
+deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.11.0"
-weakdeps = ["REPL"]
-
-    [deps.Pkg.extensions]
-    REPLExt = "REPL"
+version = "1.9.2"
 
 [[deps.PkgVersion]]
 deps = ["Pkg"]
@@ -2149,7 +1654,6 @@ version = "1.4.3"
 [[deps.Printf]]
 deps = ["Unicode"]
 uuid = "de0858da-6303-5e67-8744-51eddeeeb8d7"
-version = "1.11.0"
 
 [[deps.ProgressMeter]]
 deps = ["Distributed", "Printf"]
@@ -2193,14 +1697,12 @@ uuid = "94ee1d12-ae83-5a48-8b1c-48b8ff168ae0"
 version = "0.7.6"
 
 [[deps.REPL]]
-deps = ["InteractiveUtils", "Markdown", "Sockets", "StyledStrings", "Unicode"]
+deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
-version = "1.11.0"
 
 [[deps.Random]]
-deps = ["SHA"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
-version = "1.11.0"
 
 [[deps.RangeArrays]]
 git-tree-sha1 = "b9039e93773ddcfc828f12aadf7115b4b4d225f5"
@@ -2315,7 +1817,6 @@ version = "1.4.8"
 
 [[deps.Serialization]]
 uuid = "9e88b42a-f829-5b0c-bbe9-9e923198166b"
-version = "1.11.0"
 
 [[deps.Setfield]]
 deps = ["ConstructionBase", "Future", "MacroTools", "StaticArraysCore"]
@@ -2326,7 +1827,6 @@ version = "1.1.1"
 [[deps.SharedArrays]]
 deps = ["Distributed", "Mmap", "Random", "Serialization"]
 uuid = "1a1011a3-84de-559e-8e89-a11a2f7dc383"
-version = "1.11.0"
 
 [[deps.Showoff]]
 deps = ["Dates", "Grisu"]
@@ -2359,7 +1859,6 @@ version = "0.1.3"
 
 [[deps.Sockets]]
 uuid = "6462fe0b-24de-5631-8697-dd941f90decc"
-version = "1.11.0"
 
 [[deps.SortingAlgorithms]]
 deps = ["DataStructures"]
@@ -2370,7 +1869,6 @@ version = "1.2.1"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-version = "1.11.0"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
@@ -2395,16 +1893,16 @@ uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.1"
 
 [[deps.Static]]
-deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools"]
-git-tree-sha1 = "87d51a3ee9a4b0d2fe054bdd3fc2436258db2603"
+deps = ["IfElse"]
+git-tree-sha1 = "b366eb1eb68075745777d80861c6706c33f588ae"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "1.1.1"
+version = "0.8.9"
 
 [[deps.StaticArrayInterface]]
-deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Static"]
-git-tree-sha1 = "96381d50f1ce85f2663584c8e886a6ca97e60554"
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "Static"]
+git-tree-sha1 = "c3668ff1a3e4ddf374fc4f8c25539ce7194dcc39"
 uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
-version = "1.8.0"
+version = "1.6.0"
 weakdeps = ["OffsetArrays", "StaticArrays"]
 
     [deps.StaticArrayInterface.extensions]
@@ -2413,9 +1911,9 @@ weakdeps = ["OffsetArrays", "StaticArrays"]
 
 [[deps.StaticArrays]]
 deps = ["LinearAlgebra", "PrecompileTools", "Random", "StaticArraysCore"]
-git-tree-sha1 = "47091a0340a675c738b1304b58161f3b0839d454"
+git-tree-sha1 = "777657803913ffc7e8cc20f0fd04b634f871af8f"
 uuid = "90137ffa-7385-5640-81b9-e52037218182"
-version = "1.9.10"
+version = "1.9.8"
 weakdeps = ["ChainRulesCore", "Statistics"]
 
     [deps.StaticArrays.extensions]
@@ -2428,14 +1926,9 @@ uuid = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
 version = "1.4.3"
 
 [[deps.Statistics]]
-deps = ["LinearAlgebra"]
-git-tree-sha1 = "ae3bb1eb3bba077cd276bc5cfc337cc65c3075c0"
+deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.11.1"
-weakdeps = ["SparseArrays"]
-
-    [deps.Statistics.extensions]
-    SparseArraysExt = ["SparseArrays"]
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -2469,24 +1962,14 @@ git-tree-sha1 = "3b1dcbf62e469a67f6733ae493401e53d92ff543"
 uuid = "f3b207a7-027a-5e70-b257-86293d7955fd"
 version = "0.15.7"
 
-[[deps.StringDistances]]
-deps = ["Distances", "StatsAPI"]
-git-tree-sha1 = "5b2ca70b099f91e54d98064d5caf5cc9b541ad06"
-uuid = "88034a9c-02f8-509d-84a9-84ec65e18404"
-version = "0.11.3"
-
-[[deps.StyledStrings]]
-uuid = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
-version = "1.11.0"
-
 [[deps.SuiteSparse]]
 deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
 uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "7.7.0+0"
+version = "5.10.1+6"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -2525,13 +2008,6 @@ version = "0.1.1"
 [[deps.Test]]
 deps = ["InteractiveUtils", "Logging", "Random", "Serialization"]
 uuid = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
-version = "1.11.0"
-
-[[deps.TestImages]]
-deps = ["AxisArrays", "ColorTypes", "FileIO", "ImageIO", "ImageMagick", "OffsetArrays", "Pkg", "StringDistances"]
-git-tree-sha1 = "fc32a2c7972e2829f34cf7ef10bbcb11c9b0a54c"
-uuid = "5e47fb64-e119-507b-a336-dd2b206d9990"
-version = "1.9.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
@@ -2569,7 +2045,6 @@ version = "1.5.1"
 [[deps.UUIDs]]
 deps = ["Random", "SHA"]
 uuid = "cf7118a7-6976-5b1a-9a39-7adc72f591a4"
-version = "1.11.0"
 
 [[deps.UnPack]]
 git-tree-sha1 = "387c1f73762231e86e0c9c5443ce3b4a0a9a0c2b"
@@ -2578,7 +2053,6 @@ version = "1.0.2"
 
 [[deps.Unicode]]
 uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
-version = "1.11.0"
 
 [[deps.UnicodeFun]]
 deps = ["REPL"]
@@ -2625,9 +2099,9 @@ version = "1.21.0+2"
 
 [[deps.Wayland_protocols_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
-git-tree-sha1 = "5db3e9d307d32baba7067b13fc7b5aa6edd4a19a"
+git-tree-sha1 = "93f43ab61b16ddfb2fd3bb13b3ce241cafb0e6c9"
 uuid = "2381bf8a-dfd0-557d-9999-79630e7b1b91"
-version = "1.36.0+0"
+version = "1.31.0+0"
 
 [[deps.WebP]]
 deps = ["CEnum", "ColorTypes", "FileIO", "FixedPointNumbers", "ImageCore", "libwebp_jll"]
@@ -2661,15 +2135,15 @@ version = "1.1.42+0"
 
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
-git-tree-sha1 = "ff1fdd02e71717c7418deb1c42f487529d0b9574"
+git-tree-sha1 = "9dafcee1d24c4f024e7edc92603cedba72118283"
 uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
-version = "1.8.6+2"
+version = "1.8.6+1"
 
 [[deps.Xorg_libXau_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7966eb654d74306e553ce28b9aea17969fc1966c"
+git-tree-sha1 = "2b0e27d52ec9d8d483e2ca0b72b3cb1a8df5c27a"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
-version = "1.0.11+2"
+version = "1.0.11+1"
 
 [[deps.Xorg_libXcursor_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
@@ -2679,15 +2153,15 @@ version = "1.2.3+0"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "6a0d3b4248b01faa44509c5ea363881d3ad3f5eb"
+git-tree-sha1 = "02054ee01980c90297412e4c809c8694d7323af3"
 uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
-version = "1.1.4+2"
+version = "1.1.4+1"
 
 [[deps.Xorg_libXext_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "fb3f116a4efb81aecf8c415e9423869c6ee0f21f"
+git-tree-sha1 = "d7155fea91a4123ef59f42c4afb5ab3b4ca95058"
 uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
-version = "1.3.6+2"
+version = "1.3.6+1"
 
 [[deps.Xorg_libXfixes_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2721,15 +2195,15 @@ version = "0.9.11+1"
 
 [[deps.Xorg_libpthread_stubs_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "9c7539767c23ed0db32fd50916d8f5807ee11af8"
+git-tree-sha1 = "fee57a273563e273f0f53275101cd41a8153517a"
 uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
-version = "0.1.1+2"
+version = "0.1.1+1"
 
 [[deps.Xorg_libxcb_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
-git-tree-sha1 = "b4678b3c5ee394ae6422c415b231b8015c85542f"
+git-tree-sha1 = "1a74296303b6524a0472a8cb12d3d87a78eb3612"
 uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
-version = "1.17.0+2"
+version = "1.17.0+1"
 
 [[deps.Xorg_libxkbfile_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
@@ -2781,20 +2255,20 @@ version = "2.39.0+0"
 
 [[deps.Xorg_xtrans_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "26ded386f85de26df35524639e525c2018f68ddd"
+git-tree-sha1 = "b9ead2d2bdb27330545eb14234a2e300da61232e"
 uuid = "c5fb5394-a638-5e4d-96e5-b29de1b5cf10"
-version = "1.5.0+2"
+version = "1.5.0+1"
 
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+1"
+version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "7dc5adc3f9bfb9b091b7952f4f6048b7e37acafc"
+git-tree-sha1 = "555d1076590a6cc2fdee2ef1469451f872d8b41b"
 uuid = "3161d3a3-bdf6-5164-811a-617609db77b4"
-version = "1.5.6+2"
+version = "1.5.6+1"
 
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2817,7 +2291,7 @@ version = "0.15.2+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.11.0+0"
+version = "5.8.0+0"
 
 [[deps.libdecor_jll]]
 deps = ["Artifacts", "Dbus_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pango_jll", "Wayland_jll", "xkbcommon_jll"]
@@ -2833,15 +2307,15 @@ version = "2.0.3+0"
 
 [[deps.libpng_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Zlib_jll"]
-git-tree-sha1 = "9c42636e3205e555e5785e902387be0061e7efc1"
+git-tree-sha1 = "b70c870239dc3d7bc094eb2d6be9b73d27bef280"
 uuid = "b53b4c65-9356-5827-b1ea-8c7a1a84506f"
-version = "1.6.44+1"
+version = "1.6.44+0"
 
 [[deps.libsixel_jll]]
 deps = ["Artifacts", "JLLWrappers", "JpegTurbo_jll", "Libdl", "Pkg", "libpng_jll"]
-git-tree-sha1 = "80c5ae2c7b5163441018f4666b179f1ffca194c1"
+git-tree-sha1 = "7dfa0fd9c783d3d0cc43ea1af53d69ba45c447df"
 uuid = "075b6546-f08a-558a-be8f-8157d0f608a5"
-version = "1.10.3+2"
+version = "1.10.3+1"
 
 [[deps.libvorbis_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Ogg_jll", "Pkg"]
@@ -2858,7 +2332,7 @@ version = "1.4.0+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.59.0+0"
+version = "1.48.0+0"
 
 [[deps.oneTBB_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2869,7 +2343,7 @@ version = "2021.12.0+0"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+2"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2885,108 +2359,48 @@ version = "3.5.0+0"
 
 [[deps.xkbcommon_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
-git-tree-sha1 = "63406453ed9b33a0df95d570816d5366c92b7809"
+git-tree-sha1 = "9c304562909ab2bab0262639bd4f444d7bc2be37"
 uuid = "d8fb68d0-12a3-5cfd-a85a-d49703b185fd"
-version = "1.4.1+2"
+version = "1.4.1+1"
 """
 
 # ╔═╡ Cell order:
-# ╟─20737ad0-c3e9-11ef-3c60-8951d72fb0dd
-# ╟─7a337404-eb3a-4639-93f5-cd2c907b6422
-# ╟─ff935e28-0b09-44c9-b80e-5f45fee7b400
-# ╟─471bba4a-305a-4123-a824-bb1f91e32348
-# ╟─3838a8ee-63f9-4f41-85f3-502603433098
-# ╠═7f0d9d18-2286-4a0c-8f3b-14eec26a1a31
-# ╠═dd989a69-1961-4fe0-98e5-2698a852d8e2
-# ╟─993aff42-0eb3-4cd1-9d99-333d5a2d2669
-# ╟─6ef479c7-e440-4e1f-8425-263288d152e8
-# ╟─2fffc9c6-1585-4a0b-b99e-353611d01551
-# ╟─4235ee49-5e71-476b-b32b-c790f029720d
-# ╟─e0c13e70-41b5-439b-91ed-620adda4587d
-# ╟─7405c1ba-0dad-437e-a907-60b44e47bf80
-# ╠═ed6953b4-744c-4dbb-8ac3-69c506972554
-# ╟─f32ad76c-7222-4ea5-b14d-c26978b60ab3
-# ╟─9955f70c-6636-4b95-b774-feaa57a6a8f5
-# ╟─716cbf70-eee8-41ee-a735-06068498dd7a
-# ╟─e60ab5d6-f40e-4250-9b15-4f521c652472
-# ╟─22257c37-d113-4ebb-b392-8d4886dea5ca
-# ╟─68650463-6f3b-4193-a2db-b85bf5532482
-# ╟─c05726ab-0ef1-40d7-96a9-64372f964b11
-# ╟─da908f22-4f24-4768-bd58-1c07baf48506
-# ╟─498b73ea-757e-4d5c-852f-20d0e8f4e105
-# ╟─c217bbc0-03e2-41d2-b382-77df0a3d9108
-# ╟─9468060a-3f5a-42ef-b5dc-8acecb6d0934
-# ╟─8beb041e-60a1-4f42-bbbd-3db56c36dc6e
-# ╟─81f38acc-4944-4b40-9f8a-83bb47ae63b5
-# ╟─9255bd4e-c2ed-4d31-b6be-d74c452e1d69
-# ╠═f6c7c4d9-f096-435d-a8bd-f275700d0bc2
-# ╠═d6e429b4-5b3a-4642-ad7c-74acc57cb016
-# ╠═0a9ac857-92ab-4d99-b600-2c9f100444c1
-# ╟─0ebba0e0-dd44-4e5c-9293-d9620e9c192f
-# ╟─f2c4ee61-2d0a-4612-93d1-0cfd3b176e72
-# ╟─58624620-c6ae-4235-b3fb-5ce90610308f
-# ╟─4c7b7434-edb0-4925-a07f-a7e68ab205e0
-# ╠═c6664ddb-8a11-4129-87b7-6e40a18fedd0
-# ╠═526c3a2f-a985-4933-ac19-58b11488fde0
-# ╟─f54f2815-23d2-4967-a78b-adef2e0a578d
-# ╠═632f0ec5-e149-4965-9d1c-0d4cd48b7574
-# ╠═d2dc41fb-7211-4d62-b138-847412b951b4
-# ╟─27cf6249-d18f-422f-bede-569cb22d101c
-# ╟─b43e75ab-4b11-4add-bb80-4c053086e07b
-# ╟─0fbbc63b-1cae-4200-b0a6-ef00ec8e5169
-# ╟─b844e8b4-df96-422d-9466-7903082e5498
-# ╠═9609181b-e749-4e65-9e6f-5bff49231527
-# ╟─28532792-37df-40d5-81a8-0b61694171ae
-# ╠═d25c9f96-c97c-49d1-a657-f7746bd58e61
-# ╟─22445287-af01-4a2a-99b4-9a46c510ad8b
-# ╟─f84b8b24-251a-4f33-a724-0481b257a1a4
-# ╟─2cb6f484-a392-405c-8a17-1c75f56b96fa
-# ╠═a7724f6d-5b36-4993-9982-627a73d41243
-# ╠═6afed8e7-49e9-4a73-8aee-795e15deaba0
-# ╟─0770dd5d-f843-4b3a-bf46-847b467ef9ff
-# ╟─5690a382-23ef-4b13-9daa-d8ab45870ad7
-# ╟─991edf6d-e61a-4a10-a1f4-d98e9014e756
-# ╟─c4ac11fd-99fd-4315-8698-1c6216af4eb1
-# ╠═f9d0918b-78aa-4836-87fe-ced9d9e91239
-# ╠═50a9c393-6fb5-447c-add6-08bd622e950c
-# ╟─37266eb1-d5dc-4bef-b31d-7f967c88df66
-# ╟─c1db2105-49ab-4768-86d2-cf10ac1abf97
-# ╟─1333f1d1-0516-470e-bda6-3e11b8f76e8a
-# ╟─264f4e99-4173-4ce1-80db-0e6eef38695f
-# ╟─5014f95d-4222-411c-a481-0fcd8755c220
-# ╟─b62391fc-feaf-477d-9243-9af33610b60e
-# ╟─6791a7c5-fef6-4f93-848c-dfb4ac441092
-# ╟─daf569d1-f5e0-4422-aa08-d1b06d8e8073
-# ╠═45594130-a939-4673-b69c-cf82a816799e
-# ╟─4d79fbd1-47b6-47f5-8814-c60b722dbbbb
-# ╟─e4bba822-23bf-4fef-b1e5-2178c6e6821b
-# ╟─b7e279ad-4400-4013-a363-2bbc104913b7
-# ╟─f68d17e2-719d-4d58-807c-041bc2c44602
-# ╟─b1070518-aacc-44f5-ad26-52fa4c1c6107
-# ╟─b5839619-5456-4215-a682-9d87c6095e86
-# ╟─85f4c493-63e1-42ce-b6b5-eaa0cdc52bce
-# ╟─05489b85-4612-4498-b57d-7f6ab3d5e960
-# ╟─2a5beb83-1635-4ed3-8a8c-1e27e157b0f0
-# ╟─88357769-7764-4354-bf1a-86980b345c7a
-# ╟─c81938a2-7720-4b2c-a620-9d82189b8e0f
-# ╠═578af934-0c6e-424c-88c1-7f8c69c5b881
-# ╟─d61b8630-83ef-4743-981a-bed47ed5bd79
-# ╟─3acdef8b-ea7f-4e0e-bea4-86e951450788
-# ╟─d6c2bc4e-c624-4475-ae16-7105703f25b8
-# ╟─5b1ff33a-4754-4a5b-8123-5aceb4b52cca
-# ╠═dee9b6f8-43d1-4ee8-8c67-c423ee6263bd
-# ╟─d92230f4-7922-4e0b-9cf1-b9bc808bc4f1
-# ╟─d627e42e-20f1-428c-a9a7-f8ddb4d3395d
-# ╟─fcd1857a-22c2-498c-9842-db4b87405c4d
-# ╟─526bdc20-e0c8-4b05-a5d1-6f409f338c38
-# ╟─960aa457-7913-46d9-913d-cabe186ed71d
-# ╟─5d7aabf3-927d-4540-9611-4dd8c6deb194
-# ╠═8407e0e7-2722-4371-b4c2-1b25f6284d60
-# ╠═0da5c31e-b334-4eb4-a911-fdddc2fe32a5
-# ╟─e675a394-02d4-49af-aff8-56636d2d2d79
-# ╟─ec368cbb-49ea-45db-838c-56b461396dee
-# ╟─05b8fb8d-2d94-416f-98ff-808145fac041
-# ╟─cecd20e5-5b7e-4061-92d0-dff450931a96
-# ╟─3d19f24e-2990-4da6-b5a2-58ea8c6e717c
+# ╟─44a476c0-c3e9-11ef-2e85-278c304ad5d6
+# ╟─7bf7af2c-61fd-4a28-9000-d347d41adaa8
+# ╟─a36c9b9e-c7ef-427b-8554-1b353528edff
+# ╟─afbdb718-75cf-4d70-9f09-50e70c9805d3
+# ╟─5ecd8671-9166-4c83-8422-32c006e5a2d1
+# ╠═9d423fa4-c492-4cb1-a282-9ad2b3946376
+# ╟─71961e63-0c78-4221-9d5f-126a54513d57
+# ╟─1d9501b7-3d36-4a2e-9836-fd5e54a6b605
+# ╟─4e5e8a6f-ede5-47a7-abee-f73e9cb034f3
+# ╟─571379b1-f9b9-4bcd-b4de-2dc71e4a2da7
+# ╟─e232d1ad-8a02-4dd8-904b-4f4f38ac1653
+# ╠═d5f6b1fc-caa7-45d5-a2ad-3f6aa5148bf7
+# ╟─a42e6025-827b-48d4-8703-61e360357c7b
+# ╟─04cfa99d-97a0-4310-84f6-beca8e2aa278
+# ╠═d11a9dc3-b4b5-4cf5-b716-4d182550eef0
+# ╟─7256f297-0781-4772-a45a-57ff3faf9ca8
+# ╟─37193883-0f10-48bb-8279-30191ba264c3
+# ╠═319d8ff4-75d2-4dd1-b7b9-b8503d94b30a
+# ╟─d2ca5d55-91e4-474a-871d-8c6ca2dcbcc5
+# ╟─44f5a8dc-12fd-426f-a508-1f1715495f8e
+# ╠═9a4aaa0e-7e85-4b22-8063-0919d29b08ed
+# ╟─1df9d895-07ff-45e2-b558-4097271b62be
+# ╟─653336fa-c30b-4041-a324-8ef38f2cbc70
+# ╠═731c1a25-0428-4975-ad27-ba0d1735cd1c
+# ╟─300bd6a4-9cda-42ac-ae11-2bafed69ed80
+# ╟─935df1e6-431c-4206-ae7e-1fd1653d3b95
+# ╟─d4c41a1e-cc43-4d12-bb71-ba4d083565b8
+# ╟─d7dd657e-e5ba-417c-b9c6-0d44a109e397
+# ╠═2335c2e3-a721-4594-926f-3863c1be52b4
+# ╟─8a5ab2ec-c931-4946-990a-f07ad8463114
+# ╠═584814b8-bd47-4cc4-ae68-2e6ae8a6e18e
+# ╠═40b04914-1921-4828-84ad-a99f20d78fc0
+# ╟─a1031f8d-b356-4fcc-8d5e-ca3acd3189fa
+# ╠═ce7dabf9-59c8-469c-be3c-980c5b06a18e
+# ╠═3a3ae995-1b9f-4d35-9833-5a9389288b5e
+# ╟─534ecf5b-9050-499e-b6f4-a2df527c6d5a
+# ╟─78a07ba9-5811-40c0-9201-103ba6a5953f
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
