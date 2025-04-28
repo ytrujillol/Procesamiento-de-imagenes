@@ -70,7 +70,7 @@ begin
 end
 
 # ╔═╡ 2ff3f87f-6e99-49c6-a670-6e101162b35e
-#Write a function that will create the Haar wavelet transform matrix for the specified even dimension. Your function must check whether the specified dimension is even and give an error message in case it is not.
+#Write a function that will create the Haar wavelet transform matrix for the specified even dimension. Your function must check whether the specified dimension is even and give an error message in case it is  not.
 
 # ╔═╡ 69ceb27d-457b-425a-88fd-2fd717ddef25
 function haar_wavelet_matrix(N::Int)
