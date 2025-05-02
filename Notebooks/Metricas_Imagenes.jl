@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.0
+# v0.20.4
 
 using Markdown
 using InteractiveUtils
@@ -326,9 +326,9 @@ md"""
 
 # ╔═╡ 78a07ba9-5811-40c0-9201-103ba6a5953f
 md"""
-[1] Exequiel Fuentes, J., & Ruiz Vera, J. M. (2021). Restauración de imágenes borrosas usando un modelo regularizado de programación lineal. Ingeniería, 26(2), 254-272. https://doi.org/10.14483/23448393.17240
+[1] Exequiel Fuentes, J., & Ruiz Vera, J. M. (2021). Restauración de imágenes borrosas usando un modelo regularizado de programación lineal. Ingeniería, 26(2), 254-272. [https://doi.org/10.14483/23448393.17240](https://doi.org/10.14483/23448393.17240)
 
-[2] Métricas de calidad de imagen . (2024). Centro de Ayuda; MathWorks. https://la.mathworks.com/help/images/image-quality-metrics.html
+[2] Métricas de calidad de imagen . (2024). Centro de Ayuda; MathWorks. [https://la.mathworks.com/help/images/image-quality-metrics.html](https://la.mathworks.com/help/images/image-quality-metrics.html)
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -369,7 +369,7 @@ StatsPlots = "~0.15.7"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.11.2"
+julia_version = "1.11.4"
 manifest_format = "2.0"
 project_hash = "da7925006d3f77e6e1623a5c20b742d756cff28d"
 
@@ -1498,7 +1498,7 @@ version = "2.4.0+0"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+4"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
