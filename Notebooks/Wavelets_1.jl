@@ -1,5 +1,5 @@
 ### A Pluto.jl notebook ###
-# v0.20.5
+# v0.19.40
 
 using Markdown
 using InteractiveUtils
@@ -28,7 +28,7 @@ Tu participación es fundamental para hacer de este curso una experiencia aún m
 # ╔═╡ 5798176a-d2d6-47ad-9cc9-6f410a3bf92b
 md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
 
-Elaborado por Juan Galvis, Carlos Nosa, Jorge Mauricio Ruíz y Yessica Trujillo."""
+Elaborado por Juan Galvis, Jorge Mauricio Ruíz, Angie Forero, Carlos Nosa y Yessica Trujillo."""
 
 # ╔═╡ c5794c1b-3405-4b60-9157-ef5da147cee8
 md"""Vamos a usar las siguientes librerías:"""
@@ -38,14 +38,116 @@ md"""
 # Introducción
 """
 
+# ╔═╡ 51ff806d-79de-4001-b727-224e80c51f04
+md"""
+¿Por qué caben miles de fotos en tu teléfono? Supongamos que queremos comprar un nuevo smartphone. No necesitamos nada sofisticado, solo un dispositivo básico con 16 gigabytes de memoria interna. Tras instalar las aplicaciones esenciales, nos quedan 4 gigabytes disponibles para nuestras fotos y videos.
+
+Revisamos las especificaciones del dispositivo y notamos que tiene una excelente cámara de 16.1 megapíxeles. Como sabemos, una imagen en color utiliza tres canales (rojo, verde y azul) y algo de información adicional. Esto nos lleva a suponer que cada imagen podría ocupar cerca de:
+
+$16.1 \text{ MP} × 3 \text{ canales} + \text{datos extra} ≈ 50 \text{ MB}$
+
+Con solo 4 gigabytes libres, esto implicaría que apenas podríamos guardar unas 80 fotos. ¡Una gran decepción!
+
+Pero todos sabemos que esto no es cierto. De hecho, miles (incluso decenas de miles) de imágenes caben en nuestros teléfonos. Al revisar el tamaño real de las fotos en el sistema, descubrimos que no ocupan ni cerca de 50 MB cada una. ¿Entonces, qué fue lo que no tuvimos en cuenta en nuestra estimación rápida?
+
+La respuesta es: **compresión de imágenes**. Ese es precisamente el tema de este cuaderno. A lo largo de las últimas décadas, se han desarrollado métodos muy eficientes de compresión de imágenes. Uno de los más conocidos es JPEG, basado en la Transformada Discreta del Coseno (DCT), una pariente cercana de la Transformada de Fourier Discreta (DFT). Además de estas, existen métodos modernos que utilizan transformadas wavelet discretas, y es a estas últimas a las que nos dedicaremos aquí.
+"""
+
+# ╔═╡ dd55ff72-341e-43f3-8796-0df7a6775bf6
+md"""
+Comenzamos tratando de usar consideraciones generales y algo de intuición para encontrar un método práctico de comprimir una cadena de números, como por ejemplo:
+
+$v = (7, 9, 1, 3)$
+
+El objetivo final es ahorrar espacio de almacenamiento. Una idea inicial: ¿qué tal si simplemente reemplazamos cada par sucesivo de números por su promedio?
+Observamos que:
+
+$\frac{7+9}{2} = 8, \ \frac{1+3}{2} = 2$
+
+Entonces aplicamos la transformación:
+
+$(7,9,1,3) \to (8,2).$
+
+Sin embargo, no es posible recuperar fielmente la secuencia original solo a partir de los promedios. La secuencia (8, 2) podría haber salido también de (5, 11, 0, 4), (4, 12, 5, −1), o incluso infinitas otras combinaciones.
+
+¿Qué pasa si además de los promedios, calculamos también las semidiferencias de cada par sucesivo?
+Notamos que:
+
+$\frac{9-7}{2} = 1, \ \frac{3-1}{2} = 1$
+
+Y ahora aplicamos la nueva transformación:
+
+$(7,9,1,3)\to (8,2|1,1)$
+
+Con esta información sí podemos reconstruir la secuencia original:
+
+$7 = 8-1, 9= 8+1, 1 = 2-1, 3 = 2 + 1.$
+
+> **Observación fundamental:** Una secuencia se puede reconstruir fielmente a partir de los promedios y las semidiferencias de los pares sucesivos de elementos de la secuencia.
+"""
+
+# ╔═╡ f744e4bf-f0b7-45d0-be54-22b4f918c344
+md"""
+**Definición Entropía de una Secuencia.** Supongamos que la cadena $v$ consiste en símbolos del conjunto:
+
+$S = \{s_1, s_2, \dots, s_n\}$
+
+los cuales ocurren con frecuencias relativas:
+
+$\{p_1, p_2, \dots, p_n\}$
+
+Entonces, la entropía de la secuencia $v$ se define como:
+
+$\text{Ent}(v) = - \sum_{k=1}^{n} p_k \log_2(p_k)
+              = \sum_{k=1}^{n} p_k \log_2\left(\frac{1}{p_k}\right)$
+
+La entropía de una cadena $v$ de símbolos proporciona el límite inferior para el número promedio de bits por símbolo que podemos esperar alcanzar al usar una codificación binaria para $v$. En otras palabras, ningún esquema de compresión sin pérdida puede superar este límite, es la frontera fundamental de la eficiencia en la codificación.
+
+Un cálculo sencillo muestra que la entropía de la cadena original $(7, 9, 1, 3)$ es:
+
+$H_1 = -4 \cdot \left[0.25 \cdot \log_2(0.25)\right] = 2$
+
+mientras que la entropía de la cadena transformada $(8, 2 \mid 1, 1)$ es:
+
+$H_2 = -\left[0.25 \cdot \log_2(0.25) + 0.25 \cdot \log_2(0.25) + 0.5 \cdot \log_2(0.5)\right] = 1.5$
+
+Esto indica que la transformación ha reducido la entropía, lo que sugiere una posible mejora en la compresión de los datos.
+
+
+"""
+
 # ╔═╡ 8c6dc39d-583c-4297-bfec-866b9be75641
 md"""# La Transformada Discreta de Wavelet de Haar"""
 
-# ╔═╡ de0afeea-5661-43e8-a6d0-f84c03635fbd
-N = 512
+# ╔═╡ 1d3c2b72-d0b1-4abe-9ef4-4a35b3d1721e
+md"""
+En esta sección se define la transformada de Haar discreta que encapsula la transformación por promedios y por semidiferencias, mostrando diferentes resultados acerca de esta transformación.
+"""
+
+# ╔═╡ f42fd42a-6aa6-48e6-8c51-9b128dc798ce
+md"""
+**Definición Transformada Haar Discreta (HWT).** Dada una secuencia de números reales de longitud par $x = (x_1, x_2, ..., x_N)$, definimos su Transformada Haar Wavelet Discreta (no normalizada) como el par de secuencias $(y | z)$, donde:
+
+$y_n = \frac{1}{2}(x_{2n} + x_{2n-1}), \quad
+z_n = \frac{1}{2}(x_{2n} - x_{2n-1})
+\quad \text{para } 1 \leq n \leq N/2.$
+Llamamos a la secuencia y la parte pasa-bajas (low-pass), y a la secuencia z la parte pasa-altas (high-pass) de la transformada.
+
+
+Es fácil ver que la transformada Haar es invertible usando las siguientes fórmulas:
+
+$x_{2n-1} = y_{n}-z_{n} , x_{2n} = y_{n}+z_{n}$
+
+Con estas ecuaciones, podemos recuperar la secuencia original $x$ a partir de $y$ y $z$.
+
+
+"""
 
 # ╔═╡ 0c3e13bd-67dd-4018-bd3e-daa20f457537
-x = [10*cos(2π*i/N*4) + 4*cos(2π*i/N*64) for i in 1:N]
+begin
+	N = 512
+	x = [10*cos(2π*i/N*4) + 4*cos(2π*i/N*64) for i in 1:N]
+end
 
 # ╔═╡ 88fe22db-e8a5-4584-b2dd-5a8f4729990c
 function haar_transform(x)
@@ -69,8 +171,74 @@ begin
 	plot(plot1, plot2, layout=(1,2), size=(1000,400))
 end
 
-# ╔═╡ 2ff3f87f-6e99-49c6-a670-6e101162b35e
-#Write a function that will create the Haar wavelet transform matrix for the specified even dimension. Your function must check whether the specified dimension is even and give an error message in case it is  not.
+# ╔═╡ 0326d2d3-a5ee-4f7a-9687-5dbf69c61649
+md"""
+$\texttt{Figura 1}$
+"""
+
+# ╔═╡ a2c31c65-3e05-4a44-ab2d-0882e6e6c04f
+md"""
+Para un vector columna general $v$ de dimensión par $N$, podemos describir formalmente su transformada de Haar en forma matricial como:
+
+$\text{HWT}(v) = W_N \cdot v =
+\begin{bmatrix}
+H_N \\
+G_N
+\end{bmatrix}
+\cdot v$
+
+donde la matriz de la transformada de Haar $W_N$ está compuesta por las partes de promedio $H_N$ y diferencia $G_N$, ambas de tamaño $\frac{N}{2} \times N$:
+
+*Matriz de la transformada de Haar $W_N$:*
+
+$W_N =
+\begin{bmatrix}
+\frac{1}{2} & \frac{1}{2} & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & \frac{1}{2} & \frac{1}{2} & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & \frac{1}{2} & \frac{1}{2} \\ \hline
+-\frac{1}{2} & \frac{1}{2} & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & -\frac{1}{2} & \frac{1}{2} & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & -\frac{1}{2} & \frac{1}{2}
+\end{bmatrix}$
+
+Parte de promedios $H_N$:
+
+$H_N =
+\begin{bmatrix}
+\frac{1}{2} & \frac{1}{2} & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & \frac{1}{2} & \frac{1}{2} & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & \frac{1}{2} & \frac{1}{2}
+\end{bmatrix}$
+
+Parte de diferencias $G_N$:
+
+$G_N =
+\begin{bmatrix}
+-\frac{1}{2} & \frac{1}{2} & 0 & 0 & \cdots & 0 & 0 \\
+0 & 0 & -\frac{1}{2} & \frac{1}{2} & \cdots & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & \cdots & -\frac{1}{2} & \frac{1}{2}
+\end{bmatrix}$
+
+Fórmula de inversión: También podemos expresar la fórmula de reconstrucción de la secuencia original como multiplicación matricial:
+
+$x = W_N^{-1} \cdot
+\begin{bmatrix}
+y \\
+z
+\end{bmatrix}$
+
+donde $y$ representa la parte de baja frecuencia (promedios) y $z$ la parte de alta frecuencia (diferencias).
+
+"""
+
+# ╔═╡ 99517dbc-9e81-45e8-861e-40af82e32f33
+md"""
+En la siguiente función se calcula explícitamente la matriz para la transformación.
+"""
 
 # ╔═╡ 69ceb27d-457b-425a-88fd-2fd717ddef25
 function haar_wavelet_matrix(N::Int)
@@ -97,8 +265,10 @@ end
 # ╔═╡ 75a11584-16c5-4f24-a378-ccca170845b6
 W = haar_wavelet_matrix(8)
 
-# ╔═╡ 4ec469f3-b48a-46a0-ada4-1ac978a99e3b
-#Use the result of Problem 4 to write a function that will create the inverse Haar wavelet transform matrix for the specified even dimension. Your function must check whether the specified dimension is even and give an error message in case it is not.
+# ╔═╡ 808be566-e1fb-4b4d-8a50-b1a1deb2b1b6
+md"""
+Por otra parte, la función a continuación ejecuta el código para construir la matriz para la transformada de Haar inversa.
+"""
 
 # ╔═╡ 2769318b-5ac4-4a1f-b939-6ab822bf9602
 function inverse_haar_wavelet_matrix(N::Int)
@@ -119,11 +289,32 @@ end
 # ╔═╡ b8eb0766-03be-4821-8c6b-3e652351674f
 W_inv = inverse_haar_wavelet_matrix(8)
 
+# ╔═╡ 0e30e5d7-516a-412b-b051-33ce84776558
+md"""
+Como se pudo evidenciar, esta matriz inversa se puede calcular fácilmente y da la inversa exacta como se puede comprobar haciedno el producto $W^{-1} W$:
+"""
+
 # ╔═╡ a2273052-0e6a-4c12-a70f-46b00a56d298
 W_inv * W
 
+# ╔═╡ a06d62a1-a73c-44b7-9f63-2ee23ad6b5ec
+md"""
+Podemos ver claramente cómo la "parte de promediado" de la transformada de Haar suprime la componente de alta frecuencia de la señal y cómo la "parte de diferenciación" de la transformada suprime la componente de baja frecuencia. En vista de la *Figura 1, podemos describir la transformada de Haar como la aplicación de un par de filtros compuesto por el filtro de paso bajo de Haar:
+
+$h = \left(\frac{1}{2}, \frac{1}{2}\right)$
+
+(que realiza el cálculo de los promedios de valores sucesivos) y el filtro de onda de paso alto de Haar:
+
+$g = \left(\frac{1}{2}, -\frac{1}{2}\right)$
+
+(que realiza el cálculo de las medias diferencias de los valores sucesivos), seguido por una reducción de muestreo (tomando cada otro valor de la salida filtrada).
+
+"""
+
 # ╔═╡ d3cb4cfb-2473-47a4-b120-ec9d9279832d
-#Ejercicio 3 sección 7.4
+md"""
+En el siguiente código se producen diferentes sucesiones basadas en la función coseno. Se invita al lector a que pruebe la transformada de Haar en cada una de estas sucesiones.
+"""
 
 # ╔═╡ c6145c72-5907-44e6-bfab-5b092e44afe3
 function generar_coseno(A::Float64, N::Int, k::Int)
@@ -148,8 +339,29 @@ begin
 	plot(plots..., layout=(2,2), size=(900,600))
 end
 
+# ╔═╡ 14d2f010-82f8-4113-a1ea-d3b973bb6bbd
+md"""
+$\texttt{Figura 2}$
+"""
+
 # ╔═╡ a1399006-cd25-4aff-830d-e942964153ce
 md"""# La Transformada Discreta de Wavelet de Haar en Imágenes"""
+
+# ╔═╡ 3cdc5c93-8ff2-45cc-9d61-99eafafab748
+md"""
+A menudo es conveniente visualizar la transformada de Haar (HWT) de una imagen en su forma matricial tanto para fines teóricos como computacionales. Supongamos que la imagen original $A$ tiene $M$ filas y $N$ columnas. Entonces, la HWT de las columnas se logra multiplicando la matriz de la imagen por la izquierda por la matriz HWT $W_M$ de dimensión $M$, mientras que la HWT de las filas se logra multiplicando la matriz de la imagen por la derecha por la transpuesta $W_N^T$ de la matriz HWT de dimensión $N$. El resultado final es:
+
+$A \to W_M \cdot A \cdot W_N^T = \begin{pmatrix}
+B & V \\
+H & D
+\end{pmatrix}$
+
+- La esquina superior izquierda $B$ de la transformada representa el desenfoque de la imagen, y consiste en valores promedio de bloques de 2 × 2 píxeles.
+- La esquina superior derecha $V$ representa las medias diferencias entre píxeles adyacentes en la dirección horizontal y, por lo tanto, probablemente sea representativa de las características verticales prominentes de la imagen.
+- La esquina inferior izquierda $H$ representa las medias diferencias en la dirección vertical y, por lo tanto, probablemente corresponda a las características horizontales de la imagen.
+- La esquina inferior derecha $D$ de la imagen representa las medias diferencias "diagonales" y es probable que sea representativa de las características diagonales.
+
+"""
 
 # ╔═╡ 15c47f19-06e8-4949-bbfa-77161e493b44
 function haar2d(img::Matrix{Float64})
@@ -161,6 +373,12 @@ function haar2d(img::Matrix{Float64})
     WN = haar_wavelet_matrix(N)
     return WM * img * transpose(WN)
 end
+
+# ╔═╡ a5bff652-d613-495f-86be-79f9c2f82072
+md"""
+Podemos obtener resultados aún mejores si aplicamos el mismo método a la esquina superior izquierda de la imagen transformada (es decir, a la porción de baja frecuencia $B$ de la transformada). Esto se puede hacer si tanto el número de filas como el número de columnas de la imagen son divisibles por 4. En principio, el proceso puede continuarse $k$ veces mientras las dimensiones de la imagen sean divisibles por $2^k$ (y aunque no lo sean, el tamaño de la imagen puede ajustarse en consecuencia mediante relleno con ceros).
+
+"""
 
 # ╔═╡ 3615be86-14f6-490b-bacd-113cc6331493
 function iterated_haar2d(img::Matrix{Float64}, k::Int)
@@ -175,6 +393,11 @@ function iterated_haar2d(img::Matrix{Float64}, k::Int)
     end
     return img_copy
 end
+
+# ╔═╡ e52d09a4-5467-46a1-a768-f678cf687799
+md"""
+Para tener un punto de comparación, la definición de entropía se puede extender a sucesiones bidimensiones como lo son las imágenes representadas por matrices.
+"""
 
 # ╔═╡ 6452a273-86ac-4685-87d7-65a35923c50e
 function calcular_entropia(img::Matrix{Float64})
@@ -197,11 +420,21 @@ begin
 	img_mat = img_mat[1:rows, 1:cols]
 end;
 
+# ╔═╡ 93100b46-7b9f-49bd-92d0-e1a3a9230795
+md"""
+A continuación se muestra el resultado de aplicar una vez la transformada de Haar y la compresión de información obtenida al pasar de una entropía de 7.05 de la imágen origina a una entropía de 4.03 de la imagen comprimida en solo una iteración de la transformación.
+"""
+
 # ╔═╡ 5600b81f-ba3b-4ab2-b58c-4417b4842613
-hwt_img = iterated_haar2d(img_mat, 2);
+hwt_img = iterated_haar2d(img_mat, 1);
 
 # ╔═╡ 16d5f8a5-cf9f-462b-960c-a9c7b4cf65e4
 [Gray.(img_mat) Gray.(hwt_img)]
+
+# ╔═╡ 6848a946-95c8-4f18-bc34-e67882820e59
+md"""
+$\texttt{Figura 3}$
+"""
 
 # ╔═╡ 4f94e8ac-8618-42fe-9dfd-a5dae102448b
 begin
@@ -214,8 +447,16 @@ begin
 	println("Entropía imagen transformada (1 iteración): ", round(H_transformada, digits=2))
 end
 
-# ╔═╡ a63773bc-5e4e-4def-a6fa-56427f908f62
-#Thresholding a Wavelet Transform
+# ╔═╡ a844974c-c597-4c8a-9ff8-5eba556fd926
+md"""
+Hasta ahora solo hemos hablado de compresión sin pérdida donde la imagen original puede reconstruirse fielmente sin pérdida de información. ¿Pero qué pasa si necesitamos alcanzar una mejor tasa de compresión que la que permiten los métodos sin pérdida?
+Podemos lograrlo sacrificando algunas características de la imagen que se consideran innecesarias o poco importantes. Por ejemplo, pequeñas variaciones en el brillo (y color) del cielo, las telas u otras superficies suaves no suelen contribuir de forma crítica a nuestra percepción de la imagen. Lo mismo ocurre con los matices sutiles de color del césped o las copas de los árboles.
+
+Esas pequeñas variaciones se traducen en muchos valores pequeños en las partes de alta frecuencia de la transformada wavelet —es decir, en las componentes $H$, $V$ y $D$— que contienen las semi-diferencias entre los valores de píxeles adyacentes. Si establecemos esos valores pequeños como cero, se perderán esas variaciones en la imagen reconstruida, pero difícilmente lo notaremos. Lo que sí notaremos es un incremento significativo en la tasa de compresión.
+
+> Para lograr una mejor tasa de compresión, se anulan (se establecen en cero) los valores en las componentes de alta frecuencia $H$, $V$ y $D$ de la transformada cuyo valor absoluto sea menor que un umbral $\lambda$.
+
+"""
 
 # ╔═╡ c580a6a1-b2e8-4521-982c-11056684b72a
 function threshold_HVD(hwt::Matrix{Float64}, λ::Float64)
@@ -234,6 +475,11 @@ function threshold_HVD(hwt::Matrix{Float64}, λ::Float64)
 
     return hwt_thres
 end
+
+# ╔═╡ 84c7a75f-6935-4b56-9938-c3aa7451d762
+md"""
+En la figura 4 se muestra la imagen original y la aplicación de esta umbralización a las diferencias obtenidas de la compresión con $\lambda = 0.01,0.1,1.0$ (de izquierda a derecha y de arriba a abajo). 
+"""
 
 # ╔═╡ f4b92cec-d92b-4ab0-b74b-31f9ff4778d6
 begin
@@ -257,17 +503,42 @@ end
 [Gray.(img_mat) Gray.(imgs_rec[1]);
 Gray.(imgs_rec[2]) Gray.(imgs_rec[3])]
 
+# ╔═╡ 03c55c70-c053-482d-9b83-926620e3d654
+md"""
+$\texttt{Figura 4}$
+"""
+
+# ╔═╡ 22f5d43a-9120-4b07-b445-dbd38c9134f2
+md"""
+Nótese que hubo reducciones en las entropías de las imágenes cuendo se aplicó un $\lambda$ más grande, indicando un mayor nivel de compresión.
+"""
+
 # ╔═╡ 594b9f69-4fa0-45f1-9a72-e4d8cacc4458
-[round(H_original, digits=2) round(entropias[1], digits=2);
- round(entropias[2], digits=2) round(entropias[3], digits=2)]
+[round(H_original, digits=5) round(entropias[1], digits=5);
+ round(entropias[2], digits=5) round(entropias[3], digits=5)]
 
 # ╔═╡ aed6f545-f9d4-453f-b4d3-0f0d928b1599
-#Energia (REVISAR ESTA RARO)
+md"""
+Una mejor estrategia consiste en especificar qué porcentaje de la energía de la imagen (o, alternativamente, qué porcentaje de la energía en la porción de alta frecuencia de la transformada) debe conservarse durante la etapa de umbralización del proceso de compresión.
+
+Para sentar las bases técnicas de esta idea, recordemos que la **energía** de un vector $\mathbf{v} = [v_1, ..., v_n]^T$ se define como:
+
+$E(\mathbf{v}) = \|\mathbf{v}\|^2 = \sum_{k=1}^{n} |v_k|^2$
+
+De manera similar, la energía de una imagen (o matriz) $A$ de tamaño $M \times N$ se define como:
+
+$E(A) = \|A\|^2 = \sum_{m=1}^{M} \sum_{n=1}^{N} |A(m, n)|^2$
+"""
 
 # ╔═╡ 6e360a4f-67d2-4886-831f-37eb94d5fb2b
 function energia(A::Matrix{Float64})
     return sum(abs2, A)
 end
+
+# ╔═╡ e495eefa-be0d-4f6d-88c7-81e76b4b5418
+md"""
+A continuación se define la función para aplicar el método de umbralización por medio del porcentaje de energía.
+"""
 
 # ╔═╡ e10acc44-a37d-4776-bf04-76ad84979349
 function umbral_por_energia(hwt::Matrix{Float64}, porcentaje::Float64)
@@ -291,6 +562,11 @@ function umbral_por_energia(hwt::Matrix{Float64}, porcentaje::Float64)
     return 0.0
 end
 
+# ╔═╡ 2bf0ab32-75f6-483b-bea2-788212f24850
+md"""
+Para diferentes porcentajes de energía se exhibe el valor de $\lambda$ adecuando para aplicar en la umbralización y obtener la energía esperada.
+"""
+
 # ╔═╡ a89af050-6983-45ca-bdbb-857cf87081c8
 begin
 	# Transformada de Haar (1 iteración)
@@ -301,10 +577,15 @@ begin
 	λ_95 = umbral_por_energia(hwt_img_2, 0.95)
 	λ_90 = umbral_por_energia(hwt_img_2, 0.90)
 	
-	println("λ para 99% energía: ", round(λ_99, digits=2))
-	println("λ para 95% energía: ", round(λ_95, digits=2))
-	println("λ para 90% energía: ", round(λ_90, digits=2))
+	println("λ para 99% energía: ", round(λ_99, digits=5))
+	println("λ para 95% energía: ", round(λ_95, digits=5))
+	println("λ para 90% energía: ", round(λ_90, digits=5))
 end
+
+# ╔═╡ cd40b738-1808-4f8f-b9b6-4da18a4a428d
+md"""
+En la siguiente función se hace la reconstrucción de una imágen comprimida y aplicandole el método de umbralización.
+"""
 
 # ╔═╡ a0474e7d-b7d6-413e-b2b5-e5a4c8202b73
 begin
@@ -320,15 +601,42 @@ begin
 	img_90 = reconstruir_img_con_lambda(hwt_img, λ_90)
 end;
 
+# ╔═╡ a46637f2-0830-4e31-a550-7930fe96f312
+md"""
+En la figura 5 se muestra la imágen original, la imágen con 99\% de energía, con 95\% y con 90\% (de izquierda a derecha y de arriba a abajo).
+"""
+
 # ╔═╡ 6b6a889d-e514-4950-9db5-4bf0219b08e3
 [Gray.(img_mat) Gray.(img_99);
 Gray.(img_95) Gray.(img_90)]
 
+# ╔═╡ 87dc3954-d0ab-4616-abec-08bda857d0e9
+md"""
+$\texttt{Figura 5}$
+"""
+
+# ╔═╡ 8cf62652-7d9c-4203-98ae-507106dc0417
+md"""
+La figura 6 corresponde a la imágen umbralizada con un 90\% de energía.
+"""
+
 # ╔═╡ c4d79a2c-155e-490e-9a38-b458a8e08370
 Gray.(img_90)
 
+# ╔═╡ fda158d5-b513-4bfe-8f73-f2750d44f781
+md"""
+$\texttt{Figura 6}$
+"""
+
 # ╔═╡ ce9a0e09-905e-44e3-8306-3ef41b9b04e5
 md"""# Referencias"""
+
+# ╔═╡ c7fc5656-bbb1-491b-b311-fe7860ac1c38
+md"""
+[1] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
+
+[2] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
+"""
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
 PLUTO_PROJECT_TOML_CONTENTS = """
@@ -373,7 +681,7 @@ TestImages = "~1.9.0"
 PLUTO_MANIFEST_TOML_CONTENTS = """
 # This file is machine-generated - editing it directly is not advised
 
-julia_version = "1.10.4"
+julia_version = "1.9.2"
 manifest_format = "2.0"
 project_hash = "4083bae525eb2bec8e5ded834e93604c4d05ec25"
 
@@ -434,21 +742,16 @@ uuid = "68821587-b530-5797-8361-c406ea357684"
 version = "3.5.1+1"
 
 [[deps.ArrayInterface]]
-deps = ["Adapt", "LinearAlgebra"]
-git-tree-sha1 = "017fcb757f8e921fb44ee063a7aafe5f89b86dd1"
+deps = ["Adapt", "LinearAlgebra", "Requires", "SparseArrays", "SuiteSparse"]
+git-tree-sha1 = "c5aeb516a84459e0318a02507d2261edad97eb75"
 uuid = "4fba245c-0d91-5ea0-9b3e-6abc04ee57a9"
-version = "7.18.0"
+version = "7.7.1"
 
     [deps.ArrayInterface.extensions]
     ArrayInterfaceBandedMatricesExt = "BandedMatrices"
     ArrayInterfaceBlockBandedMatricesExt = "BlockBandedMatrices"
     ArrayInterfaceCUDAExt = "CUDA"
-    ArrayInterfaceCUDSSExt = "CUDSS"
-    ArrayInterfaceChainRulesCoreExt = "ChainRulesCore"
-    ArrayInterfaceChainRulesExt = "ChainRules"
     ArrayInterfaceGPUArraysCoreExt = "GPUArraysCore"
-    ArrayInterfaceReverseDiffExt = "ReverseDiff"
-    ArrayInterfaceSparseArraysExt = "SparseArrays"
     ArrayInterfaceStaticArraysCoreExt = "StaticArraysCore"
     ArrayInterfaceTrackerExt = "Tracker"
 
@@ -456,12 +759,7 @@ version = "7.18.0"
     BandedMatrices = "aae01518-5342-5314-be14-df237901396f"
     BlockBandedMatrices = "ffab5731-97b5-5995-9138-79e8c1846df0"
     CUDA = "052768ef-5323-5732-b1bb-66c8b64840ba"
-    CUDSS = "45b445bb-4962-46a0-9369-b4df9d0f772e"
-    ChainRules = "082447d4-558c-5d27-93f4-14fc19e9eca2"
-    ChainRulesCore = "d360d2e6-b24c-11e9-a2a3-2a2ae2dbcce4"
     GPUArraysCore = "46192b85-c4d5-4398-a991-12ede77f4527"
-    ReverseDiff = "37e2e3b7-166d-5795-8a7a-e32c996b4267"
-    SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
     StaticArraysCore = "1e83bf80-4336-4d27-bf5d-d5a4f845583c"
     Tracker = "9f7883ad-71c0-57eb-9f7f-b5c9e6d3789c"
 
@@ -579,11 +877,6 @@ git-tree-sha1 = "64e15186f0aa277e174aa81798f7eb8598e0157e"
 uuid = "5ae59095-9a9b-59fe-a467-6f913c188581"
 version = "0.13.0"
 
-[[deps.CommonWorldInvalidations]]
-git-tree-sha1 = "ae52d1c52048455e85a387fbee9be553ec2b68d0"
-uuid = "f70d9fcc-98c5-4d4a-abd7-e4cdeebd8ca8"
-version = "1.0.0"
-
 [[deps.Compat]]
 deps = ["TOML", "UUIDs"]
 git-tree-sha1 = "8ae8d32e09f0dcf42a36b90d4e17f5dd2e4c4215"
@@ -597,7 +890,7 @@ weakdeps = ["Dates", "LinearAlgebra"]
 [[deps.CompilerSupportLibraries_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "e66e0078-7015-5450-92f7-15fbd957f2ae"
-version = "1.1.1+0"
+version = "1.0.5+0"
 
 [[deps.ComputationalResources]]
 git-tree-sha1 = "52cb3ec90e8a8bea0e62e275ba577ad0f74821f7"
@@ -628,9 +921,9 @@ version = "0.6.3"
 
 [[deps.CoordinateTransformations]]
 deps = ["LinearAlgebra", "StaticArrays"]
-git-tree-sha1 = "a692f5e257d332de1e554e4566a4e5a8a72de2b2"
+git-tree-sha1 = "f9d7112bfff8a19a3a4ea4e03a8e6a91fe8456bf"
 uuid = "150eb455-5306-5404-9cee-2592286d6298"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.CpuId]]
 deps = ["Markdown"]
@@ -889,9 +1182,9 @@ version = "1.0.2"
 
 [[deps.HTTP]]
 deps = ["Base64", "CodecZlib", "ConcurrentUtilities", "Dates", "ExceptionUnwrapping", "Logging", "LoggingExtras", "MbedTLS", "NetworkOptions", "OpenSSL", "PrecompileTools", "Random", "SimpleBufferStream", "Sockets", "URIs", "UUIDs"]
-git-tree-sha1 = "c67b33b085f6e2faf8bf79a61962e7339a81129c"
+git-tree-sha1 = "f93655dc73d7a0b4a368e3c0bce296ae035ad76e"
 uuid = "cd3eb016-35fb-5094-929b-558a96fad6f3"
-version = "1.10.15"
+version = "1.10.16"
 
 [[deps.HarfBuzz_jll]]
 deps = ["Artifacts", "Cairo_jll", "Fontconfig_jll", "FreeType2_jll", "Glib_jll", "Graphite2_jll", "JLLWrappers", "Libdl", "Libffi_jll"]
@@ -984,9 +1277,9 @@ version = "0.2.17"
 
 [[deps.ImageFiltering]]
 deps = ["CatIndices", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageBase", "ImageCore", "LinearAlgebra", "OffsetArrays", "PrecompileTools", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "TiledIteration"]
-git-tree-sha1 = "33cb509839cc4011beb45bde2316e64344b0f92b"
+git-tree-sha1 = "eea3a5095c0c5f143e62773164ab11f67e43c4bb"
 uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
-version = "0.7.9"
+version = "0.7.10"
 
 [[deps.ImageIO]]
 deps = ["FileIO", "IndirectArrays", "JpegTurbo", "LazyModules", "Netpbm", "OpenEXR", "PNGFiles", "QOI", "Sixel", "TiffImages", "UUIDs", "WebP"]
@@ -1091,9 +1384,9 @@ weakdeps = ["Unitful"]
     InterpolationsUnitfulExt = "Unitful"
 
 [[deps.IntervalSets]]
-git-tree-sha1 = "dba9ddf07f77f60450fe5d2e2beb9854d9a49bd0"
+git-tree-sha1 = "5fbb102dcb8b1a858111ae81d56682376130517d"
 uuid = "8197267c-284f-5f27-9208-e0e47529a953"
-version = "0.7.10"
+version = "0.7.11"
 weakdeps = ["Random", "RecipesBase", "Statistics"]
 
     [deps.IntervalSets.extensions]
@@ -1117,16 +1410,20 @@ uuid = "82899510-4779-5014-852e-03e436cf321d"
 version = "1.0.0"
 
 [[deps.JLD2]]
-deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "PrecompileTools", "Requires", "TranscodingStreams"]
-git-tree-sha1 = "1059c071429b4753c0c869b75c859c44ba09a526"
+deps = ["FileIO", "MacroTools", "Mmap", "OrderedCollections", "PrecompileTools", "TranscodingStreams"]
+git-tree-sha1 = "8e071648610caa2d3a5351aba03a936a0c37ec61"
 uuid = "033835bb-8acc-5ee8-8aae-3f567f8a3819"
-version = "0.5.12"
+version = "0.5.13"
+weakdeps = ["UnPack"]
+
+    [deps.JLD2.extensions]
+    UnPackExt = "UnPack"
 
 [[deps.JLFzf]]
 deps = ["REPL", "Random", "fzf_jll"]
-git-tree-sha1 = "1d4015b1eb6dc3be7e6c400fbd8042fe825a6bac"
+git-tree-sha1 = "82f7acdc599b65e0f8ccd270ffa1467c21cb647b"
 uuid = "1019f520-868f-41f5-a6de-eb00f4b6a39c"
-version = "0.1.10"
+version = "0.1.11"
 
 [[deps.JLLWrappers]]
 deps = ["Artifacts", "Preferences"]
@@ -1172,9 +1469,9 @@ version = "3.0.0+1"
 
 [[deps.LLVMOpenMP_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "78211fb6cbc872f77cad3fc0b6cf647d923f4929"
+git-tree-sha1 = "eb62a3deb62fc6d8822c0c4bef73e4412419c5d8"
 uuid = "1d63c593-3942-5779-bab2-d838dc0a180e"
-version = "18.1.7+0"
+version = "18.1.8+0"
 
 [[deps.LZO_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1189,9 +1486,9 @@ version = "1.4.0"
 
 [[deps.Latexify]]
 deps = ["Format", "InteractiveUtils", "LaTeXStrings", "MacroTools", "Markdown", "OrderedCollections", "Requires"]
-git-tree-sha1 = "cd714447457c660382fe634710fb56eb255ee42e"
+git-tree-sha1 = "cd10d2cc78d34c0e2a3a36420ab607b611debfbb"
 uuid = "23fbe1c1-3f47-55db-b15f-69d7ec21a316"
-version = "0.16.6"
+version = "0.16.7"
 
     [deps.Latexify.extensions]
     DataFramesExt = "DataFrames"
@@ -1221,26 +1518,21 @@ version = "0.3.1"
 [[deps.LibCURL]]
 deps = ["LibCURL_jll", "MozillaCACerts_jll"]
 uuid = "b27032c2-a3e7-50c8-80cd-2d36dbcbfd21"
-version = "0.6.4"
+version = "0.6.3"
 
 [[deps.LibCURL_jll]]
 deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll", "Zlib_jll", "nghttp2_jll"]
 uuid = "deac9b47-8bc7-5906-a0fe-35ac56dc84c0"
-version = "8.4.0+0"
+version = "7.84.0+0"
 
 [[deps.LibGit2]]
-deps = ["Base64", "LibGit2_jll", "NetworkOptions", "Printf", "SHA"]
+deps = ["Base64", "NetworkOptions", "Printf", "SHA"]
 uuid = "76f85450-5226-5b5a-8eaa-529ad045b433"
-
-[[deps.LibGit2_jll]]
-deps = ["Artifacts", "LibSSH2_jll", "Libdl", "MbedTLS_jll"]
-uuid = "e37daf67-58a4-590a-8e99-b0245dd2ffc5"
-version = "1.6.4+0"
 
 [[deps.LibSSH2_jll]]
 deps = ["Artifacts", "Libdl", "MbedTLS_jll"]
 uuid = "29816b5a-b9ab-546f-933c-edad1886dfa8"
-version = "1.11.0+1"
+version = "1.10.2+0"
 
 [[deps.Libdl]]
 uuid = "8f399da3-3557-5675-b5ff-fb832c97cbdb"
@@ -1251,23 +1543,11 @@ git-tree-sha1 = "27ecae93dd25ee0909666e6835051dd684cc035e"
 uuid = "e9f186c6-92d2-5b65-8a66-fee21dc1b490"
 version = "3.2.2+2"
 
-[[deps.Libgcrypt_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgpg_error_jll"]
-git-tree-sha1 = "d77592fa54ad343c5043b6f38a03f1a3c3959ffe"
-uuid = "d4300ac3-e22c-5743-9152-c294e39db1e4"
-version = "1.11.1+0"
-
 [[deps.Libglvnd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll", "Xorg_libXext_jll"]
-git-tree-sha1 = "ff3b4b9d35de638936a525ecd36e86a8bb919d11"
+git-tree-sha1 = "d36c21b9e7c172a44a10484125024495e2625ac0"
 uuid = "7e76a0d4-f3c7-5321-8279-8d96eeed0f29"
-version = "1.7.0+0"
-
-[[deps.Libgpg_error_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "df37206100d39f79b3376afb6b9cee4970041c61"
-uuid = "7add5ba3-2f88-524e-9cd5-f83b8a55f7b8"
-version = "1.51.1+0"
+version = "1.7.1+1"
 
 [[deps.Libiconv_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -1305,9 +1585,9 @@ version = "2.12.0+0"
 
 [[deps.LogExpFunctions]]
 deps = ["DocStringExtensions", "IrrationalConstants", "LinearAlgebra"]
-git-tree-sha1 = "13ca9e2586b89836fd20cccf56e57e2b9ae7f38f"
+git-tree-sha1 = "a2d09619db4e765091ee5c6ffe8872849de0feea"
 uuid = "2ab3a3ac-af41-5b50-aa03-7779005ae688"
-version = "0.3.29"
+version = "0.3.28"
 
     [deps.LogExpFunctions.extensions]
     LogExpFunctionsChainRulesCoreExt = "ChainRulesCore"
@@ -1355,9 +1635,9 @@ uuid = "856f044c-d86e-5d09-b602-aeab76dc8ba7"
 version = "2025.0.1+1"
 
 [[deps.MacroTools]]
-git-tree-sha1 = "72aebe0b5051e5143a079a4685a46da330a40472"
+git-tree-sha1 = "1e0228a030642014fe5cfe68c2c0a818f9e3f522"
 uuid = "1914dd2f-81c6-5fcd-8719-6d5c9610ff09"
-version = "0.5.15"
+version = "0.5.16"
 
 [[deps.ManualMemory]]
 git-tree-sha1 = "bcaef4fc7a0cfe2cba636d84cda54b5e4e4ca3cd"
@@ -1382,7 +1662,7 @@ version = "1.1.9"
 [[deps.MbedTLS_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "c8ffd9c3-330d-5841-b78e-0817d7145fa1"
-version = "2.28.2+1"
+version = "2.28.2+0"
 
 [[deps.Measures]]
 git-tree-sha1 = "c13304c81eec1ed3af7fc20e75fb6b26092a1102"
@@ -1412,7 +1692,7 @@ version = "0.3.4"
 
 [[deps.MozillaCACerts_jll]]
 uuid = "14a3606d-f60d-562e-9121-12d972cd8159"
-version = "2023.1.10"
+version = "2022.10.11"
 
 [[deps.MultivariateStats]]
 deps = ["Arpack", "Distributions", "LinearAlgebra", "SparseArrays", "Statistics", "StatsAPI", "StatsBase"]
@@ -1422,9 +1702,9 @@ version = "0.10.3"
 
 [[deps.NaNMath]]
 deps = ["OpenLibm_jll"]
-git-tree-sha1 = "9b8215b1ee9e78a293f99797cd31375471b2bcae"
+git-tree-sha1 = "030ea22804ef91648f29b7ad3fc15fa49d0e6e71"
 uuid = "77ba4419-2d1f-58cd-9bb1-8ffee604a2e3"
-version = "1.1.3"
+version = "1.0.3"
 
 [[deps.NearestNeighbors]]
 deps = ["Distances", "StaticArrays"]
@@ -1448,9 +1728,9 @@ uuid = "510215fc-4207-5dde-b226-833fc4488ee2"
 version = "0.5.5"
 
 [[deps.OffsetArrays]]
-git-tree-sha1 = "a414039192a155fb38c4599a60110f0018c6ec82"
+git-tree-sha1 = "117432e406b5c023f665fa73dc26e79ec3630151"
 uuid = "6fe1bfb0-de20-5000-8ca7-80f57d26f881"
-version = "1.16.0"
+version = "1.17.0"
 weakdeps = ["Adapt"]
 
     [deps.OffsetArrays.extensions]
@@ -1465,7 +1745,7 @@ version = "1.3.5+1"
 [[deps.OpenBLAS_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "Libdl"]
 uuid = "4536629a-c528-5b80-bd46-f80d51c5b363"
-version = "0.3.23+4"
+version = "0.3.21+4"
 
 [[deps.OpenEXR]]
 deps = ["Colors", "FileIO", "OpenEXR_jll"]
@@ -1488,7 +1768,7 @@ version = "2.4.0+0"
 [[deps.OpenLibm_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "05823500-19ac-5b8b-9628-191a04bc5112"
-version = "0.8.1+2"
+version = "0.8.1+0"
 
 [[deps.OpenSSL]]
 deps = ["BitFlags", "Dates", "MozillaCACerts_jll", "OpenSSL_jll", "Sockets"]
@@ -1522,13 +1802,13 @@ version = "1.8.0"
 [[deps.PCRE2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "efcefdf7-47ab-520b-bdef-62a2eaa19f15"
-version = "10.42.0+1"
+version = "10.42.0+0"
 
 [[deps.PDMats]]
 deps = ["LinearAlgebra", "SparseArrays", "SuiteSparse"]
-git-tree-sha1 = "48566789a6d5f6492688279e22445002d171cf76"
+git-tree-sha1 = "949347156c25054de2db3b166c52ac4728cbad65"
 uuid = "90014a1f-27ba-587c-ab20-58faa44d9150"
-version = "0.11.33"
+version = "0.11.31"
 
 [[deps.PNGFiles]]
 deps = ["Base64", "CEnum", "ImageCore", "IndirectArrays", "OffsetArrays", "libpng_jll"]
@@ -1556,9 +1836,9 @@ version = "0.12.3"
 
 [[deps.Parsers]]
 deps = ["Dates", "PrecompileTools", "UUIDs"]
-git-tree-sha1 = "8489905bcdbcfac64d1daa51ca07c0d8f0283821"
+git-tree-sha1 = "7d2f8f21da5db6a806faf7b9b292296da42b2810"
 uuid = "69de0a69-1ddd-5017-9359-2bf0b02dc9f0"
-version = "2.8.1"
+version = "2.8.3"
 
 [[deps.Pixman_jll]]
 deps = ["Artifacts", "CompilerSupportLibraries_jll", "JLLWrappers", "LLVMOpenMP_jll", "Libdl"]
@@ -1569,7 +1849,7 @@ version = "0.44.2+0"
 [[deps.Pkg]]
 deps = ["Artifacts", "Dates", "Downloads", "FileWatching", "LibGit2", "Libdl", "Logging", "Markdown", "Printf", "REPL", "Random", "SHA", "Serialization", "TOML", "Tar", "UUIDs", "p7zip_jll"]
 uuid = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
-version = "1.10.0"
+version = "1.9.2"
 
 [[deps.PkgVersion]]
 deps = ["Pkg"]
@@ -1701,7 +1981,7 @@ deps = ["InteractiveUtils", "Markdown", "Sockets", "Unicode"]
 uuid = "3fa0cd96-eef1-5676-8a61-b3b8758bbffb"
 
 [[deps.Random]]
-deps = ["SHA"]
+deps = ["SHA", "Serialization"]
 uuid = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 
 [[deps.RangeArrays]]
@@ -1869,13 +2149,12 @@ version = "1.2.1"
 [[deps.SparseArrays]]
 deps = ["Libdl", "LinearAlgebra", "Random", "Serialization", "SuiteSparse_jll"]
 uuid = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
-version = "1.10.0"
 
 [[deps.SpecialFunctions]]
 deps = ["IrrationalConstants", "LogExpFunctions", "OpenLibm_jll", "OpenSpecFun_jll"]
-git-tree-sha1 = "64cca0c26b4f31ba18f13f6c12af7c85f478cfde"
+git-tree-sha1 = "41852b8679f78c8d8961eeadc8f62cef861a52e3"
 uuid = "276daf66-3868-5448-9aa4-cd146d93841b"
-version = "2.5.0"
+version = "2.5.1"
 weakdeps = ["ChainRulesCore"]
 
     [deps.SpecialFunctions.extensions]
@@ -1894,16 +2173,16 @@ uuid = "cae243ae-269e-4f55-b966-ac2d0dc13c15"
 version = "0.1.1"
 
 [[deps.Static]]
-deps = ["CommonWorldInvalidations", "IfElse", "PrecompileTools"]
-git-tree-sha1 = "f737d444cb0ad07e61b3c1bef8eb91203c321eff"
+deps = ["IfElse"]
+git-tree-sha1 = "b366eb1eb68075745777d80861c6706c33f588ae"
 uuid = "aedffcd0-7271-4cad-89d0-dc628f76c6d3"
-version = "1.2.0"
+version = "0.8.9"
 
 [[deps.StaticArrayInterface]]
-deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Static"]
-git-tree-sha1 = "96381d50f1ce85f2663584c8e886a6ca97e60554"
+deps = ["ArrayInterface", "Compat", "IfElse", "LinearAlgebra", "PrecompileTools", "Requires", "Static"]
+git-tree-sha1 = "c3668ff1a3e4ddf374fc4f8c25539ce7194dcc39"
 uuid = "0d7ed370-da01-4f52-bd93-41d350b8b718"
-version = "1.8.0"
+version = "1.6.0"
 weakdeps = ["OffsetArrays", "StaticArrays"]
 
     [deps.StaticArrayInterface.extensions]
@@ -1929,7 +2208,7 @@ version = "1.4.3"
 [[deps.Statistics]]
 deps = ["LinearAlgebra", "SparseArrays"]
 uuid = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
-version = "1.10.0"
+version = "1.9.0"
 
 [[deps.StatsAPI]]
 deps = ["LinearAlgebra"]
@@ -1974,9 +2253,9 @@ deps = ["Libdl", "LinearAlgebra", "Serialization", "SparseArrays"]
 uuid = "4607b0f0-06f3-5cda-b6b1-a6196a1729e9"
 
 [[deps.SuiteSparse_jll]]
-deps = ["Artifacts", "Libdl", "libblastrampoline_jll"]
+deps = ["Artifacts", "Libdl", "Pkg", "libblastrampoline_jll"]
 uuid = "bea87d4a-7f5b-5778-9afe-8cc45184846c"
-version = "7.2.1+1"
+version = "5.10.1+6"
 
 [[deps.TOML]]
 deps = ["Dates"]
@@ -2024,9 +2303,9 @@ version = "1.9.0"
 
 [[deps.ThreadingUtilities]]
 deps = ["ManualMemory"]
-git-tree-sha1 = "eda08f7e9818eb53661b3deb74e3159460dfbc27"
+git-tree-sha1 = "18ad3613e129312fe67789a71720c3747e598a61"
 uuid = "8290d209-cae3-49c0-8002-c8c24d57dab5"
-version = "0.5.2"
+version = "0.5.3"
 
 [[deps.TiffImages]]
 deps = ["ColorTypes", "DataStructures", "DocStringExtensions", "FileIO", "FixedPointNumbers", "IndirectArrays", "Inflate", "Mmap", "OffsetArrays", "PkgVersion", "ProgressMeter", "SIMD", "UUIDs"]
@@ -2140,89 +2419,77 @@ git-tree-sha1 = "b8b243e47228b4a3877f1dd6aee0c5d56db7fcf4"
 uuid = "02c8fc9c-b97f-50b9-bbe4-9be30ff0a78a"
 version = "2.13.6+1"
 
-[[deps.XSLT_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Libgcrypt_jll", "Libgpg_error_jll", "Libiconv_jll", "XML2_jll", "Zlib_jll"]
-git-tree-sha1 = "82df486bfc568c29de4a207f7566d6716db6377c"
-uuid = "aed1982a-8fda-507f-9586-7b0439959a61"
-version = "1.1.43+0"
-
 [[deps.Xorg_libX11_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxcb_jll", "Xorg_xtrans_jll"]
-git-tree-sha1 = "9dafcee1d24c4f024e7edc92603cedba72118283"
+git-tree-sha1 = "b5899b25d17bf1889d25906fb9deed5da0c15b3b"
 uuid = "4f6342f7-b3d2-589e-9d20-edeb45f2b2bc"
-version = "1.8.6+3"
+version = "1.8.12+0"
 
 [[deps.Xorg_libXau_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "e9216fdcd8514b7072b43653874fd688e4c6c003"
+git-tree-sha1 = "aa1261ebbac3ccc8d16558ae6799524c450ed16b"
 uuid = "0c0b7dd1-d40b-584c-a123-a41640f87eec"
-version = "1.0.12+0"
+version = "1.0.13+0"
 
 [[deps.Xorg_libXcursor_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXfixes_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "807c226eaf3651e7b2c468f687ac788291f9a89b"
+git-tree-sha1 = "6c74ca84bbabc18c4547014765d194ff0b4dc9da"
 uuid = "935fb764-8cf2-53bf-bb30-45bb1f8bf724"
-version = "1.2.3+0"
+version = "1.2.4+0"
 
 [[deps.Xorg_libXdmcp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "89799ae67c17caa5b3b5a19b8469eeee474377db"
+git-tree-sha1 = "52858d64353db33a56e13c341d7bf44cd0d7b309"
 uuid = "a3789734-cfe1-5b06-b2d0-1dd0d9d62d05"
-version = "1.1.5+0"
+version = "1.1.6+0"
 
 [[deps.Xorg_libXext_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "d7155fea91a4123ef59f42c4afb5ab3b4ca95058"
+git-tree-sha1 = "a4c0ee07ad36bf8bbce1c3bb52d21fb1e0b987fb"
 uuid = "1082639a-0dae-5f34-9b06-72781eeb8cb3"
-version = "1.3.6+3"
+version = "1.3.7+0"
 
 [[deps.Xorg_libXfixes_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "6fcc21d5aea1a0b7cce6cab3e62246abd1949b86"
+git-tree-sha1 = "9caba99d38404b285db8801d5c45ef4f4f425a6d"
 uuid = "d091e8ba-531a-589c-9de9-94069b037ed8"
-version = "6.0.0+0"
+version = "6.0.1+0"
 
 [[deps.Xorg_libXi_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll", "Xorg_libXfixes_jll"]
-git-tree-sha1 = "984b313b049c89739075b8e2a94407076de17449"
+git-tree-sha1 = "a376af5c7ae60d29825164db40787f15c80c7c54"
 uuid = "a51aa0fd-4e3c-5386-b890-e753decda492"
-version = "1.8.2+0"
+version = "1.8.3+0"
 
 [[deps.Xorg_libXinerama_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll"]
-git-tree-sha1 = "a1a7eaf6c3b5b05cb903e35e8372049b107ac729"
+git-tree-sha1 = "a5bc75478d323358a90dc36766f3c99ba7feb024"
 uuid = "d1454406-59df-5ea1-beac-c340f2130bc3"
-version = "1.1.5+0"
+version = "1.1.6+0"
 
 [[deps.Xorg_libXrandr_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXext_jll", "Xorg_libXrender_jll"]
-git-tree-sha1 = "b6f664b7b2f6a39689d822a6300b14df4668f0f4"
+git-tree-sha1 = "aff463c82a773cb86061bce8d53a0d976854923e"
 uuid = "ec84b674-ba8e-5d96-8ba1-2a689ba10484"
-version = "1.5.4+0"
+version = "1.5.5+0"
 
 [[deps.Xorg_libXrender_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "a490c6212a0e90d2d55111ac956f7c4fa9c277a6"
+git-tree-sha1 = "7ed9347888fac59a618302ee38216dd0379c480d"
 uuid = "ea2f1a96-1ddc-540d-b46f-429655e07cfa"
-version = "0.9.11+1"
-
-[[deps.Xorg_libpthread_stubs_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "c57201109a9e4c0585b208bb408bc41d205ac4e9"
-uuid = "14d82f49-176c-5ed1-bb49-ad3f5cbd8c74"
-version = "0.1.2+0"
+version = "0.9.12+0"
 
 [[deps.Xorg_libxcb_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "XSLT_jll", "Xorg_libXau_jll", "Xorg_libXdmcp_jll", "Xorg_libpthread_stubs_jll"]
-git-tree-sha1 = "1a74296303b6524a0472a8cb12d3d87a78eb3612"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libXau_jll", "Xorg_libXdmcp_jll"]
+git-tree-sha1 = "bfcaf7ec088eaba362093393fe11aa141fa15422"
 uuid = "c7cfdc94-dc32-55de-ac96-5a1b8d977c5b"
-version = "1.17.0+3"
+version = "1.17.1+0"
 
 [[deps.Xorg_libxkbfile_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libX11_jll"]
-git-tree-sha1 = "dbc53e4cf7701c6c7047c51e17d6e64df55dca94"
+git-tree-sha1 = "e3150c7400c41e207012b41659591f083f3ef795"
 uuid = "cc61e674-0454-545c-8b26-ed2c68acab7a"
-version = "1.1.2+1"
+version = "1.1.3+0"
 
 [[deps.Xorg_xcb_util_image_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Xorg_xcb_util_jll"]
@@ -2256,15 +2523,15 @@ version = "0.4.1+1"
 
 [[deps.Xorg_xkbcomp_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_libxkbfile_jll"]
-git-tree-sha1 = "ab2221d309eda71020cdda67a973aa582aa85d69"
+git-tree-sha1 = "801a858fc9fb90c11ffddee1801bb06a738bda9b"
 uuid = "35661453-b289-5fab-8a00-3d9160c6a3a4"
-version = "1.4.6+1"
+version = "1.4.7+0"
 
 [[deps.Xorg_xkeyboard_config_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Xorg_xkbcomp_jll"]
-git-tree-sha1 = "691634e5453ad362044e2ad653e79f3ee3bb98c3"
+git-tree-sha1 = "00af7ebdc563c9217ecc67776d1bbf037dbcebf4"
 uuid = "33bec58e-1273-512f-9401-5d533626f822"
-version = "2.39.0+0"
+version = "2.44.0+0"
 
 [[deps.Xorg_xtrans_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2275,7 +2542,7 @@ version = "1.6.0+0"
 [[deps.Zlib_jll]]
 deps = ["Libdl"]
 uuid = "83775a58-1f1d-513f-b197-d71354ab007a"
-version = "1.2.13+1"
+version = "1.2.13+0"
 
 [[deps.Zstd_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2285,9 +2552,9 @@ version = "1.5.7+1"
 
 [[deps.fzf_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
-git-tree-sha1 = "6e50f145003024df4f5cb96c7fce79466741d601"
+git-tree-sha1 = "b6a34e0e0960190ac2a4363a1bd003504772d631"
 uuid = "214eeab7-80f7-51ab-84ad-2988db7cef09"
-version = "0.56.3+0"
+version = "0.61.1+0"
 
 [[deps.libaom_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2304,7 +2571,7 @@ version = "0.15.2+0"
 [[deps.libblastrampoline_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850b90-86db-534c-a0d3-1478176c7d93"
-version = "5.8.0+1"
+version = "5.8.0+0"
 
 [[deps.libdecor_jll]]
 deps = ["Artifacts", "Dbus_jll", "JLLWrappers", "Libdl", "Libglvnd_jll", "Pango_jll", "Wayland_jll", "xkbcommon_jll"]
@@ -2345,7 +2612,7 @@ version = "1.4.0+0"
 [[deps.nghttp2_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "8e850ede-7688-5339-a07c-302acd2aaf8d"
-version = "1.52.0+1"
+version = "1.48.0+0"
 
 [[deps.oneTBB_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl"]
@@ -2356,7 +2623,7 @@ version = "2022.0.0+0"
 [[deps.p7zip_jll]]
 deps = ["Artifacts", "Libdl"]
 uuid = "3f19e933-33d8-53b3-aaab-bd5110c3b7a0"
-version = "17.4.0+2"
+version = "17.4.0+0"
 
 [[deps.x264_jll]]
 deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg"]
@@ -2371,10 +2638,10 @@ uuid = "dfaa095f-4041-5dcd-9319-2fabd8486b76"
 version = "3.5.0+0"
 
 [[deps.xkbcommon_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
-git-tree-sha1 = "63406453ed9b33a0df95d570816d5366c92b7809"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
+git-tree-sha1 = "c950ae0a3577aec97bfccf3381f66666bc416729"
 uuid = "d8fb68d0-12a3-5cfd-a85a-d49703b185fd"
-version = "1.4.1+2"
+version = "1.8.1+0"
 """
 
 # ╔═╡ Cell order:
@@ -2385,41 +2652,66 @@ version = "1.4.1+2"
 # ╟─c5794c1b-3405-4b60-9157-ef5da147cee8
 # ╠═e68b5266-1321-4900-a6d2-8471734ecbde
 # ╟─d9629211-6630-4748-b57b-c5172b211727
+# ╟─51ff806d-79de-4001-b727-224e80c51f04
+# ╟─dd55ff72-341e-43f3-8796-0df7a6775bf6
+# ╟─f744e4bf-f0b7-45d0-be54-22b4f918c344
 # ╟─8c6dc39d-583c-4297-bfec-866b9be75641
-# ╠═de0afeea-5661-43e8-a6d0-f84c03635fbd
+# ╟─1d3c2b72-d0b1-4abe-9ef4-4a35b3d1721e
+# ╟─f42fd42a-6aa6-48e6-8c51-9b128dc798ce
 # ╠═0c3e13bd-67dd-4018-bd3e-daa20f457537
 # ╠═88fe22db-e8a5-4584-b2dd-5a8f4729990c
-# ╠═6ee50b2d-f4fc-4b12-a0be-05042b50f9bc
-# ╠═2ff3f87f-6e99-49c6-a670-6e101162b35e
+# ╟─6ee50b2d-f4fc-4b12-a0be-05042b50f9bc
+# ╟─0326d2d3-a5ee-4f7a-9687-5dbf69c61649
+# ╟─a2c31c65-3e05-4a44-ab2d-0882e6e6c04f
+# ╟─99517dbc-9e81-45e8-861e-40af82e32f33
 # ╠═69ceb27d-457b-425a-88fd-2fd717ddef25
 # ╠═75a11584-16c5-4f24-a378-ccca170845b6
-# ╠═4ec469f3-b48a-46a0-ada4-1ac978a99e3b
+# ╟─808be566-e1fb-4b4d-8a50-b1a1deb2b1b6
 # ╠═2769318b-5ac4-4a1f-b939-6ab822bf9602
 # ╠═b8eb0766-03be-4821-8c6b-3e652351674f
+# ╟─0e30e5d7-516a-412b-b051-33ce84776558
 # ╠═a2273052-0e6a-4c12-a70f-46b00a56d298
-# ╠═d3cb4cfb-2473-47a4-b120-ec9d9279832d
+# ╟─a06d62a1-a73c-44b7-9f63-2ee23ad6b5ec
+# ╟─d3cb4cfb-2473-47a4-b120-ec9d9279832d
 # ╠═c6145c72-5907-44e6-bfab-5b092e44afe3
 # ╟─706eadcf-a514-4944-bcfa-631fb513dda4
+# ╟─14d2f010-82f8-4113-a1ea-d3b973bb6bbd
 # ╟─a1399006-cd25-4aff-830d-e942964153ce
+# ╟─3cdc5c93-8ff2-45cc-9d61-99eafafab748
 # ╠═15c47f19-06e8-4949-bbfa-77161e493b44
+# ╟─a5bff652-d613-495f-86be-79f9c2f82072
 # ╠═3615be86-14f6-490b-bacd-113cc6331493
+# ╟─e52d09a4-5467-46a1-a768-f678cf687799
 # ╠═6452a273-86ac-4685-87d7-65a35923c50e
-# ╠═c5e8d35c-0ea6-4036-81e2-f1df83f01dd7
+# ╟─c5e8d35c-0ea6-4036-81e2-f1df83f01dd7
+# ╟─93100b46-7b9f-49bd-92d0-e1a3a9230795
 # ╠═5600b81f-ba3b-4ab2-b58c-4417b4842613
-# ╠═16d5f8a5-cf9f-462b-960c-a9c7b4cf65e4
-# ╠═4f94e8ac-8618-42fe-9dfd-a5dae102448b
-# ╠═a63773bc-5e4e-4def-a6fa-56427f908f62
+# ╟─16d5f8a5-cf9f-462b-960c-a9c7b4cf65e4
+# ╟─6848a946-95c8-4f18-bc34-e67882820e59
+# ╟─4f94e8ac-8618-42fe-9dfd-a5dae102448b
+# ╟─a844974c-c597-4c8a-9ff8-5eba556fd926
 # ╠═c580a6a1-b2e8-4521-982c-11056684b72a
-# ╠═f4b92cec-d92b-4ab0-b74b-31f9ff4778d6
+# ╟─84c7a75f-6935-4b56-9938-c3aa7451d762
+# ╟─f4b92cec-d92b-4ab0-b74b-31f9ff4778d6
 # ╠═54e3b0fa-0684-44a7-bb1d-8c74ee2aa928
-# ╠═594b9f69-4fa0-45f1-9a72-e4d8cacc4458
-# ╠═aed6f545-f9d4-453f-b4d3-0f0d928b1599
+# ╟─03c55c70-c053-482d-9b83-926620e3d654
+# ╟─22f5d43a-9120-4b07-b445-dbd38c9134f2
+# ╟─594b9f69-4fa0-45f1-9a72-e4d8cacc4458
+# ╟─aed6f545-f9d4-453f-b4d3-0f0d928b1599
 # ╠═6e360a4f-67d2-4886-831f-37eb94d5fb2b
+# ╟─e495eefa-be0d-4f6d-88c7-81e76b4b5418
 # ╠═e10acc44-a37d-4776-bf04-76ad84979349
-# ╠═a89af050-6983-45ca-bdbb-857cf87081c8
+# ╟─2bf0ab32-75f6-483b-bea2-788212f24850
+# ╟─a89af050-6983-45ca-bdbb-857cf87081c8
+# ╟─cd40b738-1808-4f8f-b9b6-4da18a4a428d
 # ╠═a0474e7d-b7d6-413e-b2b5-e5a4c8202b73
-# ╠═6b6a889d-e514-4950-9db5-4bf0219b08e3
-# ╠═c4d79a2c-155e-490e-9a38-b458a8e08370
+# ╟─a46637f2-0830-4e31-a550-7930fe96f312
+# ╟─6b6a889d-e514-4950-9db5-4bf0219b08e3
+# ╟─87dc3954-d0ab-4616-abec-08bda857d0e9
+# ╟─8cf62652-7d9c-4203-98ae-507106dc0417
+# ╟─c4d79a2c-155e-490e-9a38-b458a8e08370
+# ╟─fda158d5-b513-4bfe-8f73-f2750d44f781
 # ╟─ce9a0e09-905e-44e3-8306-3ef41b9b04e5
+# ╟─c7fc5656-bbb1-491b-b311-fe7860ac1c38
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002

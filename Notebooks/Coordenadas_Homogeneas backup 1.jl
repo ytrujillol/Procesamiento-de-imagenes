@@ -4,16 +4,6 @@
 using Markdown
 using InteractiveUtils
 
-# This Pluto notebook uses @bind for interactivity. When running this notebook outside of Pluto, the following 'mock version' of @bind gives bound variables a default value (instead of an error).
-macro bind(def, element)
-    quote
-        local iv = try Base.loaded_modules[Base.PkgId(Base.UUID("6e696c72-6542-2067-7265-42206c756150"), "AbstractPlutoDingetjes")].Bonds.initial_value catch; b -> missing; end
-        local el = $(esc(element))
-        global $(esc(def)) = Core.applicable(Base.get, el) ? Base.get(el) : iv(el)
-        el
-    end
-end
-
 # ╔═╡ a403c522-cc82-11ef-1553-8de0ed8d5f4a
 using PlutoUI
 
@@ -49,105 +39,12 @@ md"""
 
 # ╔═╡ 5b293f7e-323b-4e87-a61b-d84449640128
 md"""
-En este cuaderno exploramos el uso de **coordenadas homogéneas** para representar y aplicar transformaciones proyectivas (también conocidas como homografías) en imágenes. Este enfoque permite modelar transformaciones complejas como rotaciones, traslaciones, escalados, perspectivas e incluso mapeos entre planos no paralelos, todo dentro de un marco algebraico unificado.
-
-Geométricamente, una transformación proyectiva puede verse como una manera de mapear un cuadrilátero arbitrario en la imagen original a un rectángulo o viceversa, conservando relaciones de incidencia y rectitud (aunque no necesariamente distancias ni ángulos).
-
-En términos algebraicos, estas transformaciones se representan mediante una **matriz 3×3** que actúa sobre las coordenadas homogéneas de los píxeles. Para determinar esta matriz, basta con conocer cuatro pares de puntos correspondientes entre la imagen original y la deseada.
-
-A lo largo del cuaderno:
-
-- Revisaremos la influencia de los valores de la matriz.
-- Describiremos el sistema que nos permite calcular la matriz de transformación.
-- Implementaremos este cálculo en Julia usando álgebra lineal.
-- Aplicaremos la homografía resultante para transformar imágenes reales.
-
-Este enfoque es fundamental en áreas como visión por computadora, reconstrucción 3D, realidad aumentada y rectificación de imágenes.
-
+Falta
 """
 
 # ╔═╡ 4a9860ae-38af-4626-8b19-6015291c5c95
 md"""
 # Coordenadas homogéneas y transformaciones proyectivas
-"""
-
-# ╔═╡ 217d3faa-930b-4ff5-9b08-2e2b2a4ba2c1
-md"""
-Considere el siguiente conjunto de rectángulos dispuestos en la imagen, vamos a aplicar una transformación proyectiva, pero ¿qué es una transformación proyectiva?
-"""
-
-# ╔═╡ 63911cc4-1b07-428c-a1dd-681ad3309550
-md"""
-Una **transformación proyectiva** es una función que puede doblar, girar, estirar y deformar una imagen como si fuera una hoja flexible observada desde otro ángulo. Matemáticamente, es una función que **mapea líneas en líneas**, pero no conserva longitudes ni ángulos. Por ejemplo: convertir una foto tomada en perspectiva en una vista frontal.
-
-Las **coordenadas homogéneas** son una forma elegante de escribir puntos del plano como si vivieran en 3D: El punto `(x, y)` se convierte en `(λx, λy, λ)` para cualquier número no nulo `λ`.
-
-"""
-
-# ╔═╡ cf75eb8d-44c4-4923-9ebf-6449bef2ad12
-md"""
-La **matriz de transformación proyectiva** es una matriz **3×3** que se aplica a las coordenadas homogéneas de un punto:
-
-$A =\begin{bmatrix}
-a_{11} & a_{12} & a_{13} \\
-a_{21} & a_{22} & a_{23} \\
-a_{31} & a_{32} & a_{33}
-\end{bmatrix}$
-
-Esta matriz transforma el punto $(x,y)$ en las nuevas coordenadas $(x', y')$:
-
-$\begin{bmatrix}
-x' \\ y' \\ w
-\end{bmatrix}
-= A
-\begin{bmatrix}
-x \\ y \\ 1
-\end{bmatrix}$
-
-Después, recuperamos el punto transformado dividiendo por $w$:
-
-$(x', y') = \left( \frac{x'}{w}, \frac{y'}{w} \right)$
-
-El menor principal $2×2$:
-El subcuadro de la matriz compuesto por los elementos  
-
-$\begin{bmatrix}
-a_{11} & a_{12} \\
-a_{21} & a_{22}
-\end{bmatrix}$  
-
-representa una **rotación** y/o **dilatación**.  
-- Si $a_{11} = a_{22}$ y $a_{12} = -a_{21}$, está rotando.  
-- Si sus valores no son $1$, estamos hablando de una dilatación o contracción.
-
-El vector $[a_{13}; a_{23}]$:
-Este vector representa la **traslación** de la imagen.  
--  $a_{13}$ controla el desplazamiento horizontal ($x$).  
--  $a_{23}$ controla el desplazamiento vertical ($y$).  
-
-El vector $[a_{31}, a_{32}]$:
-Este vector introduce el efecto de la **perspectiva**.  
-- Los valores $a_{31}$ y $a_{32}$ permiten modificar la proporción de los ejes de la transformación, distorsionando las líneas rectas en el plano proyectado.  
-
-El valor $a_{33}$:
-- Normalmente, se toma como $1$.  
-- Esto hace que la matriz sea homogénea, garantizando que el punto transformado esté representado en el mismo espacio proyectivo.  
-- Si fuera distinto a $1$, alteraría la escala del resultado final.
-
-"""
-
-# ╔═╡ ba316956-0310-4dd0-bf69-3cb7eba81958
-md"""
-Para la figura 1 se aplica la transformación proyectiva con matriz asociada
-
-$A =\begin{bmatrix}
-1 & 0 & a_{13} \\
-0 & 1 & a_{23} \\
-a_{31} & a_{32} & 1
-\end{bmatrix}$
-
-donde los valores $a_{13}, a_{23}, a_{31}$ y $a_{32}$ se pueden seleccionar dentro de un rango de valores usando deslizadores. Se invita al lector a que indague los efectos de cada uno de estos valores en la figura 2 y además que investigue los rangos escogidos para estos deslizadores.
-
 """
 
 # ╔═╡ 37916b3b-b6b8-40df-936f-4cc5e42fb33b
@@ -161,32 +58,19 @@ begin
 	    end
 	end
 	L_window = Gray.(L_window)
-	CompleteWindow = kron([0 0 0; 0 1 0; 0 0 0],L_window)
 end
 
-# ╔═╡ 45f2f183-befd-4a13-91d9-7164f5e55795
-md"""$\texttt{Figura 1.}$"""
-
-# ╔═╡ 5a9ac07b-a587-4c8e-abf7-c467a5bc20f5
-a13 = @bind a13 Slider(-800:40:800, default=0)
-
-# ╔═╡ 3562cd59-4f3a-40cd-8a97-82d440bc7faa
-a23 = @bind a23 Slider(-400:20:400, default=0)
-
-# ╔═╡ dc3b1811-4d83-49e2-a192-085ea4bfb13a
-a31 = @bind a31 Slider(-0.001:0.0001:0.001, default=0)
-
-# ╔═╡ 40620bba-5c00-4c51-92e5-92c7fa847fbe
-a32 = @bind a32 Slider(-0.005:0.0001:0.005, default=0)
-
-# ╔═╡ ee7a27a9-f28f-49b6-b7fd-ebed46adca0b
-A = [1 0 a13; 0 1 a23; a31 a32 1]
+# ╔═╡ bfacca3f-92ce-447c-99ba-4caccf030687
+kron([0 0 0; 0 1 0; 0 0 0],L_window)
 
 # ╔═╡ 10209b04-b8d5-4408-b85c-81ec9d053abe
-function homog_coord_naive(image, A)
+function homog_coord_naive(image)
     M, N = size(image)
     cx = N / 2
     cy = M / 2
+	A = [1 0 30; 
+		0 1 30;
+		0.0022 0.0021 1]
     new_image = zeros(eltype(image), M, N)
 
     for m in 1:M, n in 1:N
@@ -196,7 +80,7 @@ function homog_coord_naive(image, A)
 		
 		λ = new_coords[3]
 		if λ==0
-			continue
+			print("AAA")
 		end
 		
         x_p = new_coords[1]/λ + cx
@@ -212,19 +96,18 @@ function homog_coord_naive(image, A)
 end
 
 # ╔═╡ 4a1417ee-325d-47f1-9112-c8435108fe99
-homog_coord_naive(CompleteWindow,A)
-
-# ╔═╡ 7ebaec22-5dda-467c-93c6-393f69fd8a1b
-md"""$\texttt{Figura 2.}$"""
+homog_coord_naive(kron([0 0 0; 0 1 0; 0 0 0],L_window))
 
 # ╔═╡ 7ce6a9c8-ec65-4deb-a2e5-c29fbbc2aa5f
 md"""
-# Selección automática de la transformaciónproyectiva
+Si recordamos, la dificultad de combinar los tres primeros pasos del procedimiento de rotación de imágenes en un solo paso radica en el molesto hecho de que la traslación no es una transformación lineal. Entonces, ¿qué dimensión adicional podemos introducir para hacerla lineal?
+
+Resulta que lo único que debemos hacer es mover el origen del sistema de coordenadas lejos del centro de la imagen y colocarlo donde estamos, a una unidad de distancia de la pantalla de la computadora. De esta manera, cualquier punto con coordenadas $(x, y)$ se asignará a las coordenadas $(x, y, 1)$, conocidas como coordenadas homogéneas.
 """
 
 # ╔═╡ 075f04cc-6ca6-47b6-84e9-26d56f48599f
 md"""
-Supongamos que la imagen mostrada a continuación proviene de nuestra cámara de seguridad, y nos gustaría obtener una buena vista frontal de la placa delantera en el parachoques del vehículo. ¿Cómo podemos "girar" digitalmente la imagen para obtener una vista desde un punto de vista diferente? ¿Pueden las coordenadas homogéneas ayudarnos en esto?
+Por ejemplo, supongamos que la imagen mostrada a continuación proviene de nuestra cámara de seguridad, y nos gustaría obtener una buena vista frontal de la placa delantera en el parachoques del vehículo. ¿Cómo podemos "girar" digitalmente la imagen para obtener una vista desde un punto de vista diferente? ¿Pueden las coordenadas homogéneas ayudarnos en esto?
 """
 
 # ╔═╡ 97ea41e1-dcf9-4205-af96-94661a9c43f6
@@ -235,7 +118,49 @@ begin
 end
 
 # ╔═╡ d55e7d8c-6066-4317-8f8e-4c2f902c6724
-md"""$\texttt{Figura 3.}$"""
+md"""$\texttt{Figura x.}$"""
+
+# ╔═╡ c2414c29-750a-4384-96f7-263c37b98d6f
+size(imagplaca)
+
+# ╔═╡ 75426f6c-24c6-4973-b272-d977f1bd40d7
+imagplaca[50:200,100:200]
+
+# ╔═╡ 6268b716-dc96-47f1-ab3d-b26e4271f3b5
+imagplaca[50:150,100:200]
+
+# ╔═╡ ab7c32ae-651f-4996-8d00-3feb132da7bc
+md"""
+-  $M = 238$
+-  $N = 330$
+
+
+-  $(m_1,n_1)=(50,100)$
+-  $(m_2,n_2)=(50,200)$
+-  $(m_3,n_3)=(200,100)$
+-  $(m_4,n_4)=(150,200)$
+
+
+-  $(x_1,y_1)=(-65,69)$
+-  $(x_2,y_2)=(35,69)$
+-  $(x_3,y_3)=(-65,35)$
+-  $(x_4,y_4)=(35,-31)$
+
+
+-  $(m'_1,n'_1)=(1,1)$
+-  $(m'_2,n'_2)=(1,330)$
+-  $(m'_3,n'_3)=(238,1)$
+-  $(m'_4,n'_4)=(238,330)$
+
+
+-  $(x'_1,y'_1)=(-164,118)$
+-  $(x'_2,y'_2)=(165,118)$
+-  $(x'_3,y'_3)=(-164,-119)$
+-  $(x'_4,y'_4)=(165,-119)$
+"""
+
+# ╔═╡ 00886f58-7508-490c-bb92-40fe9e29eb09
+[0 1; -1 0]*[1 1 238 238; 1 330 1 330].+[-165; 119]
 
 # ╔═╡ a07cdb2b-9c56-4b36-9209-c0df92606254
 md"""
@@ -326,100 +251,53 @@ a_{33}
 \end{bmatrix}^{T}.$
 """
 
-# ╔═╡ 6f42d465-1f85-4e39-a440-c95005b07cd0
-md"""
-En la siguiente matriz ponemos en la mitad izquierda los pixeles en los que deseamos ajustar la imagen y en la mitad derecha los pixeles que corresponden a las esquinas de la placa, que corresponde a la porción de la imágen que queremos que sea ajustada. Esta selección de los pixeles se hizo **manualmente** usando las características de la imagen (¿cómo se pueden elegir de una manera más sencilla?).
-"""
-
 # ╔═╡ 727ad7b2-c898-43f8-804b-0841bdf92095
-pixeles = [1 1 238 238 45 15 210 135; 1 330 1 330 100 205 100 205]
+pixeles = [50 50 200 150 1 200 1 200; 100 200 100 200 1 1 200 200]
 
-# ╔═╡ a94ad943-9348-4c47-8833-ae189c4a76d6
-begin
-	# Función que calcula la matriz de transformación homográfica (H) dados puntos de correspondencia
-	function SolHa(pxs, M, N)
-	    # 1. Preprocesamiento de coordenadas:
-	    #    - Aplica rotación de 90° ([0 1; -1 0])
-	    #    - Centra las coordenadas restando N/2 en x y sumando M/2 en y
-	    coord = [0 1; -1 0]*pxs .+ [-N/2; M/2]
-	    
-	    # 2. Construcción de la matriz A:
-	    #    - Toma las primeras 4 columnas (puntos origen)
-	    #    - Añade columna de unos (coordenadas homogéneas)
-	    A = [coord[1:2, 1:4]' ones(4, 1)]
-	    
-	    # 3. Matriz de ceros para construir el sistema
-	    Z = zeros(4, 3)
-	    
-	    # 4. Construye términos para las ecuaciones de restricción:
-	    #    - B = A multiplicada por las coordenadas x destino (columnas 5-8)
-	    #    - C = A multiplicada por las coordenadas y destino (columnas 5-8)
-	    B = A .* coord[1, 5:8]
-	    C = A .* coord[2, 5:8]
-	    
-	    # 5. Ensambla el sistema lineal H para resolver la homografía
-	    H = [-A Z B; Z -A C]
-	    
-	    # 6. Resuelve el sistema:
-	    #    - Encuentra el espacio nulo de H
-	    #    - Reforma la solución en matriz 3×3 y la transpone
-	    R = Array(reshape(nullspace(H), 3, 3)')
-	    return R
-	end
-	
-	# Función que aplica la transformación homográfica a una imagen
-	function homog_coord(image, pxs)
-	    # 1. Obtiene dimensiones de la imagen y calcula centro
-	    M, N = size(image)
-	    cx = N / 2  # Centro en x
-	    cy = M / 2  # Centro en y
-	    
-	    # 2. Calcula matriz de transformación homográfica
-	    A = SolHa(pxs, M, N)
-	    
-	    # 3. Prepara imagen de salida (mismo tipo que la entrada)
-	    new_image = zeros(eltype(image), M, N)
-	    
-	    # 4. Transformación píxel a píxel
-	    for m in 1:M, n in 1:N
-	        # 4.1. Convierte a coordenadas centradas:
-	        #      - x: distancia desde el centro horizontal
-	        #      - y: distancia invertida desde el centro vertical
-	        x = n - cx
-	        y = cy - m
-	        
-	        # 4.2. Aplica transformación homográfica
-	        new_coords = A * [x; y; 1]
-	        λ = new_coords[3]  # Factor de escala homogéneo
-	        
-	        # 4.3. Manejo de división por cero
-	        if λ == 0
-	            continue  # Salta este píxel si λ es cero
-	        end
-	        
-	        # 4.4. Convierte de vuelta a coordenadas de imagen:
-	        #      - Ajusta por λ y revierte el centrado
-	        x_p = new_coords[1] / λ + cx
-	        y_p = cy - new_coords[2] / λ
-	        
-	        # 4.5. Redondea a coordenadas enteras
-	        x_p = round(Int, x_p)
-	        y_p = round(Int, y_p)
-	        
-	        # 4.6. Si está dentro de los límites, copia el píxel
-	        if 1 <= x_p <= N && 1 <= y_p <= M
-	            new_image[m, n] = image[y_p, x_p]
-	        end
-	    end
-	    return new_image
-	end
+# ╔═╡ ad044773-c0cc-4ed8-b69a-08d4f98181fd
+function SolHa(pxs,M,N)
+	coord = [0 1; -1 0]*pxs .+ [-N/2;M/2]
+	A = [coord[1:2,1:4]' ones(4,1)]
+	Z = zeros(4,3)
+	B = A .* coord[1,5:8]
+	C = A .* coord[2,5:8]
+	H = [-A Z B ; Z -A C]
+	return Array(reshape(nullspace(H),3,3)')
+end
+
+# ╔═╡ c424f0b5-817c-4d4f-8f70-e326240c68f9
+SolHa(pixeles,238,330)
+
+# ╔═╡ 1d545ce3-f1e6-4c67-acd0-3e3e77acfb93
+function homog_coord(image, pxs)
+    M, N = size(image)
+    cx = N / 2
+    cy = M / 2
+	A = SolHa(pxs,M,N)
+    new_image = zeros(eltype(image), M, N)
+
+    for m in 1:M, n in 1:N
+        x = n - cx
+        y = cy - m
+        new_coords = A * [x; y ; 1]
+		λ = new_coords[3]
+        x_p = new_coords[1]/λ + cx
+        y_p = cy - new_coords[2]/λ
+        
+        x_p = round(Int, x_p)
+        y_p = round(Int, y_p)
+        if x_p >= 1 && x_p <= N && y_p >= 1 && y_p <= M
+            new_image[m, n] = image[y_p, x_p]
+        end
+    end
+    return new_image
 end
 
 # ╔═╡ f74a4788-151b-4c83-91b0-c276113c5fb2
-[imagplaca homog_coord(imagplaca, pixeles)]
+imagplaca
 
-# ╔═╡ 12387c2c-33d5-4364-be59-7671133fa329
-md"""$\texttt{Figura 4.}$"""
+# ╔═╡ 7333c232-4fa4-44a0-b2c5-f32fff38685f
+homog_coord(imagplaca, pixeles)
 
 # ╔═╡ d11b57f2-718a-470f-9ef1-49121c0c7956
 md"""
@@ -488,16 +366,16 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
 
 [compat]
-ColorVectorSpace = "~0.11.0"
+ColorVectorSpace = "~0.10.0"
 Colors = "~0.13.0"
-Distributions = "~0.25.118"
-FileIO = "~1.17.0"
+Distributions = "~0.25.115"
+FileIO = "~1.16.6"
 HypertextLiteral = "~0.9.5"
 ImageIO = "~0.6.9"
 ImageShow = "~0.3.8"
-Images = "~0.26.2"
+Images = "~0.26.1"
 Plots = "~1.40.7"
-PlutoUI = "~0.7.23"
+PlutoUI = "~0.7.60"
 StatsBase = "~0.34.4"
 StatsPlots = "~0.15.7"
 """
@@ -508,7 +386,7 @@ PLUTO_MANIFEST_TOML_CONTENTS = """
 
 julia_version = "1.9.2"
 manifest_format = "2.0"
-project_hash = "975b45c493d9ea0010181af9bbd17f0ac9a43a35"
+project_hash = "036eac9cacea0f41aae7e55044a1ffc6d2455924"
 
 [[deps.AbstractFFTs]]
 deps = ["LinearAlgebra"]
@@ -682,21 +560,15 @@ version = "3.29.0"
 
 [[deps.ColorTypes]]
 deps = ["FixedPointNumbers", "Random"]
-git-tree-sha1 = "67e11ee83a43eb71ddc950302c53bf33f0690dfe"
+git-tree-sha1 = "b10d0b65641d57b8b4d5e234446582de5047050d"
 uuid = "3da002f7-5984-5a60-b8a6-cbb66c0b333f"
-version = "0.12.1"
-
-    [deps.ColorTypes.extensions]
-    StyledStringsExt = "StyledStrings"
-
-    [deps.ColorTypes.weakdeps]
-    StyledStrings = "f489334b-da3d-4c2e-b8f0-e476e12c162b"
+version = "0.11.5"
 
 [[deps.ColorVectorSpace]]
 deps = ["ColorTypes", "FixedPointNumbers", "LinearAlgebra", "Requires", "Statistics", "TensorCore"]
-git-tree-sha1 = "8b3b6f87ce8f65a2b4f857528fd8d70086cd72b1"
+git-tree-sha1 = "a1f44953f2382ebb937d60dafbe2deea4bd23249"
 uuid = "c3611d14-8923-5661-9e6a-0046d554d3a4"
-version = "0.11.0"
+version = "0.10.0"
 weakdeps = ["SpecialFunctions"]
 
     [deps.ColorVectorSpace.extensions]
@@ -890,9 +762,9 @@ version = "3.3.11+0"
 
 [[deps.FileIO]]
 deps = ["Pkg", "Requires", "UUIDs"]
-git-tree-sha1 = "b66970a70db13f45b7e57fbda1736e1cf72174ea"
+git-tree-sha1 = "2dd20384bf8c6d411b5c7370865b1e9b26cb2ea3"
 uuid = "5789e2e9-d7fb-5bc7-8068-2c6fae9b9549"
-version = "1.17.0"
+version = "1.16.6"
 weakdeps = ["HTTP"]
 
     [deps.FileIO.extensions]
@@ -1043,9 +915,9 @@ version = "0.3.28"
 
 [[deps.Hyperscript]]
 deps = ["Test"]
-git-tree-sha1 = "8d511d5b81240fc8e6802386302675bdf47737b9"
+git-tree-sha1 = "179267cfa5e712760cd43dcae385d7ea90cc25a4"
 uuid = "47d2ed2b-36de-50cf-bf87-49c2cf4b8b91"
-version = "0.0.4"
+version = "0.0.5"
 
 [[deps.HypertextLiteral]]
 deps = ["Tricks"]
@@ -1108,9 +980,9 @@ version = "0.2.17"
 
 [[deps.ImageFiltering]]
 deps = ["CatIndices", "ComputationalResources", "DataStructures", "FFTViews", "FFTW", "ImageBase", "ImageCore", "LinearAlgebra", "OffsetArrays", "PrecompileTools", "Reexport", "SparseArrays", "StaticArrays", "Statistics", "TiledIteration"]
-git-tree-sha1 = "eea3a5095c0c5f143e62773164ab11f67e43c4bb"
+git-tree-sha1 = "33cb509839cc4011beb45bde2316e64344b0f92b"
 uuid = "6a3955dd-da59-5b1f-98d4-e7296123deb5"
-version = "0.7.10"
+version = "0.7.9"
 
 [[deps.ImageIO]]
 deps = ["FileIO", "IndirectArrays", "JpegTurbo", "LazyModules", "Netpbm", "OpenEXR", "PNGFiles", "QOI", "Sixel", "TiffImages", "UUIDs", "WebP"]
@@ -1454,6 +1326,11 @@ version = "0.12.172"
     ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
     SpecialFunctions = "276daf66-3868-5448-9aa4-cd146d93841b"
 
+[[deps.MIMEs]]
+git-tree-sha1 = "c64d943587f7187e751162b3b84445bbbd79f691"
+uuid = "6c6e2e6c-3030-632d-7369-2d6c69616d65"
+version = "1.1.0"
+
 [[deps.MKL_jll]]
 deps = ["Artifacts", "IntelOpenMP_jll", "JLLWrappers", "LazyArtifacts", "Libdl", "oneTBB_jll"]
 git-tree-sha1 = "5de60bc6cb3899cd318d80d627560fae2e2d99ae"
@@ -1716,10 +1593,10 @@ version = "1.40.7"
     Unitful = "1986cc42-f94f-5a68-af5c-568840ba703d"
 
 [[deps.PlutoUI]]
-deps = ["AbstractPlutoDingetjes", "Base64", "Dates", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "Markdown", "Random", "Reexport", "UUIDs"]
-git-tree-sha1 = "5152abbdab6488d5eec6a01029ca6697dff4ec8f"
+deps = ["AbstractPlutoDingetjes", "Base64", "ColorTypes", "Dates", "FixedPointNumbers", "Hyperscript", "HypertextLiteral", "IOCapture", "InteractiveUtils", "JSON", "Logging", "MIMEs", "Markdown", "Random", "Reexport", "URIs", "UUIDs"]
+git-tree-sha1 = "d3de2694b52a01ce61a036f18ea9c0f61c4a9230"
 uuid = "7f904dfe-b85e-4ff6-b463-dae2292396a8"
-version = "0.7.23"
+version = "0.7.62"
 
 [[deps.PolyesterWeave]]
 deps = ["BitTwiddlingConvenienceFunctions", "CPUSummary", "IfElse", "Static", "ThreadingUtilities"]
@@ -2452,10 +2329,10 @@ uuid = "dfaa095f-4041-5dcd-9319-2fabd8486b76"
 version = "3.5.0+0"
 
 [[deps.xkbcommon_jll]]
-deps = ["Artifacts", "JLLWrappers", "Libdl", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
-git-tree-sha1 = "c950ae0a3577aec97bfccf3381f66666bc416729"
+deps = ["Artifacts", "JLLWrappers", "Libdl", "Pkg", "Wayland_jll", "Wayland_protocols_jll", "Xorg_libxcb_jll", "Xorg_xkeyboard_config_jll"]
+git-tree-sha1 = "63406453ed9b33a0df95d570816d5366c92b7809"
 uuid = "d8fb68d0-12a3-5cfd-a85a-d49703b185fd"
-version = "1.8.1+0"
+version = "1.4.1+2"
 """
 
 # ╔═╡ Cell order:
@@ -2468,31 +2345,27 @@ version = "1.8.1+0"
 # ╟─909579b1-c4ce-4b74-8493-f31e0b70116d
 # ╟─5b293f7e-323b-4e87-a61b-d84449640128
 # ╟─4a9860ae-38af-4626-8b19-6015291c5c95
-# ╟─217d3faa-930b-4ff5-9b08-2e2b2a4ba2c1
-# ╟─63911cc4-1b07-428c-a1dd-681ad3309550
-# ╟─cf75eb8d-44c4-4923-9ebf-6449bef2ad12
-# ╟─ba316956-0310-4dd0-bf69-3cb7eba81958
-# ╟─37916b3b-b6b8-40df-936f-4cc5e42fb33b
-# ╟─45f2f183-befd-4a13-91d9-7164f5e55795
-# ╠═5a9ac07b-a587-4c8e-abf7-c467a5bc20f5
-# ╠═3562cd59-4f3a-40cd-8a97-82d440bc7faa
-# ╠═dc3b1811-4d83-49e2-a192-085ea4bfb13a
-# ╠═40620bba-5c00-4c51-92e5-92c7fa847fbe
-# ╟─ee7a27a9-f28f-49b6-b7fd-ebed46adca0b
-# ╟─10209b04-b8d5-4408-b85c-81ec9d053abe
-# ╟─4a1417ee-325d-47f1-9112-c8435108fe99
-# ╟─7ebaec22-5dda-467c-93c6-393f69fd8a1b
+# ╠═37916b3b-b6b8-40df-936f-4cc5e42fb33b
+# ╠═bfacca3f-92ce-447c-99ba-4caccf030687
+# ╠═10209b04-b8d5-4408-b85c-81ec9d053abe
+# ╠═4a1417ee-325d-47f1-9112-c8435108fe99
 # ╟─7ce6a9c8-ec65-4deb-a2e5-c29fbbc2aa5f
 # ╟─075f04cc-6ca6-47b6-84e9-26d56f48599f
-# ╟─97ea41e1-dcf9-4205-af96-94661a9c43f6
-# ╟─d55e7d8c-6066-4317-8f8e-4c2f902c6724
+# ╠═97ea41e1-dcf9-4205-af96-94661a9c43f6
+# ╠═d55e7d8c-6066-4317-8f8e-4c2f902c6724
+# ╠═c2414c29-750a-4384-96f7-263c37b98d6f
+# ╠═75426f6c-24c6-4973-b272-d977f1bd40d7
+# ╠═6268b716-dc96-47f1-ab3d-b26e4271f3b5
+# ╠═ab7c32ae-651f-4996-8d00-3feb132da7bc
+# ╠═00886f58-7508-490c-bb92-40fe9e29eb09
 # ╟─a07cdb2b-9c56-4b36-9209-c0df92606254
-# ╟─ed19ae62-b88f-4256-a6d3-57355c8556da
-# ╟─6f42d465-1f85-4e39-a440-c95005b07cd0
+# ╠═ed19ae62-b88f-4256-a6d3-57355c8556da
 # ╠═727ad7b2-c898-43f8-804b-0841bdf92095
-# ╠═a94ad943-9348-4c47-8833-ae189c4a76d6
+# ╠═ad044773-c0cc-4ed8-b69a-08d4f98181fd
+# ╠═c424f0b5-817c-4d4f-8f70-e326240c68f9
+# ╠═1d545ce3-f1e6-4c67-acd0-3e3e77acfb93
 # ╠═f74a4788-151b-4c83-91b0-c276113c5fb2
-# ╟─12387c2c-33d5-4364-be59-7671133fa329
+# ╠═7333c232-4fa4-44a0-b2c5-f32fff38685f
 # ╟─d11b57f2-718a-470f-9ef1-49121c0c7956
 # ╟─33a10a1f-68c8-4ed6-91e8-39f5517b1ce1
 # ╟─5df7a9d4-ccef-4fbe-81a6-e0036c3dfb33

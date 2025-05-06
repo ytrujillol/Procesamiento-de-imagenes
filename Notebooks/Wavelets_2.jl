@@ -4,23 +4,145 @@
 using Markdown
 using InteractiveUtils
 
+# ╔═╡ 553db4a2-b1cd-41a4-879f-16266bcb3064
+using PlutoUI
+
 # ╔═╡ e1adbc95-6473-49d1-aa80-fadd45d985b2
-using PlutoUI, NLsolve, Images, ImageIO, FileIO, Downloads, ImageShow, ImageView,Plots, Symbolics, SymPy, Plots, LinearAlgebra
+using NLsolve, Images, ImageIO, FileIO, Downloads, ImageShow, ImageView,Plots, Symbolics, SymPy, Plots, LinearAlgebra
+
+# ╔═╡ 1d452a8a-8034-4d81-a62c-90413cb6cd40
+PlutoUI.TableOfContents(title="Compresión de Imágenes Basada en Wavelets", aside=true)
+
+# ╔═╡ 84d99318-31bc-44cc-a206-6fc5a3d7084b
+md"""Este cuaderno está en construcción y puede ser modificado en el futuro para mejorar su contenido. En caso de comentarios o sugerencias, por favor escribir a **labmatecc_bog@unal.edu.co**.
+
+Tu participación es fundamental para hacer de este curso una experiencia aún mejor."""
+
+# ╔═╡ f73134fd-1e68-4842-94bf-e1c050be1125
+md"""**Este cuaderno está basado en actividades del seminario Procesamiento de Imágenes de la Universidad Nacional de Colombia, sede Bogotá, dirigido por el profesor Jorge Mauricio Ruíz en 2024-2.**
+
+Elaborado por Juan Galvis, Jorge Mauricio Ruíz, Angie Forero, Carlos Nosa y Yessica Trujillo."""
+
+# ╔═╡ b7362141-65a4-4758-8b3c-02e5bcd3d445
+md"""Vamos a usar las siguientes librerías:"""
+
+# ╔═╡ ebcd3185-12de-47d5-9a98-8ee72cc8a0fc
+md"""
+# Introducción
+"""
+
+# ╔═╡ 5f61b31b-1977-4806-a2c6-9f123915e670
+md"""
+En este cuaderno exploraremos el vínculo profundo entre el análisis en frecuencia y las transformadas wavelet, partiendo desde los fundamentos de la Transformada de Fourier en Tiempo Discreto (DTFT) hasta llegar a las sofisticadas transformadas wavelet de Daubechies y las transformadas biortogonales.
+
+La **DTFT** se define como:
+
+$X(\omega) = \sum_{k=-\infty}^{\infty} x_k e^{-i k \omega}$
+
+Esta fórmula permite analizar secuencias (finitas o infinitas) en el dominio de la frecuencia, siempre que la serie converja. Su relevancia va más allá del análisis armónico clásico: sirve como punto de partida para entender cómo se descompone una señal en componentes de baja y alta frecuencia.
+
+Sobre esa base, introducimos las **wavelets de Daubechies**, una familia de funciones diseñadas para capturar detalles locales en señales de forma mucho más eficiente que las armónicas globales de Fourier. Finalmente, nos introduciremos en el concepto de **wavelets biortogonales**, que extienden esta idea permitiendo bases diferentes para análisis y síntesis, ganando flexibilidad sin sacrificar estabilidad.
+
+"""
+
+# ╔═╡ af8105c3-b7e3-4700-a265-7fa9b1667d34
+md"""
+## Observaciones sobre la DTFT
+
+La Transformada de Fourier en Tiempo Discreto (DTFT) se distingue de la Transformada Discreta de Fourier (DFT) en varios aspectos fundamentales que la hacen más adecuada para el análisis teórico de secuencias, especialmente cuando estas no son periódicas ni finitas:
+
+- La DFT no está definida para secuencias infinitas no periódicas. Este es un límite natural de su definición: asume periodicidad y longitud finita.
+- La longitud $N$ de la secuencia es un parámetro central en la DFT. Sin embargo, es altamente manipulable, ya que muchas veces se recurre al _zero-padding_ (relleno con ceros) para ajustar la longitud según convenga. Esto puede generar cierta incomodidad, ya que afecta tanto los valores como el período de la transformada $X(n)$, distorsionando la percepción del contenido en frecuencia.
+- Aunque la DFT es discreta (lo cual es útil para la computación), esta misma característica limita su utilidad cuando se desea aplicar herramientas del análisis continuo, como el cálculo diferencial e integral. En cambio, la DTFT ofrece una representación continua en frecuencia que permite un análisis más fino y matemáticamente riguroso.
+- Una de las propiedades más potentes y útiles de la DTFT es su comportamiento frente a convoluciones: Si dos secuencias $x$ y $y$ tienen transformadas DTFT $X(\omega)$ y $Y(\omega)$, entonces la DTFT de su convolución $g = x * y$ es el producto punto a punto de sus transformadas:
+
+   $G(\omega) = X(\omega) \cdot Y(\omega)$
+
+   Esta propiedad simplifica considerablemente el análisis de sistemas lineales, ya que transforma el operador convolución (complicado en el dominio temporal) en una multiplicación sencilla en el dominio frecuencial.
+
+- Los filtros pueden clasificarse según su comportamiento en frecuencia, que se refleja en la magnitud de su DTFT \( H(\omega) \):
+
+  - **Definción.** Una secuencia (finita o infinita) $h$ se llama **filtro pasa bajas** si:
+
+    $|H(0)| = 1 \quad \text{y} \quad H(\pi) = 0$
+
+    Esto significa que el filtro deja pasar las frecuencias bajas y elimina las altas.
+
+  - **Definción.** Una secuencia \( h \) se llama **filtro pasa altas** si:
+
+    $H(0) = 0 \quad \text{y} \quad |H(\pi)| = 1$
+
+    Es decir, bloquea las bajas frecuencias y resalta los componentes de alta frecuencia.
+
+Estos conceptos son fundamentales en el diseño de filtros y en el análisis wavelet, donde las funciones wavelet y de escalamiento actúan como filtros complementarios (pasa altas y pasa bajas) aplicados de manera jerárquica.
+
+"""
 
 # ╔═╡ 23270390-d1d9-4d92-bb60-4572d9ed2f53
 md"""# Transformada de Daubechies"""
 
-# ╔═╡ 3a91d8ba-bfe5-4c67-8f09-d947f5341ea7
-md""" Los módulos y paquetes necesarios para ejecutar este notebook son: """
+# ╔═╡ 1094331c-0d04-4def-9448-64c4ad3f8789
+md"""
+La transformada wavelet de Daubechies, y en particular la versión D4, es una mejora respecto a la transformada de Haar. Su objetivo principal es evitar los artefactos de bloque visibles en compresiones de imagen y proporcionar una representación más suave y continua de los datos. Fue desarrollada por Ingrid Daubechies como parte de una familia de wavelets ortogonales con soporte compacto y mayor regularidad que la transformada de Haar.
 
-# ╔═╡ be94dd90-1f05-11f0-2781-adeaffb3bcb9
-PlutoUI.TableOfContents()
+La transformada de Haar trabaja usando promedios y diferencias sobre bloques no superpuestos. Esta estrategia genera discontinuidades en los puntos de corte entre bloques, lo que se manifiesta como artefactos visibles en forma de bloques cuadrados al reconstruir la imagen. Un ejemplo de matriz Haar que muestra la parte de baja frecuencia sería:
 
-# ╔═╡ 21c75b0e-5ead-48b5-84ec-31f6c1295ab6
-md""" ## Ejercicio 1"""
+$H =
+\begin{bmatrix}
+\frac{1}{2} & \frac{1}{2} & 0 & 0 & \dots & 0 \\
+0 & 0 & \frac{1}{2} & \frac{1}{2} & \dots & 0 \\
+\vdots & \vdots & \vdots & \vdots & \ddots & \vdots \\
+0 & 0 & 0 & 0 & \dots & \frac{1}{2} & \frac{1}{2}
+\end{bmatrix}$
 
-# ╔═╡ 17ca2b73-5199-4124-b2d7-0db38005701f
-#Utiliza un sistema de álgebra computacional para verificar los coeficientes del filtro ortogonal de Daubechies de longitud 6.
+Las filas de esta matriz no se solapan, lo que implica que la información de un bloque no afecta a su vecino. Esto rompe la continuidad espacial en las imágenes.
+
+La propuesta de Daubechies consiste en generar matrices de transformación cuyas filas se solapan parcialmente, permitiendo que los valores transformados en una región influyan en los vecinos. Esto suaviza los bordes y elimina los artefactos de bloque. Una forma general de la matriz D4, que muestra cómo se aplican los coeficientes $h_i$ y $g_i$ de forma solapada, es:
+
+$W =
+\begin{bmatrix}
+h_3 & h_2 & h_1 & h_0 & 0 & \dots \\
+0 & 0 & h_3 & h_2 & h_1 & h_0 & \dots \\
+\vdots & & & \ddots & & & \\
+g_3 & g_2 & g_1 & g_0 & 0 & \dots \\
+0 & 0 & g_3 & g_2 & g_1 & g_0 & \dots \\
+\vdots & & & \ddots & & &
+\end{bmatrix}$
+
+
+Para determinar los coeficientes $h_0, h_1, h_2, h_3$, se deben cumplir varias condiciones de ortonormalidad y regularidad. Las condiciones son:
+
+1.  $h_0^2 + h_1^2 + h_2^2 + h_3^2 = 1$  
+2.  $h_0 h_2 + h_1 h_3 = 0$  
+3.  $h_0 - h_1 + h_2 - h_3 = 0$ (condición para preservar las constantes)  
+4.  $h_1 - 2h_2 + 3h_3 = 0$ (suavidad: derivada nula en $\omega = \pi$)
+
+La solución explícita de estos coeficientes es:
+
+$\begin{align*}
+h_0 &= \frac{1}{4\sqrt{2}}(1 + \sqrt{3}) \\
+h_1 &= \frac{1}{4\sqrt{2}}(3 + \sqrt{3}) \\
+h_2 &= \frac{1}{4\sqrt{2}}(3 - \sqrt{3}) \\
+h_3 &= \frac{1}{4\sqrt{2}}(1 - \sqrt{3})
+\end{align*}$
+
+El filtro wavelet asociado $g_i$ se calcula a partir de los $h_i$ mediante la relación (para mantener ortogonalidad):
+
+$\begin{align*}
+g_0 &= h_3 \\
+g_1 &= -h_2 \\
+g_2 &= h_1 \\
+g_3 &= -h_0
+\end{align*}$
+
+
+Estas wavelets tienen soporte compacto, es decir, solo afectan a un número reducido de muestras vecinas. También son ortogonales, lo que facilita la inversión exacta de la transformada. Además, presentan regularidad, lo que significa que producen una representación más suave de la señal o imagen transformada. Finalmente, forman una base completa del espacio, por lo que se puede reconstruir la señal original sin pérdida.
+"""
+
+# ╔═╡ 300beaee-e2fb-428b-9429-904d9346976e
+md"""
+Por ejemplo si en lugar de tener filtros de orden 4 tenemos filtros de orden 6 entonces se pueden calcular de la siguiente manera:
+"""
 
 # ╔═╡ 7634bad7-2c18-4649-966d-fa6c504c894e
 function S!(F,h)
@@ -50,14 +172,18 @@ begin
 	h=[h₀,h₁,h₂,h₃,h₄,h₅]
 end	
 
+# ╔═╡ 990ef17b-39fb-45aa-9918-ad61bb616f6f
+md"""
+Comprobamos que si son los valores adecuados para el filtro:
+"""
+
 # ╔═╡ b28d165f-fdae-4217-bf1b-a336096c4a99
 sol.zero-h
 
-# ╔═╡ d502d827-7b7b-4c33-8698-d546ddbd39b8
-md""" ## Ejercicio 2"""
-
-# ╔═╡ baff130c-1e21-4697-906d-fe54b07f7496
-# Escribe una función en Julia que cree la matriz de transformación wavelet basada en Daubechies $D_4$ para una dimensión par especificada. Tu función debe verificar si la dimensión dada es par y mostrar un mensaje de error en caso de que no lo sea.
+# ╔═╡ 610b1443-84a7-4428-b52b-600cad5f8719
+md"""
+En la siguiente función se crea la matriz de transformación wavelet basada en Daubechies $D_4$ para una dimensión par especificada. Esta función verifica si la dimensión dada es par y mostrar un mensaje de error en caso de que no lo sea.
+"""
 
 # ╔═╡ 1dce8386-ae6c-44fe-b4e2-a1093646f711
 function D4_Daubechies(n)
@@ -92,10 +218,7 @@ end
 D4_Daubechies(4)
 
 # ╔═╡ 8732a665-f13c-4d26-9005-4770c6b92bf7
-md"""## Ejercicio 3"""
-
-# ╔═╡ 09fd9b76-3f60-4682-b91e-30b16a813d39
-# De manera similar, escribe una función en Julia que cree la matriz de transformación wavelet basada en Daubechies D6 para la dimensión especificada.
+md"""La siguiente función crea la matriz de transformación wavelet basada en Daubechies D6 para la dimensión especificada."""
 
 # ╔═╡ 7e65f842-1287-4efd-9355-4e249006914f
 function D6_Daubechies(n)
@@ -131,13 +254,11 @@ end
 D6_Daubechies(8)
 
 # ╔═╡ 3cb613f8-73b2-40a4-83cc-600e11dfef2c
-md""" ## Ejercicio 4"""
+md""" ## Ejemplo 1
+En este ejemplo se toma una imagen y se hace la compresión con la transformada D4 utilizando el método de umbralización.
 
-# ╔═╡ 93c15656-abb0-4a55-ad4a-917a8c90d5d0
-# Escribe una función en Julia que calcule el umbral dado el porcentaje de la energía total en las partes de alta frecuencia de la transformada de la imagen que el usuario desea conservar.
-
-# ╔═╡ 86e86245-0bf4-4cc6-824e-d28e9fa2cfea
-md""" Primeramente se realizará la comprensión de una imagen tomada de [1] utilizando la transformada de Daubechies."""
+Primeramente se realizará la comprensión de una imagen tomada de [1] utilizando la transformada de Daubechies.
+"""
 
 # ╔═╡ 4007a140-f31b-4297-9b16-770858cb8d9d
 begin
@@ -147,6 +268,11 @@ begin
 	img = load(fname)
 	img2 = Gray.(float.(img))
 end
+
+# ╔═╡ c90c8e0d-3aee-4457-aec7-c799efe8be4b
+md"""
+$\texttt{Figura 1}$
+"""
 
 # ╔═╡ 23657ff0-dec4-4b5e-b17c-92dadc2503ec
 md"""La función de compresión D4 para imágenes en escala de grises es la siguiente"""
@@ -191,6 +317,11 @@ md"""A continuación se muestran cada una de las imágenes resultantes"""
 # ╔═╡ 6af035ff-f570-4280-9ba5-a64d0822c69b
 Result= Gray.(Compression_D4(img2)[1])
 
+# ╔═╡ a97b0801-a689-434f-b707-951c18e721b4
+md"""
+$\texttt{Figura 2}$
+"""
+
 # ╔═╡ 38163eaa-a417-4e89-93db-274d17b9d75b
 begin
 	Result1= Gray.(Compression_D4(img2)[2])
@@ -198,12 +329,22 @@ begin
 	hcat(Result1, Result2)
 end
 
+# ╔═╡ 4145bdbc-c7f4-4a84-8c72-e4e04766336b
+md"""
+$\texttt{Figura 3}$
+"""
+
 # ╔═╡ 9edea4dc-4817-4ba7-ada5-9c490afc9862
 begin
 	Result3= Gray.(Compression_D4(img2)[4])	
 	Result4= Gray.(Compression_D4(img2)[5])	
 	hcat(Result3, Result4)
 end
+
+# ╔═╡ 7498a8a5-d22f-45a0-a268-ac4740f52797
+md"""
+$\texttt{Figura 4}$
+"""
 
 # ╔═╡ 8727b4ac-f0cd-4b1f-871f-923c1be9b493
 md"""La función de compresión para imágenes a color D4 es: """
@@ -235,8 +376,18 @@ md"""De allí, los resultados más importantes son:"""
 # ╔═╡ bbaf9ccc-b928-47e5-a32d-6f87af377404
 Compression_Color_D4(img)[1]
 
+# ╔═╡ dafeb5b5-488f-4d31-ae74-e341f1328a34
+md"""
+$\texttt{Figura 5}$
+"""
+
 # ╔═╡ edadd335-6851-44c3-80aa-bb26a10a8f20
 Compression_Color_D4(img)[2]
+
+# ╔═╡ 6829ca04-8692-4856-aa94-6b92b7005357
+md"""
+$\texttt{Figura 6}$
+"""
 
 # ╔═╡ b051b68f-2353-4f98-b1f7-99b95631b3ff
 md"""A continuación, podemos observar el tamaño de la imagen original y el tamaño de la imagen comprimida."""
@@ -300,10 +451,9 @@ function Compression_D6(image)
 end
 
 # ╔═╡ 4fbd9526-4713-4384-aad7-a35dddfd2661
-md"""## Ejercicio 5"""
-
-# ╔═╡ 393092cf-b58a-45ff-a663-c3d878d841fb
-#Realizar una función en Julia que realice la compresión y recuperación de una imagen escogida por el usuario, tomando el número de iteraciones queridas por el usuario y el porcentaje de energía requerido por el usuario.
+md"""## Ejemplo 2
+En este ejemplo se toma una imagen y se realiza la compresión y recuperación tomando el número de iteraciones y el porcentaje de energía requeridos.
+"""
 
 # ╔═╡ ccc2d922-308e-4bdd-9e5b-720c0143b834
 function expand_matrix(mat::Matrix{T}) where T
@@ -392,11 +542,21 @@ begin
 	img3 = load(fname1)
 end
 
+# ╔═╡ 0a2267d3-c164-47ea-bf6f-4d908a9d8244
+md"""
+$\texttt{Figura 7}$
+"""
+
 # ╔═╡ 7dff4d15-f836-444e-a22d-e69e393fa5b4
 begin
 	Imagenes=image_compression_iter_Daubechies(img3,"db4",2,0.96)
 	[Gray.(Imagenes[1][1]) Gray.(Imagenes[1][2])]
 end
+
+# ╔═╡ 1097c334-75b2-4651-9e85-88746ca8abf6
+md"""
+$\texttt{Figura 8}$
+"""
 
 # ╔═╡ 2e70891c-4e3c-4629-9aa2-7f6e2544a431
 md"""La imagen recuperada es"""
@@ -404,20 +564,170 @@ md"""La imagen recuperada es"""
 # ╔═╡ fe5ebce1-574e-466b-ac3b-45b1861d684c
 Gray.( Imagenes[2])
 
+# ╔═╡ 357acde0-d6e2-46fb-ae94-538c2b5d57a6
+md"""
+$\texttt{Figura 9}$
+"""
+
 # ╔═╡ f0ba2a5b-4661-42d7-b596-9208c8f0dd13
 md""" # Transformadas Biortogonales"""
 
-# ╔═╡ 7567d456-82ba-4032-8263-e50d3883cfb7
-md"""## Ejercicio 7 """
+# ╔═╡ 261f5c2d-f0a0-41ad-a5df-315eabc1d8a7
+md"""
+La transformada wavelet biortogonal surge como respuesta a ciertas limitaciones de las transformadas wavelet ortogonales, como las de Daubechies. Aunque estas últimas ofrecen una excelente compresión y suavidad, presentan problemas: sus coeficientes son irracionales, lo cual introduce errores de redondeo, y sus filtros no son simétricos, lo que contradice la intuición al calcular promedios de píxeles vecinos. Además, la falta de simetría puede provocar artefactos asimétricos en el procesamiento de imágenes.
 
-# ╔═╡ 4544720c-1625-485d-a109-a36633d8dbd6
-#(sección 7.8.1) Plantea y resuelve sistemas lineales para diseñar pares de filtros spline biorortogonales de longitudes (7,5) y (9,7) usando el método presentado en esta subsección.
+Queremos filtros que:
+1. Sean de paso bajo (low-pass), para conservar la información esencial.
+2. Tengan coeficientes simétricos, lo que respeta la idea de tratar píxeles vecinos con igual importancia.
+3. Formen una matriz ortogonal, para una inversión fácil y estable.
 
-# ╔═╡ 8afb954c-8cf3-4218-9ddc-e5d62b939293
-md""" Como $\widetilde{h}$ es un filtro low-pass, se sabe que $\widetilde{H}(\pi)=0$ y $\widetilde{H}(0)\neq 0$, lo cual comple la función $\cos(\frac{\omega}{2})$, por tanto se hallan los coeficientes del filtro $\widetilde{h}$ por medio de potencias de esta función."""
+El problema es que, según un teorema de Ingrid Daubechies, no es posible satisfacer las tres propiedades anteriores simultáneamente, a menos que usemos el filtro de Haar: $(\tfrac{1}{2}, \tfrac{1}{2})$. Si queremos usar filtros más largos y suaves, tendremos que sacrificar una de estas propiedades.
+
+La elección natural es mantener el filtrado de paso bajo (1) y la simetría (2), renunciando a la ortogonalidad (3). Pero renunciar a la ortogonalidad plantea un problema: perderíamos la facilidad de inversión de la transformada, ya que las matrices ortogonales son su propia inversa transpuesta.
+
+Solución: La biortogonalidad ofrece un compromiso. En vez de exigir que la matriz de transformación $W$ sea ortogonal ($W^{-1} = W^T$), exigimos una condición más flexible:
+
+$W^{-1} = \widetilde{W}^T$
+
+Es decir, la inversa de $W$ es la transpuesta de **otra** matriz $\widetilde{W}$. Este cambio de perspectiva permite diseñar filtros **simétricos** y aún así mantener una inversión eficiente. Pero a cambio, ahora debemos construir dos matrices diferentes: $W$ y $\widetilde{W}$, en lugar de una sola.
+
+Ambas matrices $W$ y $\widetilde{W}$ se construyen a partir de filtros de paso bajo y alto. Denotamos:
+
+-  $H$, $G$ como las matrices de convolución (y submuestreo) de los filtros $h$ y $g$.
+-  $\widetilde{H}$, $\widetilde{G}$ como las matrices correspondientes de los filtros duales $\widetilde{h}$ y $\widetilde{g}$.
+
+Entonces definimos:
+
+$W = \begin{bmatrix} H \\ G \end{bmatrix}, \quad \widetilde{W} = \begin{bmatrix} \widetilde{H} \\ \widetilde{G} \end{bmatrix}$
+
+La condición de biortogonalidad se traduce en que estas matrices satisfacen:
+
+$W \widetilde{W}^T = I \quad \Rightarrow \quad
+\begin{bmatrix}
+H \widetilde{H}^T & H \widetilde{G}^T \\
+G \widetilde{H}^T & G \widetilde{G}^T
+\end{bmatrix}
+=
+\begin{bmatrix}
+I & 0 \\
+0 & I
+\end{bmatrix}$
+
+Esto equivale a cumplir el siguiente sistema de cuatro ecuaciones:
+
+-  $H \widetilde{H}^T = I$
+-  $H \widetilde{G}^T = 0$
+-  $G \widetilde{H}^T = 0$
+-  $G \widetilde{G}^T = I$
+
+Estas condiciones garantizan que la transformada wavelet y su inversa se comporten correctamente, aunque los filtros ya no sean ortogonales entre sí.
+
+Al igual que en las wavelets de Daubechies, los filtros de paso alto $g$ y $\widetilde{g}$ se deducen de sus respectivos filtros de paso bajo mediante ciertas simetrías y relaciones algebraicas. Normalmente se parte del diseño de $h$ y $\widetilde{h}$, que se eligen con simetría y otras propiedades deseables. Luego, se calculan $g$ y $\widetilde{g}$ usando reglas como:
+
+$g_n = (-1)^n h_{N - 1 - n}, \quad
+\widetilde{g}_n = (-1)^n \widetilde{h}_{N - 1 - n}$
+
+- **Coeficientes racionales** (en muchos casos), lo que los hace adecuados para compresión sin pérdida.
+- **Filtros simétricos**, ideales para procesamiento de imágenes.
+- **Inversión sencilla**, aunque no tan directa como con matrices ortogonales.
+"""
+
+# ╔═╡ 87ef2ff0-dade-4aca-8cf7-5bcb75bfdf83
+md"""
+Queremos construir un filtro $\widetilde{h}$ que sea paso bajo, simétrico y racional. Para ello, consideramos su transformada discreta de Fourier (DTFT). Notamos que:
+
+$\cos\left(\frac{\omega}{2}\right)^2 = \left( \frac{e^{i\omega/2} + e^{-i\omega/2}}{2} \right)^2 = \frac{1}{4}\left( e^{-i\omega} + 2 + e^{i\omega} \right),$
+
+lo que corresponde a la DTFT del filtro:
+
+$\widetilde{h} = \left( \frac{1}{4}, \frac{1}{2}, \frac{1}{4} \right).$
+
+Este filtro cumple con:
+
+-  $\widetilde{H}(0) \ne 0$,
+-  $\widetilde{H}(\pi) = 0$.
+
+Es simétrico, racional y suaviza más que el filtro de Haar. A este tipo de filtros se les llama filtros spline.
+
+
+Por otra parte, queremos encontrar un filtro $h$ tal que:
+
+$H\widetilde{H}^T = I,$
+
+y que también sea paso bajo y simétrico. Probamos con filtros de longitud 3 y 4, pero resultan inconsistentes. Entonces, consideramos un filtro simétrico de longitud 5:
+
+$h = (h_{-2}, h_{-1}, h_0, h_1, h_2),$
+
+con simetría:
+
+$h_{-2} = h_2, \quad h_{-1} = h_1.$
+
+Quedan entonces tres coeficientes libres: $h_0$, $h_1$, y $h_2$.
+
+Las condiciones de biortogonalidad nos conducen al siguiente sistema:
+
+$\begin{aligned}
+h_0 + h_1 &= 2, \\
+h_1 + 2h_2 &= 0, \\
+h_0 - 2h_1 + 2h_2 &= 0.
+\end{aligned}$
+
+Resolviendo este sistema se obtiene:
+
+$h = \left( -\frac{1}{4}, \frac{1}{2}, \frac{3}{2}, \frac{1}{2}, -\frac{1}{4} \right).$
+
+Este filtro es simétrico, racional, de tipo paso bajo, y cumple la condición de biortogonalidad con $\widetilde{h}$.
+
+"""
+
+# ╔═╡ 41ba70bf-a0f2-4b0b-b9c6-f563a7b5fca0
+md"""#### Filtro spline biortogonal de longitud (5,3)"""
+
+# ╔═╡ 186d6853-e253-4021-95f4-d8fea54650b6
+md"""
+El **par de filtros biortogonales spline (5,3)** consiste en los siguientes filtros:
+
+$h = (h_{-2}, h_{-1}, h_0, h_1, h_2) = \left( -\frac{1}{4}, \frac{1}{2}, \frac{3}{2}, \frac{1}{2}, -\frac{1}{4} \right)$
+
+y
+
+$\widetilde{h} = (\widetilde{h}_{-1}, \widetilde{h}_0, \widetilde{h}_1) = \left( \frac{1}{4}, \frac{1}{2}, \frac{1}{4} \right).$
+
+
+Las **matrices de la transformada wavelet** para el par de filtros biortogonales spline (5,3) son:
+
+$W =
+\begin{bmatrix}
+h_0 & h_1 & h_2 & 0 & 0 & \cdots & 0 & 0 & 0 & h_2 & h_1 \\
+h_2 & h_1 & h_0 & h_1 & h_2 & \cdots & 0 & 0 & 0 & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+h_2 & 0 & 0 & 0 & 0 & \cdots & 0 & h_2 & h_1 & h_0 & h_1 \\
+\widetilde{h}_1 & -\widetilde{h}_0 & \widetilde{h}_1 & 0 & 0 & \cdots & 0 & 0 & 0 & 0 & 0 \\
+0 & 0 & \widetilde{h}_1 & -\widetilde{h}_0 & \widetilde{h}_1 & \cdots & 0 & 0 & 0 & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+\widetilde{h}_1 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 & \widetilde{h}_1 & -\widetilde{h}_0
+\end{bmatrix}$
+
+
+$\widetilde{W} =
+\begin{bmatrix}
+\widetilde{h}_0 & \widetilde{h}_1 & 0 & 0 & 0 & \cdots & 0 & 0 & 0 & 0 & \widetilde{h}_1 \\
+0 & \widetilde{h}_1 & \widetilde{h}_0 & \widetilde{h}_1 & 0 & \cdots & 0 & 0 & 0 & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+0 & 0 & 0 & 0 & 0 & \cdots & 0 & 0 & \widetilde{h}_1 & \widetilde{h}_0 & \widetilde{h}_1 \\
+h_1 & -h_0 & h_1 & -h_2 & 0 & \cdots & 0 & 0 & 0 & 0 & -h_2 \\
+0 & -h_2 & h_1 & -h_0 & h_1 & \cdots & 0 & 0 & 0 & 0 & 0 \\
+\vdots & \vdots & \vdots & \vdots & \vdots & \ddots & \vdots & \vdots & \vdots & \vdots & \vdots \\
+-h_1 & -h_2 & 0 & 0 & 0 & \cdots & 0 & 0 & -h_2 & h_1 & -h_0
+\end{bmatrix}$
+
+"""
 
 # ╔═╡ 3269b25b-b9b7-463f-b7c5-4c37e6368c0f
 md"""#### Filtro spline biortogonal de longitud (7,5)"""
+
+# ╔═╡ 8afb954c-8cf3-4218-9ddc-e5d62b939293
+md""" Como $\widetilde{h}$ es un filtro low-pass, se sabe que $\widetilde{H}(\pi)=0$ y $\widetilde{H}(0)\neq 0$, lo cual comple la función $\cos(\frac{\omega}{2})$, por tanto se hallan los coeficientes del filtro $\widetilde{h}$ por medio de potencias de esta función."""
 
 # ╔═╡ f3861f54-8045-49aa-b108-0b12a0dca79e
 md"""Por lo dicho anteriormente, los coeficientes del filtro $\widetilde{h}$ se pueden hallar tomando la función 
@@ -486,12 +796,6 @@ end
 
 # ╔═╡ 9a1a0ee8-d8dc-4887-8cf0-be5cfdd9f33d
 md"""Así, los filtros estan dados por $\widetilde{h}=(0.015625, 0.09375, 0.234375, 0.3125, 0.234375, 0.09375, 0.015625)$ y $h=(-0.15625,0.9375,-1.75,-0.4375, 4.8125, -0.4375, -1.75, 0.9375, -0.15625)$"""
-
-# ╔═╡ d9db897c-2759-489d-990c-7ba797e0e0c9
-md"""## Ejercicio 3"""
-
-# ╔═╡ d84ad18d-6538-4311-887f-c33196896026
-#(sección 7.8.2) Utiliza el Teorema de Daubechies para Filtros Spline Biortogonales para encontrar las transformadas de Fourier en tiempo discreto de los pares de filtros spline ortogonales de longitudes (7,5) y (9,7)
 
 # ╔═╡ 78e30f16-88db-4ce8-9077-725aa0a1a875
 md"""Para utilizar el teorema de Daubechies con el fin de encontrar la transformadas de Fourier en tiempo discreto relacionadas a los pares (5,7) y (7,9) es necesario encontrar $Ñ$, $\widetilde{l}$ y $l$ convenientes para la transformada discreta de $\widetilde{H}$ y $H$ respectivamente, en ese sentido, es necesario tomar $Ñ=6$ para el primer filtro, y $Ñ=8$ para el segundo, con el fin de hallar $\widetilde{H}(\omega)$ y, de la misma manera, con el fin de hallar $H(\omega)$ se toman los pares $(l,\widetilde{l})=(1,1)$ y $(l,\widetilde{l})=(1,2)$ respectivamente."""
@@ -595,10 +899,7 @@ $$H(\omega)=-0.1104e^{-4\omega}+0.6629e^{-3i\omega}-1.2374e^{-2i\omega}-0.3093e^
 """
 
 # ╔═╡ 96dc0688-8eae-491e-89bc-d7b2aab16222
-md"""## Ejercicio 1"""
-
-# ╔═╡ d3141470-6ee0-4f9f-a3f8-1171f899b4bd
-#(Sección 7.8.3) Para cada par de filtros que diseñaste en el Ejercicio 7 de la Subsección 7.8.1 grafica las funciones 𝐻~(𝜔) y 𝐻(𝜔) una al lado de la otra. Haz predicciones sobre el rendimiento de la transformada wavelet correspondiente basándote en la (des)similitud de los gráficos."
+md"""A continuación se muestran las transformadas de Fourier de los filtros construidos anteriormente."""
 
 # ╔═╡ eda259cb-af6c-427e-b21b-e8f4ea4917bc
 md"""#### Filtro (7,5)"""
@@ -614,6 +915,11 @@ p₁₂ = plot(ω ->H7(ω), xlabel="ω", ylabel="H(ω)", xlims=(-π, π), linewi
 plot(p₁₁, p₁₂, layout=(1, 2))  
 end
 
+# ╔═╡ fdee80b4-715d-430b-8b6d-9f225342c015
+md"""
+$\texttt{Figura 10}$
+"""
+
 # ╔═╡ dfe32b6f-dace-43fd-9cc2-06c7f8dfe0dd
 md"""#### Filtro (9,7)"""
 
@@ -628,14 +934,18 @@ p2 = plot(ω ->function2H(ω), xlabel="ω", ylabel="H(ω)", xlims=(-π, π), lin
 plot(p1, p2, layout=(1, 2))  
 end
 
+# ╔═╡ d547229e-a836-4ce3-8115-653b0a00c91a
+md"""
+$\texttt{Figura 11}$
+"""
+
 # ╔═╡ 552df4e0-e4ca-4619-8e2f-b0900940934f
 md"""Se observa que en ambos casos, el filtro $\widetilde{h}$ cumple con ser un filtro low-pass, pues su transformada discreta se anula en $\pi$ y en 0 su valor absoluto da $1$, por otro lado, el filtro $h$ no tiene un buen comportamiento, su transformada discreta asociada aunque da $0$ en $\pi$ no da $1$ en 0, lo cual nos indica que no tiene un buen comportamiento en cuanto al manejo de frecuencias bajas, podria distorcionar frecuencias suaves."""
 
-# ╔═╡ 876119df-0111-44b2-9a9e-ac3abeba1cde
-md"""## Ejercicio 2"""
-
-# ╔═╡ aaf043d2-89de-463e-b068-c19061440c90
-#Escribe funciones en julia que creen las matrices de transformación  𝑊 y ~W de dimensiones especificadas para los siguientes pares de filtros: (5,3),(7,5),(9,7) 
+# ╔═╡ 489be9a0-7b92-4ff0-b2b3-259f52739a62
+md"""
+A continuación se crean las matrices de transformación  𝑊 y ~W de dimensiones especificadas para los siguientes pares de filtros: (5,3),(7,5),(9,7)
+"""
 
 # ╔═╡ 7e5b4999-fe1f-4616-9ba1-5787d3cb7f36
 md"""#### Wavelet (5,3)"""
@@ -778,10 +1088,7 @@ md"""Se verifica que $W\widetilde{W}^{T}=I$"""
 norm((Wavelet_97(14)[1]*transpose(Wavelet_97(14)[2]))-I(14))
 
 # ╔═╡ 5cdc94e1-b1d6-4353-b271-7e1227026da4
-md""" ## Ejercicio 3"""
-
-# ╔═╡ 75ad0d2a-844f-409b-ad84-5b6734cc74f7
-#Realiza la compresión de imagenes con los distintos filtros y las iteraciones preferidas por los usarios.
+md"""Finalemente, realizamos la compresión de imagenes con los distintos filtros y las iteraciones preferidas"""
 
 # ╔═╡ 75e0cbe0-3809-4f8a-b6d3-47c09705d591
 function Compressed_B53(img,num_iter)
@@ -819,6 +1126,11 @@ begin
 	img4
 end
 
+# ╔═╡ a93a575c-4813-4638-a2b8-03bd482d3b65
+md"""
+$\texttt{Figura 12}$
+"""
+
 # ╔═╡ 30ce11ab-82fe-458a-a672-031a7e293287
 begin
 Compresiones=Compressed_B53(img_mat,3)
@@ -826,6 +1138,11 @@ Compresiones=Compressed_B53(img_mat,3)
 Gray.(Compresiones[2])
 Gray.(Compresiones[3])]
 end
+
+# ╔═╡ e9a3ac80-76b6-44ef-8b23-daad7ec9cae4
+md"""
+$\texttt{Figura 13}$
+"""
 
 # ╔═╡ 42709e09-9925-472d-856b-3f5ac5518c2d
 function Compressed_B75(img,num_iter)
@@ -859,6 +1176,11 @@ Compresiones2=Compressed_B75(img_mat,3)
 Gray.(Compresiones2[2])
 Gray.(Compresiones2[3])]
 end
+
+# ╔═╡ dc4c37bb-9ac0-4a5e-913a-7bd1109c95cf
+md"""
+$\texttt{Figura 14}$
+"""
 
 # ╔═╡ 8baa3f17-6119-4169-8563-4713fee9d20d
 function Compressed_B97(img,num_iter)
@@ -894,12 +1216,25 @@ Gray.(Compresiones3[2])
 Gray.(Compresiones3[3])]
 end
 
+# ╔═╡ efec2314-c732-4ac7-8737-24e7ec05cad9
+md"""
+$\texttt{Figura 15}$
+"""
+
+# ╔═╡ 00e849d7-92b7-4f63-a776-ef564bf7407f
+md"""# Referencias"""
+
 # ╔═╡ 9357a96e-0870-4fa8-803a-a46e543a6063
 md"""[1] Imagen de pajaro carricero tomada de Pixabay: https://pixabay.com/es/photos/pájaro-carricero-carricero-8799413/
 
 [2] Imagen del árbol de hoja caduca tomada de Pixabay: https://pixabay.com/es/photos/árbol-árbol-de-hoja-caduca-paisaje-8411271/
 
 [3]Fotografia de balajisrinivasan tomada de Pixabay: https://pixabay.com/es/photos/paisaje-luz-huecos-de-luz-4755205/
+
+[4] Galperin, Y. V. (2020). An image processing tour of college mathematics. Chapman & Hall/CRC Press.
+
+[5] JuliaImages. (s.f.). JuliaImages Documentation. Recuperado de [https://juliaimages.org/stable/](https://juliaimages.org/stable/).
+
 """
 
 # ╔═╡ 00000000-0000-0000-0000-000000000001
@@ -3281,39 +3616,48 @@ version = "1.4.1+2"
 """
 
 # ╔═╡ Cell order:
-# ╟─23270390-d1d9-4d92-bb60-4572d9ed2f53
-# ╟─3a91d8ba-bfe5-4c67-8f09-d947f5341ea7
+# ╟─553db4a2-b1cd-41a4-879f-16266bcb3064
+# ╟─1d452a8a-8034-4d81-a62c-90413cb6cd40
+# ╟─84d99318-31bc-44cc-a206-6fc5a3d7084b
+# ╟─f73134fd-1e68-4842-94bf-e1c050be1125
+# ╟─b7362141-65a4-4758-8b3c-02e5bcd3d445
 # ╠═e1adbc95-6473-49d1-aa80-fadd45d985b2
-# ╠═be94dd90-1f05-11f0-2781-adeaffb3bcb9
-# ╟─21c75b0e-5ead-48b5-84ec-31f6c1295ab6
-# ╠═17ca2b73-5199-4124-b2d7-0db38005701f
+# ╟─ebcd3185-12de-47d5-9a98-8ee72cc8a0fc
+# ╟─5f61b31b-1977-4806-a2c6-9f123915e670
+# ╟─af8105c3-b7e3-4700-a265-7fa9b1667d34
+# ╟─23270390-d1d9-4d92-bb60-4572d9ed2f53
+# ╟─1094331c-0d04-4def-9448-64c4ad3f8789
+# ╟─300beaee-e2fb-428b-9429-904d9346976e
 # ╠═7634bad7-2c18-4649-966d-fa6c504c894e
 # ╠═e569a696-e899-4037-bc8b-a801d89bfa3f
 # ╠═41f9be2f-fc0c-4a96-9476-a66039b0a0aa
+# ╟─990ef17b-39fb-45aa-9918-ad61bb616f6f
 # ╠═b28d165f-fdae-4217-bf1b-a336096c4a99
-# ╟─d502d827-7b7b-4c33-8698-d546ddbd39b8
-# ╠═baff130c-1e21-4697-906d-fe54b07f7496
+# ╟─610b1443-84a7-4428-b52b-600cad5f8719
 # ╠═1dce8386-ae6c-44fe-b4e2-a1093646f711
 # ╠═cfe94e68-6272-4896-b5ed-e3f8d585fb9a
 # ╟─8732a665-f13c-4d26-9005-4770c6b92bf7
-# ╠═09fd9b76-3f60-4682-b91e-30b16a813d39
 # ╠═7e65f842-1287-4efd-9355-4e249006914f
 # ╠═1be8950d-1701-4b47-8aca-58524319b218
 # ╟─3cb613f8-73b2-40a4-83cc-600e11dfef2c
-# ╠═93c15656-abb0-4a55-ad4a-917a8c90d5d0
-# ╟─86e86245-0bf4-4cc6-824e-d28e9fa2cfea
 # ╟─4007a140-f31b-4297-9b16-770858cb8d9d
+# ╟─c90c8e0d-3aee-4457-aec7-c799efe8be4b
 # ╟─23657ff0-dec4-4b5e-b17c-92dadc2503ec
 # ╠═7f9400d2-149b-4408-9160-33b7fc5e480b
 # ╟─5ccb3876-971a-43f8-bb21-aed1dcd25202
-# ╠═6af035ff-f570-4280-9ba5-a64d0822c69b
+# ╟─6af035ff-f570-4280-9ba5-a64d0822c69b
+# ╟─a97b0801-a689-434f-b707-951c18e721b4
 # ╟─38163eaa-a417-4e89-93db-274d17b9d75b
+# ╟─4145bdbc-c7f4-4a84-8c72-e4e04766336b
 # ╟─9edea4dc-4817-4ba7-ada5-9c490afc9862
+# ╟─7498a8a5-d22f-45a0-a268-ac4740f52797
 # ╟─8727b4ac-f0cd-4b1f-871f-923c1be9b493
 # ╠═f793d8b3-cd0d-48aa-bb1a-d505965f5b91
 # ╟─d5fe01b9-ef82-4f33-8df8-c2a74a80d924
 # ╟─bbaf9ccc-b928-47e5-a32d-6f87af377404
+# ╟─dafeb5b5-488f-4d31-ae74-e341f1328a34
 # ╟─edadd335-6851-44c3-80aa-bb26a10a8f20
+# ╟─6829ca04-8692-4856-aa94-6b92b7005357
 # ╟─b051b68f-2353-4f98-b1f7-99b95631b3ff
 # ╠═ad225e95-d239-4b2a-8eee-9209ff7857f3
 # ╠═be5bbeb1-fe50-4452-909b-1ee0b305b0ee
@@ -3323,19 +3667,23 @@ version = "1.4.1+2"
 # ╟─2b949a07-f5d2-4197-b535-871860b1b6f0
 # ╠═5642ed0e-2845-4eda-b137-382f1de82df8
 # ╟─4fbd9526-4713-4384-aad7-a35dddfd2661
-# ╠═393092cf-b58a-45ff-a663-c3d878d841fb
 # ╠═ccc2d922-308e-4bdd-9e5b-720c0143b834
 # ╠═4aa9eb9c-6646-4c14-89c6-e4eb31360cdc
 # ╟─eb0ec858-acf2-4d33-835a-2227f9f58597
 # ╟─6fe521b6-f4e9-49f3-8ccd-9983a99afc61
-# ╠═7dff4d15-f836-444e-a22d-e69e393fa5b4
+# ╟─0a2267d3-c164-47ea-bf6f-4d908a9d8244
+# ╟─7dff4d15-f836-444e-a22d-e69e393fa5b4
+# ╟─1097c334-75b2-4651-9e85-88746ca8abf6
 # ╟─2e70891c-4e3c-4629-9aa2-7f6e2544a431
-# ╠═fe5ebce1-574e-466b-ac3b-45b1861d684c
+# ╟─fe5ebce1-574e-466b-ac3b-45b1861d684c
+# ╟─357acde0-d6e2-46fb-ae94-538c2b5d57a6
 # ╟─f0ba2a5b-4661-42d7-b596-9208c8f0dd13
-# ╟─7567d456-82ba-4032-8263-e50d3883cfb7
-# ╠═4544720c-1625-485d-a109-a36633d8dbd6
-# ╟─8afb954c-8cf3-4218-9ddc-e5d62b939293
+# ╟─261f5c2d-f0a0-41ad-a5df-315eabc1d8a7
+# ╟─87ef2ff0-dade-4aca-8cf7-5bcb75bfdf83
+# ╟─41ba70bf-a0f2-4b0b-b9c6-f563a7b5fca0
+# ╟─186d6853-e253-4021-95f4-d8fea54650b6
 # ╟─3269b25b-b9b7-463f-b7c5-4c37e6368c0f
+# ╟─8afb954c-8cf3-4218-9ddc-e5d62b939293
 # ╟─f3861f54-8045-49aa-b108-0b12a0dca79e
 # ╠═1a083f8c-c8d8-4465-9fd4-296d3e248c99
 # ╠═38f59b83-ba21-4987-8747-b02d672617b7
@@ -3348,8 +3696,6 @@ version = "1.4.1+2"
 # ╟─6f3c3ca5-5ef8-4b0e-b247-958d740157ee
 # ╠═6b8fa884-abbc-4ceb-80a3-559c054804cc
 # ╟─9a1a0ee8-d8dc-4887-8cf0-be5cfdd9f33d
-# ╟─d9db897c-2759-489d-990c-7ba797e0e0c9
-# ╠═d84ad18d-6538-4311-887f-c33196896026
 # ╟─78e30f16-88db-4ce8-9077-725aa0a1a875
 # ╟─b22ac379-0368-4365-b32d-bac0d95d09c0
 # ╠═f256ee6e-d299-4a38-98cb-8f756ceec550
@@ -3369,14 +3715,14 @@ version = "1.4.1+2"
 # ╠═9cfe7e5b-966c-4941-9124-25ea1421462c
 # ╟─6392f87d-e6d9-40ed-861b-5daf0bd27240
 # ╟─96dc0688-8eae-491e-89bc-d7b2aab16222
-# ╠═d3141470-6ee0-4f9f-a3f8-1171f899b4bd
 # ╟─eda259cb-af6c-427e-b21b-e8f4ea4917bc
-# ╠═f93743ee-125a-4075-9c19-c4288dd4adca
+# ╟─f93743ee-125a-4075-9c19-c4288dd4adca
+# ╟─fdee80b4-715d-430b-8b6d-9f225342c015
 # ╟─dfe32b6f-dace-43fd-9cc2-06c7f8dfe0dd
-# ╠═4927e8c8-e659-4c07-81e1-c119f8dfccae
+# ╟─4927e8c8-e659-4c07-81e1-c119f8dfccae
+# ╟─d547229e-a836-4ce3-8115-653b0a00c91a
 # ╟─552df4e0-e4ca-4619-8e2f-b0900940934f
-# ╟─876119df-0111-44b2-9a9e-ac3abeba1cde
-# ╠═aaf043d2-89de-463e-b068-c19061440c90
+# ╟─489be9a0-7b92-4ff0-b2b3-259f52739a62
 # ╟─7e5b4999-fe1f-4616-9ba1-5787d3cb7f36
 # ╠═80ca95fc-f2ac-4b44-973f-1fa59757b3dd
 # ╠═237aa6d3-da70-4b0c-adbe-5e965cd322bd
@@ -3396,15 +3742,19 @@ version = "1.4.1+2"
 # ╟─e3ad85f3-534a-4705-a6c0-7a2688546158
 # ╠═f614701f-d87b-488e-8488-16f4097def60
 # ╟─5cdc94e1-b1d6-4353-b271-7e1227026da4
-# ╠═75ad0d2a-844f-409b-ad84-5b6734cc74f7
 # ╠═75e0cbe0-3809-4f8a-b6d3-47c09705d591
 # ╟─69bcb9de-7f99-43fc-8f65-0d119155c969
 # ╟─e8eaddc7-bea5-46bb-81d2-9e4017e26f39
-# ╠═30ce11ab-82fe-458a-a672-031a7e293287
+# ╟─a93a575c-4813-4638-a2b8-03bd482d3b65
+# ╟─30ce11ab-82fe-458a-a672-031a7e293287
+# ╟─e9a3ac80-76b6-44ef-8b23-daad7ec9cae4
 # ╠═42709e09-9925-472d-856b-3f5ac5518c2d
-# ╠═38eb6d21-7726-4625-a779-a9e0e2efe308
+# ╟─38eb6d21-7726-4625-a779-a9e0e2efe308
+# ╟─dc4c37bb-9ac0-4a5e-913a-7bd1109c95cf
 # ╠═8baa3f17-6119-4169-8563-4713fee9d20d
-# ╠═82048f9d-0ffb-4e38-b02c-5fe3f9ca1d08
+# ╟─82048f9d-0ffb-4e38-b02c-5fe3f9ca1d08
+# ╟─efec2314-c732-4ac7-8737-24e7ec05cad9
+# ╟─00e849d7-92b7-4f63-a776-ef564bf7407f
 # ╟─9357a96e-0870-4fa8-803a-a46e543a6063
 # ╟─00000000-0000-0000-0000-000000000001
 # ╟─00000000-0000-0000-0000-000000000002
